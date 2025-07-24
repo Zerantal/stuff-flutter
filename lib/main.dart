@@ -1,122 +1,233 @@
+// main.dart
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:provider/provider.dart';
+import 'locations_page.dart';
+import 'rooms_page.dart';
+import 'models/location_model.dart';
+import 'package:flutter/foundation.dart';
+import 'package:logging/logging.dart';
+import 'services/data_service_interface.dart';
+import 'services/hive_db_data_service.dart';
 
-void main() {
-  runApp(const MyApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Configure logging
+  Logger.root.level = Level.ALL;
+  Logger.root.onRecord.listen((record) {
+    if (kDebugMode) {
+      // Standard print for console output during development
+      print(
+        '${record.level.name}: ${record.time}: ${record.loggerName}: ${record.message}',
+      );
+      if (record.error != null) {
+        print('Error: ${record.error}, StackTrace: ${record.stackTrace}');
+      }
+    } else {
+      if (record.level >= Level.SEVERE) {
+        // Send to crash reporting service (e.g., Sentry, Firebase Crashlytics)
+      }
+    }
+  });
+
+  final appDocumentDir = await getApplicationDocumentsDirectory();
+  await Hive.initFlutter(appDocumentDir.path);
+  final IDataService dataService = HiveDbDataService();
+  await dataService.init();
+
+  runApp(
+    Provider<IDataService>.value(value: dataService, child: const MyApp()),
+  );
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Stuff',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
+        useMaterial3: true,
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.teal,
+          foregroundColor: Colors.white,
+        ),
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const MyHomePageWrapper(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
+enum ActiveView { locations, rooms }
 
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
+class MyHomePageWrapper extends StatefulWidget {
+  const MyHomePageWrapper({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<MyHomePageWrapper> createState() => _MyHomePageWrapperState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+class _MyHomePageWrapperState extends State<MyHomePageWrapper> {
+  String _appBarTitle = 'Locations'; // Default title
+  ActiveView _currentView = ActiveView.locations;
 
-  void _incrementCounter() {
+  // Parameters for RoomsPage if _currentView is rooms
+  String? _selectedLocationId;
+  String? _selectedLocationName;
+
+  Future<void> _resetDatabaseWithSampleData() async {
+    final dataService = Provider.of<IDataService>(context, listen: false);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('Confirm Reset'),
+          content: const Text(
+            'Are you sure you want to reset ALL inventory data to the sample set? This action cannot be undone.',
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+            ),
+            TextButton(
+              child: const Text('Reset All Data'),
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Resetting database... Please wait.')),
+      );
+      await dataService.populateSampleData();
+      if (mounted) {
+        ScaffoldMessenger.of(context).removeCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Database has been reset with sample data.'),
+          ),
+        );
+      }
+    }
+  }
+
+  // Callback to update the AppBar title from child pages
+  void _updateAppBarTitle(String newTitle) {
+    if (mounted) {
+      setState(() {
+        _appBarTitle = newTitle;
+      });
+    }
+  }
+
+  // Method to navigate to the Rooms view
+  void _navigateToRooms(Location location) {
     setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
+      _currentView = ActiveView.rooms;
+      _selectedLocationId = location.id;
+      _selectedLocationName = location.name;
     });
+  }
+
+  // Method to go back to Locations view from Rooms view
+  void _navigateBackToLocations() {
+    setState(() {
+      _currentView = ActiveView.locations;
+      _selectedLocationId = null;
+      _selectedLocationName = null;
+      _appBarTitle = 'Locations'; // Reset title
+    });
+  }
+
+  Widget _buildBody() {
+    switch (_currentView) {
+      case ActiveView.locations:
+        return LocationsPage(
+          onViewLocationContents: _navigateToRooms,
+          // If LocationsPage ever needs to dynamically set the title (e.g. "Locations (3)")
+          // you could pass it like this:
+          // updateAppBarTitle: _updateAppBarTitle,
+        );
+      case ActiveView.rooms:
+        if (_selectedLocationId != null && _selectedLocationName != null) {
+          return RoomsPage(
+            locationId: _selectedLocationId!,
+            locationName: _selectedLocationName!,
+            updateAppBarTitle: _updateAppBarTitle,
+          );
+        }
+        // Fallback or error state if parameters are missing
+        // This should ideally not be reached if navigation is managed correctly
+        return const Center(
+          child: Text('Error: Location data missing for rooms view.'),
+        );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
+    bool canGoBackToLocations = _currentView == ActiveView.rooms;
+
     return Scaffold(
       appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
+        // This is the MAIN AppBar
+        title: Text(_appBarTitle),
+        leading: canGoBackToLocations
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: _navigateBackToLocations,
+                tooltip: 'Back to Locations',
+              )
+            : (kDebugMode // Only show drawer button if not showing back button AND in debug mode
+                  ? Builder(
+                      // Use Builder to get context for Scaffold.of
+                      builder: (BuildContext appBarContext) {
+                        return IconButton(
+                          icon: const Icon(Icons.menu),
+                          tooltip: 'Developer Options',
+                          onPressed: () {
+                            // Use appBarContext which is under the Scaffold
+                            Scaffold.of(appBarContext).openDrawer();
+                          },
+                        );
+                      },
+                    )
+                  : null),
       ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+      drawer: kDebugMode
+          ? Drawer(
+              child: ListView(
+                padding: EdgeInsets.zero,
+                children: <Widget>[
+                  const DrawerHeader(
+                    decoration: BoxDecoration(color: Colors.teal),
+                    child: Text(
+                      'Developer Options',
+                      style: TextStyle(color: Colors.white, fontSize: 24),
+                    ),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.dataset_outlined),
+                    title: const Text('Reset DB with Sample Data'),
+                    onTap: () async {
+                      Navigator.pop(context); // Close the drawer first
+                      await _resetDatabaseWithSampleData(); // Call the stateful method
+                    },
+                  ),
+                  // Add other developer options here
+                ],
+              ),
+            )
+          : null,
+      body: _buildBody(),
     );
   }
 }
