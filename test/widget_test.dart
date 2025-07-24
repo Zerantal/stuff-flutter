@@ -71,8 +71,6 @@ void main() {
     PathProviderPlatform.instance = MockPathProviderPlatform();
   });
 
-
-
   testWidgets('My widget test with logging', (WidgetTester tester) async {
     _logger.shout('This is a SHOUT message!');
     _logger.severe('This is a SEVERE message');
