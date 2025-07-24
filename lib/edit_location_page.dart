@@ -41,9 +41,15 @@ class _EditLocationPageState extends State<EditLocationPage> {
     super.initState();
     _isNewLocation = widget.initialLocation == null;
 
-    _nameController = TextEditingController(text: widget.initialLocation?.name ?? '');
-    _descriptionController = TextEditingController(text: widget.initialLocation?.description ?? '');
-    _addressController = TextEditingController(text: widget.initialLocation?.address ?? '');
+    _nameController = TextEditingController(
+      text: widget.initialLocation?.name ?? '',
+    );
+    _descriptionController = TextEditingController(
+      text: widget.initialLocation?.description ?? '',
+    );
+    _addressController = TextEditingController(
+      text: widget.initialLocation?.address ?? '',
+    );
 
     if (widget.initialLocation != null) {
       _currentImagePaths = List.from(widget.initialLocation!.imagePaths);
@@ -70,7 +76,8 @@ class _EditLocationPageState extends State<EditLocationPage> {
     if (permission == LocationPermission.deniedForever) {
       if (mounted) {
         setState(() {
-          _deviceHasLocationService = false; // Treat as no service if permanently denied
+          _deviceHasLocationService =
+              false; // Treat as no service if permanently denied
         });
       }
       return;
@@ -84,7 +91,6 @@ class _EditLocationPageState extends State<EditLocationPage> {
     }
   }
 
-
   Future<void> _getCurrentAddress() async {
     setState(() {
       _isGettingLocation = true;
@@ -94,14 +100,16 @@ class _EditLocationPageState extends State<EditLocationPage> {
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
-          if(mounted) {
+        if (permission == LocationPermission.denied ||
+            permission == LocationPermission.deniedForever) {
+          if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Location permission denied.')),
             );
             setState(() {
               _isGettingLocation = false;
-              _deviceHasLocationService = permission != LocationPermission.deniedForever;
+              _deviceHasLocationService =
+                  permission != LocationPermission.deniedForever;
             });
           }
           return;
@@ -109,9 +117,13 @@ class _EditLocationPageState extends State<EditLocationPage> {
       }
 
       if (permission == LocationPermission.deniedForever) {
-        if(mounted) {
+        if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Location permission permanently denied. Please enable it in settings.')),
+            const SnackBar(
+              content: Text(
+                'Location permission permanently denied. Please enable it in settings.',
+              ),
+            ),
           );
           setState(() {
             _isGettingLocation = false;
@@ -122,10 +134,11 @@ class _EditLocationPageState extends State<EditLocationPage> {
       }
 
       Position position = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.high);
+        desiredAccuracy: LocationAccuracy.high,
+      );
 
-      List<geocoding.Placemark> placemarks = await geocoding.placemarkFromCoordinates(
-          position.latitude, position.longitude);
+      List<geocoding.Placemark> placemarks = await geocoding
+          .placemarkFromCoordinates(position.latitude, position.longitude);
 
       if (placemarks.isNotEmpty && mounted) {
         final placemark = placemarks.first;
@@ -141,13 +154,15 @@ class _EditLocationPageState extends State<EditLocationPage> {
           subLocality,
           locality,
           postalCode,
-          country
+          country,
         ].where((s) => s.isNotEmpty).join(', ');
 
         _addressController.text = formattedAddress;
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not determine address from location.')),
+          const SnackBar(
+            content: Text('Could not determine address from location.'),
+          ),
         );
       }
     } catch (e) {
@@ -194,12 +209,19 @@ class _EditLocationPageState extends State<EditLocationPage> {
       if (pickedFile != null && mounted) {
         // 3. Copy image to app's directory to ensure it persists
         final File imageFile = File(pickedFile.path);
-        final String appDocPath = (await getApplicationDocumentsDirectory()).path;
+        final String appDocPath =
+            (await getApplicationDocumentsDirectory()).path;
         final String fileName = p.basename(imageFile.path);
-        final String localPath = p.join(appDocPath, 'location_images', fileName);
+        final String localPath = p.join(
+          appDocPath,
+          'location_images',
+          fileName,
+        );
 
         // Ensure the directory exists
-        final Directory localImagesDir = Directory(p.join(appDocPath, 'location_images'));
+        final Directory localImagesDir = Directory(
+          p.join(appDocPath, 'location_images'),
+        );
         if (!await localImagesDir.exists()) {
           await localImagesDir.create(recursive: true);
         }
@@ -212,9 +234,9 @@ class _EditLocationPageState extends State<EditLocationPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error picking image: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error picking image: $e')));
       }
       _logger.severe("Error picking image: $e");
     }
@@ -247,21 +269,28 @@ class _EditLocationPageState extends State<EditLocationPage> {
         // Or simply log and move on.
       }
     }
-    if (mounted) { // Check mounted again if any async operations happened before this
+    if (mounted) {
+      // Check mounted again if any async operations happened before this
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Image removed.'), duration: Duration(seconds: 1)),
+        const SnackBar(
+          content: Text('Image removed.'),
+          duration: Duration(seconds: 1),
+        ),
       );
     }
   }
-
 
   void _saveLocation() async {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save(); // Important for onSaved callbacks if used
 
       final String name = _nameController.text.trim();
-      final String? description = _descriptionController.text.trim().isNotEmpty ? _descriptionController.text.trim() : null;
-      final String? address = _addressController.text.trim().isNotEmpty ? _addressController.text.trim() : null;
+      final String? description = _descriptionController.text.trim().isNotEmpty
+          ? _descriptionController.text.trim()
+          : null;
+      final String? address = _addressController.text.trim().isNotEmpty
+          ? _addressController.text.trim()
+          : null;
 
       if (_isNewLocation) {
         final newId = 'loc_${DateTime.now().millisecondsSinceEpoch}';
@@ -274,9 +303,9 @@ class _EditLocationPageState extends State<EditLocationPage> {
         );
         await DatabaseService.locationsBox.add(newLocation);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('${newLocation.name} added.')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('${newLocation.name} added.')));
         }
       } else {
         // Editing existing location
@@ -306,14 +335,18 @@ class _EditLocationPageState extends State<EditLocationPage> {
 
   Widget _buildImageWidget(String path) {
     // Define a consistent placeholder for errors within this page too
-    const Widget errorPlaceholder = Center(child: Icon(Icons.broken_image, color: Colors.grey, size: 50));
+    const Widget errorPlaceholder = Center(
+      child: Icon(Icons.broken_image, color: Colors.grey, size: 50),
+    );
 
     if (path.startsWith('assets/')) {
       return Image.asset(
         path,
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) {
-          _logger.severe("EDIT_PAGE: Error loading ASSET '$path'. Error: $error");
+          _logger.severe(
+            "EDIT_PAGE: Error loading ASSET '$path'. Error: $error",
+          );
           return errorPlaceholder;
         },
       );
@@ -322,7 +355,9 @@ class _EditLocationPageState extends State<EditLocationPage> {
         File(path),
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) {
-          _logger.severe("EDIT_PAGE: Error loading FILE '$path'. Error: $error");
+          _logger.severe(
+            "EDIT_PAGE: Error loading FILE '$path'. Error: $error",
+          );
           return errorPlaceholder;
         },
       );
@@ -339,7 +374,7 @@ class _EditLocationPageState extends State<EditLocationPage> {
             icon: const Icon(Icons.save),
             onPressed: _saveLocation,
             tooltip: 'Save Location',
-          )
+          ),
         ],
       ),
       body: SingleChildScrollView(
@@ -385,69 +420,80 @@ class _EditLocationPageState extends State<EditLocationPage> {
               const SizedBox(height: 8.0),
               if (_deviceHasLocationService)
                 _isGettingLocation
-                    ? const Center(child: Padding(
-                  padding: EdgeInsets.all(8.0),
-                  child: CircularProgressIndicator(),
-                ))
+                    ? const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(8.0),
+                          child: CircularProgressIndicator(),
+                        ),
+                      )
                     : OutlinedButton.icon(
-                  icon: const Icon(Icons.my_location),
-                  label: const Text('Get Current Address'),
-                  onPressed: _getCurrentAddress,
-                ),
+                        icon: const Icon(Icons.my_location),
+                        label: const Text('Get Current Address'),
+                        onPressed: _getCurrentAddress,
+                      ),
               if (!_deviceHasLocationService)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8.0),
                   child: Text(
                     'Device location service is unavailable or permission denied.',
-                    style: TextStyle(color: Theme.of(context).colorScheme.error),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                 ),
               Text('Images', style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 8.0),
               _currentImagePaths.isEmpty
-                  ? const Text('No images yet. Add one!', textAlign: TextAlign.center,)
+                  ? const Text(
+                      'No images yet. Add one!',
+                      textAlign: TextAlign.center,
+                    )
                   : SizedBox(
-                height: 120.0, // Adjust height as needed
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: _currentImagePaths.length,
-                  itemBuilder: (context, index) {
-                    final imagePath = _currentImagePaths[index];
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8.0),
-                      child: Stack(
-                        children: [
-                          Container(
-                            width: 100.0, // Adjust width
-                            height: 100.0, // Adjust height
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey),
-                              borderRadius: BorderRadius.circular(8.0),
+                      height: 120.0, // Adjust height as needed
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: _currentImagePaths.length,
+                        itemBuilder: (context, index) {
+                          final imagePath = _currentImagePaths[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 8.0),
+                            child: Stack(
+                              children: [
+                                Container(
+                                  width: 100.0, // Adjust width
+                                  height: 100.0, // Adjust height
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: Colors.grey),
+                                    borderRadius: BorderRadius.circular(8.0),
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(7.0),
+                                    child: _buildImageWidget(imagePath),
+                                  ),
+                                ),
+                                Positioned(
+                                  top: -4,
+                                  right: -4,
+                                  child: IconButton(
+                                    icon: const Icon(
+                                      Icons.remove_circle,
+                                      color: Colors.redAccent,
+                                    ),
+                                    iconSize: 24,
+                                    tooltip: 'Remove Image',
+                                    onPressed: () => _removeImage(index),
+                                    padding: EdgeInsets.zero,
+                                    constraints:
+                                        const BoxConstraints(), // Make it tight
+                                  ),
+                                ),
+                              ],
                             ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(7.0),
-                              child: _buildImageWidget(imagePath),
-                            ),
-                          ),
-                          Positioned(
-                            top: -4,
-                            right: -4,
-                            child: IconButton(
-                              icon: const Icon(Icons.remove_circle, color: Colors.redAccent),
-                              iconSize: 24,
-                              tooltip: 'Remove Image',
-                              onPressed: () => _removeImage(index),
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(), // Make it tight
-                            ),
-                          ),
-                        ],
+                          );
+                        },
                       ),
-                    );
-                  },
-                ),
-              ),
+                    ),
               const SizedBox(height: 12.0),
               ElevatedButton.icon(
                 icon: const Icon(Icons.add_a_photo_outlined),
@@ -458,7 +504,7 @@ class _EditLocationPageState extends State<EditLocationPage> {
               ElevatedButton(
                 onPressed: _saveLocation,
                 style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16.0)
+                  padding: const EdgeInsets.symmetric(vertical: 16.0),
                 ),
                 child: Text(_isNewLocation ? 'Add Location' : 'Save Changes'),
               ),

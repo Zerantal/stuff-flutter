@@ -12,4 +12,3 @@ class RoomData {
     required this.roomId,
   });
 }
-    

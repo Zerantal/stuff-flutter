@@ -8,10 +8,7 @@ final Logger _logger = Logger('ContainersPage');
 class ContainersPage extends StatefulWidget {
   final RoomData roomData;
 
-  const ContainersPage({
-    super.key,
-    required this.roomData,
-  });
+  const ContainersPage({super.key, required this.roomData});
 
   @override
   State<ContainersPage> createState() => _ContainersPageState();
@@ -44,18 +41,22 @@ class _ContainersPageState extends State<ContainersPage> {
       final newContainerName = 'Container ${_containers.length + 1}';
       _containers.add(newContainerName);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Added $newContainerName to ${widget.roomData.roomName}')),
+        SnackBar(
+          content: Text(
+            'Added $newContainerName to ${widget.roomData.roomName}',
+          ),
+        ),
       );
     });
   }
-
-
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Containers in ${widget.roomData.roomName} (${widget.roomData.locationName})'),
+        title: Text(
+          'Containers in ${widget.roomData.roomName} (${widget.roomData.locationName})',
+        ),
       ),
       body: ListView.builder(
         itemCount: _containers.length,

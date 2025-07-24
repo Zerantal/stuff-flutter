@@ -17,15 +17,16 @@ class ItemsPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text('Items in $containerName'),
-        bottom: PreferredSize( // Optional: Subtitle for more context
+        bottom: PreferredSize(
+          // Optional: Subtitle for more context
           preferredSize: const Size.fromHeight(20.0),
           child: Text(
             '$roomName, $locationName',
-            style: TextStyle(color: Theme
-                .of(context)
-                .appBarTheme
-                .foregroundColor
-                 ?? Colors.white70),
+            style: TextStyle(
+              color:
+                  Theme.of(context).appBarTheme.foregroundColor ??
+                  Colors.white70,
+            ),
           ),
         ),
       ),

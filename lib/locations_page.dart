@@ -27,7 +27,8 @@ Widget _getLocationImage(List<String> imagePaths) {
           width: imageSize,
           fit: BoxFit.cover,
           errorBuilder: (context, error, stackTrace) {
-            _logger.severe("Error loading ASSET '$path'. Falling back to placeholder. Error: $error",
+            _logger.severe(
+              "Error loading ASSET '$path'. Falling back to placeholder. Error: $error",
             );
             return Image.asset(
               // Fallback to placeholder asset
@@ -81,10 +82,7 @@ Widget _getLocationImage(List<String> imagePaths) {
 class LocationsPage extends StatefulWidget {
   final Function(Location) onViewLocationContents;
 
-  const LocationsPage({
-    super.key,
-    required this.onViewLocationContents,
-  });
+  const LocationsPage({super.key, required this.onViewLocationContents});
 
   @override
   State<LocationsPage> createState() => _LocationsPageState();

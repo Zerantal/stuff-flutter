@@ -17,7 +17,9 @@ Future<void> main() async {
   Logger.root.onRecord.listen((record) {
     if (kDebugMode) {
       // Standard print for console output during development
-      print('${record.level.name}: ${record.time}: ${record.loggerName}: ${record.message}');
+      print(
+        '${record.level.name}: ${record.time}: ${record.loggerName}: ${record.message}',
+      );
       if (record.error != null) {
         print('Error: ${record.error}, StackTrace: ${record.stackTrace}');
       }
@@ -43,12 +45,13 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Stuff',
       theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
-          useMaterial3: true,
-          appBarTheme: const AppBarTheme(
-            backgroundColor: Colors.teal,
-            foregroundColor: Colors.white,
-          )),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
+        useMaterial3: true,
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.teal,
+          foregroundColor: Colors.white,
+        ),
+      ),
       home: const MyHomePageWrapper(),
     );
   }
@@ -78,7 +81,8 @@ class _MyHomePageWrapperState extends State<MyHomePageWrapper> {
         return AlertDialog(
           title: const Text('Confirm Reset'),
           content: const Text(
-              'Are you sure you want to reset ALL inventory data to the sample set? This action cannot be undone.'),
+            'Are you sure you want to reset ALL inventory data to the sample set? This action cannot be undone.',
+          ),
           actions: <Widget>[
             TextButton(
               child: const Text('Cancel'),
@@ -98,11 +102,12 @@ class _MyHomePageWrapperState extends State<MyHomePageWrapper> {
         const SnackBar(content: Text('Resetting database... Please wait.')),
       );
       await DatabaseService.populateSampleData();
-      if(mounted) {
+      if (mounted) {
         ScaffoldMessenger.of(context).removeCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              content: Text('Database has been reset with sample data.')),
+            content: Text('Database has been reset with sample data.'),
+          ),
         );
       }
     }
@@ -155,7 +160,9 @@ class _MyHomePageWrapperState extends State<MyHomePageWrapper> {
         }
         // Fallback or error state if parameters are missing
         // This should ideally not be reached if navigation is managed correctly
-        return const Center(child: Text('Error: Location data missing for rooms view.'));
+        return const Center(
+          child: Text('Error: Location data missing for rooms view.'),
+        );
     }
   }
 
@@ -164,55 +171,55 @@ class _MyHomePageWrapperState extends State<MyHomePageWrapper> {
     bool canGoBackToLocations = _currentView == ActiveView.rooms;
 
     return Scaffold(
-      appBar: AppBar( // This is the MAIN AppBar
+      appBar: AppBar(
+        // This is the MAIN AppBar
         title: Text(_appBarTitle),
         leading: canGoBackToLocations
             ? IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: _navigateBackToLocations,
-          tooltip: 'Back to Locations',
-        )
+                icon: const Icon(Icons.arrow_back),
+                onPressed: _navigateBackToLocations,
+                tooltip: 'Back to Locations',
+              )
             : (kDebugMode // Only show drawer button if not showing back button AND in debug mode
-            ? Builder( // Use Builder to get context for Scaffold.of
-          builder: (BuildContext appBarContext) {
-            return IconButton(
-              icon: const Icon(Icons.menu),
-              tooltip: 'Developer Options',
-              onPressed: () {
-                // Use appBarContext which is under the Scaffold
-                Scaffold.of(appBarContext).openDrawer();
-              },
-            );
-          },
-        )
-            : null),
+                  ? Builder(
+                      // Use Builder to get context for Scaffold.of
+                      builder: (BuildContext appBarContext) {
+                        return IconButton(
+                          icon: const Icon(Icons.menu),
+                          tooltip: 'Developer Options',
+                          onPressed: () {
+                            // Use appBarContext which is under the Scaffold
+                            Scaffold.of(appBarContext).openDrawer();
+                          },
+                        );
+                      },
+                    )
+                  : null),
       ),
       drawer: kDebugMode
           ? Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: <Widget>[
-            const DrawerHeader(
-              decoration: BoxDecoration(
-                color: Colors.teal,
+              child: ListView(
+                padding: EdgeInsets.zero,
+                children: <Widget>[
+                  const DrawerHeader(
+                    decoration: BoxDecoration(color: Colors.teal),
+                    child: Text(
+                      'Developer Options',
+                      style: TextStyle(color: Colors.white, fontSize: 24),
+                    ),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.dataset_outlined),
+                    title: const Text('Reset DB with Sample Data'),
+                    onTap: () async {
+                      Navigator.pop(context); // Close the drawer first
+                      await _resetDatabaseWithSampleData(); // Call the stateful method
+                    },
+                  ),
+                  // Add other developer options here
+                ],
               ),
-              child: Text(
-                'Developer Options',
-                style: TextStyle(color: Colors.white, fontSize: 24),
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.dataset_outlined),
-              title: const Text('Reset DB with Sample Data'),
-              onTap: () async {
-                Navigator.pop(context); // Close the drawer first
-                await _resetDatabaseWithSampleData(); // Call the stateful method
-              },
-            ),
-            // Add other developer options here
-          ],
-        ),
-      )
+            )
           : null,
       body: _buildBody(),
     );

@@ -23,7 +23,6 @@ class RoomsPage extends StatefulWidget {
 }
 
 class _RoomsPageState extends State<RoomsPage> {
-
   @override
   void initState() {
     super.initState();
@@ -33,14 +32,16 @@ class _RoomsPageState extends State<RoomsPage> {
 
     // Example: Initialize fetching of rooms for the given locationId
     // _roomsFuture = _fetchRoomsForLocation(widget.locationId);
-    _logger.info("Viewing rooms for Location ID: ${widget.locationId}, Name: ${widget
-        .locationName}");
+    _logger.info(
+      "Viewing rooms for Location ID: ${widget.locationId}, Name: ${widget.locationName}",
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     // This Widget will now be the BODY of MyHomePageWrapper's Scaffold
-    return Stack( // Use Stack to position the FloatingActionButton
+    return Stack(
+      // Use Stack to position the FloatingActionButton
       children: [
         // Replace with your actual room fetching and display logic
         // For example, using a FutureBuilder if fetching data:
@@ -88,12 +89,15 @@ class _RoomsPageState extends State<RoomsPage> {
 
         // Using placeholder ListView.builder for now:
         ListView.builder(
-          padding: const EdgeInsets.only(bottom: 80), // Ensure FAB doesn't overlap last item
+          padding: const EdgeInsets.only(
+            bottom: 80,
+          ), // Ensure FAB doesn't overlap last item
           itemCount: 5, // Replace with actual data fetching based on locationId
           itemBuilder: (context, index) {
             final roomName = 'Room ${index + 1}';
             // Example unique room ID incorporating location details
-            final roomId = 'room${index +1}_${widget.locationId.substring(0, widget.locationId.length > 3 ? 3 : widget.locationId.length)}';
+            final roomId =
+                'room${index + 1}_${widget.locationId.substring(0, widget.locationId.length > 3 ? 3 : widget.locationId.length)}';
             return ListTile(
               title: Text(roomName),
               trailing: const Icon(Icons.arrow_forward_ios),
@@ -123,7 +127,11 @@ class _RoomsPageState extends State<RoomsPage> {
             onPressed: () {
               // TODO: Implement logic to add a new room to this location (using locationId)
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Add new room to ${widget.locationName} (ID: ${widget.locationId}) tapped')),
+                SnackBar(
+                  content: Text(
+                    'Add new room to ${widget.locationName} (ID: ${widget.locationId}) tapped',
+                  ),
+                ),
               );
               // You might want to refresh the list of rooms here
             },
