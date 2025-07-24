@@ -8,9 +8,10 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:logging/logging.dart';
+import 'package:provider/provider.dart';
 
 import 'models/location_model.dart';
-import 'services/database_service.dart';
+import 'services/data_service_interface.dart';
 
 final Logger _logger = Logger('EditLocationPage');
 
@@ -281,6 +282,11 @@ class _EditLocationPageState extends State<EditLocationPage> {
   }
 
   void _saveLocation() async {
+    final IDataService dataService = Provider.of<IDataService>(
+      context,
+      listen: false,
+    );
+
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save(); // Important for onSaved callbacks if used
 
@@ -301,7 +307,7 @@ class _EditLocationPageState extends State<EditLocationPage> {
           address: address,
           imagePaths: List.from(_currentImagePaths),
         );
-        await DatabaseService.locationsBox.add(newLocation);
+        await dataService.addLocation(newLocation);
         if (mounted) {
           ScaffoldMessenger.of(
             context,

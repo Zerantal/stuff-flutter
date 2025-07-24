@@ -2,12 +2,14 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:provider/provider.dart';
 import 'locations_page.dart';
 import 'rooms_page.dart';
 import 'models/location_model.dart';
 import 'package:flutter/foundation.dart';
 import 'package:logging/logging.dart';
-import 'services/database_service.dart';
+import 'services/data_service_interface.dart';
+import 'services/hive_db_data_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,9 +34,12 @@ Future<void> main() async {
 
   final appDocumentDir = await getApplicationDocumentsDirectory();
   await Hive.initFlutter(appDocumentDir.path);
-  await DatabaseService.init();
+  final IDataService dataService = HiveDbDataService();
+  await dataService.init();
 
-  runApp(const MyApp());
+  runApp(
+    Provider<IDataService>.value(value: dataService, child: const MyApp()),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -75,6 +80,7 @@ class _MyHomePageWrapperState extends State<MyHomePageWrapper> {
   String? _selectedLocationName;
 
   Future<void> _resetDatabaseWithSampleData() async {
+    final dataService = Provider.of<IDataService>(context, listen: false);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (BuildContext dialogContext) {
@@ -101,7 +107,7 @@ class _MyHomePageWrapperState extends State<MyHomePageWrapper> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Resetting database... Please wait.')),
       );
-      await DatabaseService.populateSampleData();
+      await dataService.populateSampleData();
       if (mounted) {
         ScaffoldMessenger.of(context).removeCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(

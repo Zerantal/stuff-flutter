@@ -1,10 +1,10 @@
 // lib/locations_page.dart
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart'; // Import for ValueListenableBuilder
 import 'package:logging/logging.dart';
-import 'models/location_model.dart'; // Import your model
-import 'services/database_service.dart';
+import 'package:provider/provider.dart';
+import 'models/location_model.dart';
+import 'services/data_service_interface.dart';
 import 'edit_location_page.dart';
 
 final Logger _logger = Logger('LocationsPage');
@@ -89,9 +89,21 @@ class LocationsPage extends StatefulWidget {
 }
 
 class _LocationsPageState extends State<LocationsPage> {
+  late Future<List<Location>> _locationsFuture;
+  late IDataService _dataService;
+
   @override
   void initState() {
     super.initState();
+    _dataService = Provider.of<IDataService>(context, listen: false);
+    _loadLocations();
+  }
+
+  void _loadLocations() {
+    _logger.info("Loading locations...");
+    setState(() {
+      _locationsFuture = _dataService.getAllLocations();
+    });
   }
 
   // --- Actions ---
@@ -114,42 +126,78 @@ class _LocationsPageState extends State<LocationsPage> {
       MaterialPageRoute(
         builder: (context) => EditLocationPage(initialLocation: location),
       ),
-    ).then((_) {
-      // Optional: Refresh list or state if needed after edit page pops,
-      // though ValueListenableBuilder should handle it if Hive object changed.
-      // setState(() {}); // Usually not needed if HiveObject.save() was called.
+    ).then((value) {
+      // Using 'value' to indicate something might be returned
+      _logger.info(
+        "Returned from EditLocationPage (editing existing). Refreshing locations.",
+      );
+      // Check if 'value' indicates a save occurred, or just always refresh.
+      // For simplicity, always refresh.
+      _loadLocations();
     });
   }
 
-  void _addNewLocation() async {
+  void _addNewLocation() {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) =>
             const EditLocationPage(), // Pass no initialLocation for new
       ),
-    ).then((_) {
-      // Optional: Refresh list or state if needed after edit page pops.
-      // setState(() {});
+    ).then((value) {
+      _logger.info(
+        "Returned from EditLocationPage (adding new). Refreshing locations.",
+      );
+      // Check if 'value' indicates a save occurred, or just always refresh.
+      _loadLocations();
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final dataService = Provider.of<IDataService>(context, listen: false);
     return Stack(
       // Use Stack if you need a FAB that overlaps the ListView
       children: [
-        ValueListenableBuilder<Box<Location>>(
-          valueListenable: DatabaseService.locationsBox.listenable(),
-          builder: (context, box, _) {
-            if (box.values.isEmpty) {
+        FutureBuilder<List<Location>>(
+          future: _locationsFuture, // Use the state variable
+          builder: (context, snapshot) {
+            _logger.fine(
+              "LocationsPage FutureBuilder: ConnectionState=${snapshot.connectionState}, HasData=${snapshot.hasData}, HasError=${snapshot.hasError}, Data=${snapshot.data?.length} items",
+            );
+
+            if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(
-                child: Text(
-                  'No locations found. Tap + to add one or use Developer Options to reset data.',
+                child: CircularProgressIndicator(
+                  key: Key("locations_waiting_spinner"),
                 ),
               );
             }
-            final locations = box.values.toList().cast<Location>();
+            if (snapshot.hasError) {
+              _logger.severe(
+                "Error in FutureBuilder: ${snapshot.error}",
+                snapshot.error,
+                snapshot.stackTrace,
+              );
+              return Center(
+                child: Text('Error loading locations: ${snapshot.error}'),
+              );
+            }
+            // FutureBuilder's snapshot.hasData is true once the future completes, even with null data.
+            // So, check snapshot.data directly for emptiness or nullity.
+            if (!snapshot.hasData ||
+                snapshot.data == null ||
+                snapshot.data!.isEmpty) {
+              _logger.info(
+                "FutureBuilder: No locations found or data is null/empty.",
+              );
+              return const Center(
+                child: Text('No locations found. Tap + to add one!'),
+              );
+            }
+
+            final locations = snapshot.data!;
+
             return ListView.builder(
               itemCount: locations.length,
               itemBuilder: (context, index) {
@@ -207,6 +255,7 @@ class _LocationsPageState extends State<LocationsPage> {
                                     .start, // Align buttons to start
                                 children: [
                                   ElevatedButton.icon(
+                                    key: Key('view_location_${location.id}'),
                                     icon: const Icon(
                                       Icons.inventory_2_outlined,
                                     ),
