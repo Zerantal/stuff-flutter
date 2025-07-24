@@ -5,6 +5,8 @@
 // gestures. You can also use WidgetTester to find child widgets in the widget
 // tree, read text, and verify that the values of widget properties are correct.
 
+// ignore_for_file: avoid_print
+
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -36,6 +38,9 @@ class MockPathProviderPlatform extends Mock
   }
 }
 
+// Example logger usage within a test or your app code
+final _logger = Logger('TestLogger');
+
 void main() {
   // Use a late final for the mock because it's set up in setUpAll
   late MockIDataService mockDataService;
@@ -47,6 +52,7 @@ void main() {
     Logger.root.level = Level.ALL; // Capture all log levels
     Logger.root.onRecord.listen((record) {
       // Customize the output format if needed
+
       print(
         '[${record.level.name}] ${record.time}: ${record.loggerName}: ${record.message}',
       );
@@ -65,8 +71,7 @@ void main() {
     PathProviderPlatform.instance = MockPathProviderPlatform();
   });
 
-  // Example logger usage within a test or your app code
-  final _logger = Logger('MyTestLogger');
+
 
   testWidgets('My widget test with logging', (WidgetTester tester) async {
     _logger.shout('This is a SHOUT message!');

@@ -155,7 +155,6 @@ class _LocationsPageState extends State<LocationsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final dataService = Provider.of<IDataService>(context, listen: false);
     return Stack(
       // Use Stack if you need a FAB that overlaps the ListView
       children: [

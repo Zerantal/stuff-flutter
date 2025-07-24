@@ -27,7 +27,7 @@ class _RoomsPageState extends State<RoomsPage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      widget.updateAppBarTitle('${widget.locationName}');
+      widget.updateAppBarTitle(widget.locationName);
     });
 
     // Example: Initialize fetching of rooms for the given locationId
