@@ -1,44 +1,214 @@
 // main.dart
-import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:provider/provider.dart';
-import 'locations_page.dart';
-import 'rooms_page.dart';
-import 'models/location_model.dart';
-import 'package:flutter/foundation.dart';
+import 'dart:async';
 import 'package:logging/logging.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:flutter/foundation.dart';
+import 'package:hive_ce_flutter/hive_flutter.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:stuff/services/image_data_service_interface.dart';
+
+import 'pages/rooms_page.dart';
+import 'pages/locations_page.dart';
+import 'models/location_model.dart';
+import 'services/impl/hive_db_data_service.dart';
+import 'services/utils/sample_data_populator.dart';
 import 'services/data_service_interface.dart';
-import 'services/hive_db_data_service.dart';
+import 'services/impl/geolocator_location_service.dart';
+import 'services/location_service_interface.dart';
+import 'services/impl/local_app_image_data_service.dart';
+import 'services/impl/flutter_image_picker_service.dart';
+import 'services/image_picker_service_interface.dart';
+import 'services/temporary_file_service_interface.dart';
+import 'services/impl/path_provider_temporary_file_service.dart';
 
-Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+final _mainLogger = Logger('AppInitializer');
 
-  // Configure logging
-  Logger.root.level = Level.ALL;
-  Logger.root.onRecord.listen((record) {
-    if (kDebugMode) {
-      // Standard print for console output during development
-      print(
-        '${record.level.name}: ${record.time}: ${record.loggerName}: ${record.message}',
-      );
-      if (record.error != null) {
-        print('Error: ${record.error}, StackTrace: ${record.stackTrace}');
-      }
+const MethodChannel _nativeLogChannel = MethodChannel('com.example.stuff/log');
+
+Future<void> _sendToNativeLog(LogRecord record) async {
+  if (!kDebugMode && record.level < Level.SEVERE) {
+    // In release mode, only send SEVERE logs and above to native, unless configured otherwise
+    return;
+  }
+  try {
+    await _nativeLogChannel.invokeMethod('log', {
+      'tag': record.loggerName,
+      'message': '${record.level.name}: ${record.message}',
+      'error': record.error?.toString(),
+      'stackTrace': record.stackTrace?.toString(),
+    });
+  } catch (e) {
+    // Fallback if platform channel fails
+    final fallbackMessage =
+        '[NATIVE LOG FAIL] ${record.level.name}: ${record.loggerName}: ${record.message} (Error: $e)';
+    if (Logger.root.level != Level.OFF) {
+      // Check if logging has been configured at all
+      _mainLogger.warning(fallbackMessage, record.error, record.stackTrace);
     } else {
-      if (record.level >= Level.SEVERE) {
-        // Send to crash reporting service (e.g., Sentry, Firebase Crashlytics)
+      debugPrint(fallbackMessage);
+      if (record.error != null) debugPrint('  Error: ${record.error}');
+      if (record.stackTrace != null) {
+        debugPrint('  StackTrace: ${record.stackTrace}');
       }
     }
+  }
+}
+
+// --- Initialization Helper Functions ---
+Future<void> _configureLogging() async {
+  Logger.root.level = Level.ALL; // Capture all logs
+
+  Logger.root.onRecord.listen((record) {
+    if (kDebugMode) {
+      final message =
+          '${record.level.name}: ${record.time.toIso8601String()}: ${record.loggerName}: ${record.message}';
+      debugPrint(message);
+      if (record.error != null) {
+        debugPrint('  ERROR: ${record.error}');
+        if (record.stackTrace != null) {
+          debugPrint('  STACKTRACE: ${record.stackTrace}');
+        }
+      } else if (record.stackTrace != null) {
+        debugPrint('  STACKTRACE: ${record.stackTrace}');
+      }
+
+      if (record.level >= Level.SEVERE) {
+        // Send severe errors to native even in debug
+        _sendToNativeLog(record);
+      }
+    } else {
+      // In release mode, only rely on _sendToNativeLog
+      _sendToNativeLog(record);
+    }
+
+    if (!kDebugMode && record.level >= Level.SEVERE) {
+      // TODO: Implement crash reporting (e.g., Sentry, Firebase Crashlytics)
+    }
   });
+}
 
-  final appDocumentDir = await getApplicationDocumentsDirectory();
-  await Hive.initFlutter(appDocumentDir.path);
-  final IDataService dataService = HiveDbDataService();
-  await dataService.init();
+Future<void> _initializeHive() async {
+  _mainLogger.info("Initializing Hive...");
+  try {
+    final appDocumentDir = await getApplicationDocumentsDirectory();
+    await Hive.initFlutter(appDocumentDir.path);
+    if (!Hive.isAdapterRegistered(LocationAdapter().typeId)) {
+      Hive.registerAdapter(LocationAdapter());
+    }
+    _mainLogger.info("Hive initialized successfully.");
+  } catch (e, s) {
+    _mainLogger.severe("Error initializing Hive", e, s);
+    rethrow; // Re-throw to be caught by runZonedGuarded or main's try-catch
+  }
+}
 
-  runApp(
-    Provider<IDataService>.value(value: dataService, child: const MyApp()),
+Future<IDataService> _initializeDataService() async {
+  _mainLogger.info("Initializing DataService...");
+  final IDataService dataService =
+      HiveDbDataService(); // Or your chosen implementation
+  try {
+    await dataService.init();
+    _mainLogger.info("DataService initialized successfully.");
+    return dataService;
+  } catch (e, s) {
+    _mainLogger.severe("Error initializing DataService", e, s);
+    rethrow;
+  }
+}
+
+Future<IImageDataService?> _createLocalAppImageDataService() async {
+  _mainLogger.info("Creating LocalAppImageDataService...");
+  try {
+    final service = await LocalAppImageDataService.create();
+    _mainLogger.info("LocalAppImageDataService created successfully.");
+    return service;
+  } catch (e, s) {
+    _mainLogger.severe('Failed to create LocalAppImageDataService', e, s);
+    // Depending on how critical this is, you might rethrow or return null
+    return null; // Or rethrow if it's a critical failure for app start
+  }
+}
+
+// --- Main Application Entry Point --- This is where the magic happens!
+
+Future<void> main() async {
+  runZonedGuarded<Future<void>>(
+    () async {
+      WidgetsFlutterBinding.ensureInitialized();
+
+      await _configureLogging();
+      _mainLogger.info(
+        "AppInitializer: Flutter bindings ensured. Configuring logging...",
+      );
+      _mainLogger.info("Application starting...");
+
+      // 3. Initialize Core Services
+      IDataService dataService;
+      try {
+        await _initializeHive();
+        dataService = await _initializeDataService();
+      } catch (error, stackTrace) {
+        _mainLogger.shout(
+          'CRITICAL_ERROR_UNCAUGHT_BY_RUNZONEDGUARDED: $error',
+          error,
+          stackTrace,
+        );
+        return;
+      }
+
+      _mainLogger.info(
+        "Core services initialized. Setting up providers and running app.",
+      );
+
+      // 4. Run the App with Providers
+      runApp(
+        MultiProvider(
+          providers: [
+            Provider<IDataService>.value(value: dataService),
+            FutureProvider<IImageDataService?>(
+              create: (_) => _createLocalAppImageDataService(),
+              initialData: null,
+              catchError: (context, error) {
+                _mainLogger.severe(
+                  'Error in FutureProvider for IImageDataService',
+                  error,
+                  (error is Error ? error.stackTrace : null),
+                );
+                return null;
+              },
+            ),
+            // Other synchronous services can be directly provided
+            Provider<ILocationService>(
+              create: (_) => GeolocatorLocationService(),
+            ),
+            Provider<IImagePickerService>(
+              create: (_) => FlutterImagePickerService(),
+            ),
+            Provider<ITemporaryFileService>(
+              create: (_) => PathProviderTemporaryFileService(),
+            ),
+          ],
+          child: const MyApp(),
+        ),
+      );
+      _mainLogger.info(
+        "runApp() called. Flutter application UI should now take over.",
+      );
+    },
+    (error, stackTrace) {
+      // This handler catches:
+      // 1. Synchronous errors during the initial `runZonedGuarded` callback.
+      // 2. Asynchronous errors that weren't caught by `await` and propagated up.
+      // At this point, logging should be configured.
+      _mainLogger.shout(
+        'CRITICAL_ERROR_UNCAUGHT_BY_RUNZONEDGUARDED: $error',
+        error,
+        stackTrace,
+      );
+      // TODO: Consider reporting this to a crash service as well.
+    },
   );
 }
 
@@ -81,6 +251,28 @@ class _MyHomePageWrapperState extends State<MyHomePageWrapper> {
 
   Future<void> _resetDatabaseWithSampleData() async {
     final dataService = Provider.of<IDataService>(context, listen: false);
+    final imageDataService = Provider.of<IImageDataService?>(
+      context,
+      listen: false,
+    );
+
+    if (imageDataService == null) {
+      // Handle the case where image service isn't ready.
+      // This might be rare if it's a FutureProvider that has resolved,
+      // but good to be defensive.
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Image service not available. Please try again.'),
+          ),
+        );
+      }
+      _mainLogger.warning(
+        "Attempted to reset DB, but IImageDataService is null.",
+      );
+      return;
+    }
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (BuildContext dialogContext) {
@@ -107,14 +299,39 @@ class _MyHomePageWrapperState extends State<MyHomePageWrapper> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Resetting database... Please wait.')),
       );
-      await dataService.populateSampleData();
-      if (mounted) {
-        ScaffoldMessenger.of(context).removeCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Database has been reset with sample data.'),
-          ),
+
+      // Use the SampleDataPopulator
+      final populator = SampleDataPopulator(
+        dataService: dataService,
+        imageDataService: imageDataService, // Pass the potentially null service
+      );
+
+      try {
+        await populator.populate(); // This now handles clearing and populating
+        _mainLogger.info(
+          "Sample data population successful via SampleDataPopulator.",
         );
+        if (mounted) {
+          ScaffoldMessenger.of(context).removeCurrentSnackBar();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Database has been reset with sample data.'),
+            ),
+          );
+          // Refresh UI - consider a more robust way than just setState
+          setState(() {});
+        }
+      } catch (e, s) {
+        _mainLogger.severe("Error during sample data population: $e", e, s);
+        if (mounted) {
+          ScaffoldMessenger.of(context).removeCurrentSnackBar();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error resetting database: $e'),
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
+        }
       }
     }
   }

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'items_page.dart'; // To navigate to items
-import 'models/room_data.dart';
+import '../models/room_data.dart';
 import 'package:logging/logging.dart';
 
 final Logger _logger = Logger('ContainersPage');

@@ -10,16 +10,11 @@ abstract class IDataService {
 
   // --- Location Operations ---
   Future<List<Location>> getAllLocations();
+  Stream<List<Location>> getLocationsStream();
   Future<Location?> getLocationById(String id);
   Future<void> addLocation(Location location);
   Future<void> updateLocation(Location location);
   Future<void> deleteLocation(String id);
-  Stream<List<Location>> watchAllLocations();
-
-  // --- Development & Debugging ---
-  /// Populates the database with a predefined set of sample data.
-  /// Should typically clear existing data first.
-  Future<void> populateSampleData();
 
   /// Clears all data from all relevant stores.
   Future<void> clearAllData();

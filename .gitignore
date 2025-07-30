@@ -124,3 +124,7 @@ app.*.symbols
 
 # --- Flutter-generated tooling files you don’t usually need --- 
 .metadata
+
+# Generated files (by build_runner)
+*.g.dart
+*.mocks.dart
