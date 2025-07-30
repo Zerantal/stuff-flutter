@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'containers_page.dart';
-import 'models/room_data.dart';
+import '../models/room_data.dart';
 
 final Logger _logger = Logger('RoomsPage');
 

@@ -24,6 +24,9 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Generate files
+        run: dart run build_runner build --delete-conflicting-outputs
+
       - name: Run analyzer
         run: flutter analyze
 
@@ -59,6 +62,9 @@ jobs:
 
       - name: Install dependencies
         run: flutter pub get
+
+      - name: Generate files
+        run: dart run build_runner build --delete-conflicting-outputs
 
       - name: Run tests
         run: flutter test --coverage
