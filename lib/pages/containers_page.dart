@@ -108,11 +108,8 @@ class _ContainersPageState extends State<ContainersPage> {
             widget.roomData.locationName, // Display location context
             style: TextStyle(
               fontSize: 14,
-              color:
-                  Theme.of(
-                    context,
-                  ).appBarTheme.foregroundColor?.withOpacity(0.8) ??
-                  Colors.white70,
+              color: (Theme.of(context).appBarTheme.foregroundColor ?? Colors.white)
+                  .withAlpha((0.8 * 255).round()),
             ),
           ),
         ),
