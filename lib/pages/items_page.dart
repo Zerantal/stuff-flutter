@@ -97,8 +97,10 @@ class _ItemsPageState extends State<ItemsPage> {
             '${widget.args.roomName}, ${widget.args.locationName}',
             style: TextStyle(
               fontSize: 14,
-              color: (Theme.of(context).appBarTheme.foregroundColor ?? Colors.white)
-                  .withAlpha((0.8 * 255).round()),
+              color:
+                  (Theme.of(context).appBarTheme.foregroundColor ??
+                          Colors.white)
+                      .withAlpha((0.8 * 255).round()),
             ),
           ),
         ),
