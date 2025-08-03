@@ -9,12 +9,19 @@ import '../services/image_data_service_interface.dart';
 import '../services/location_service_interface.dart';
 import '../services/image_picker_service_interface.dart';
 import '../services/temporary_file_service_interface.dart';
+import '../services/exceptions/permission_exceptions.dart';
+import '../services/exceptions/os_service_exceptions.dart';
 import '../models/location_model.dart';
 import '../core/image_identifier.dart';
 
 final Logger _logger = Logger('EditLocationViewModel');
 
+enum ImageSourceType { camera, gallery }
+
+typedef FormValidationCallback = bool Function();
+
 class EditLocationViewModel extends ChangeNotifier {
+  late FormValidationCallback _validateFormCallback;
   final IDataService _dataService;
   final IImageDataService? _imageDataService;
   final ILocationService _locationService;
@@ -29,12 +36,15 @@ class EditLocationViewModel extends ChangeNotifier {
     required IImagePickerService imagePickerService,
     required ITemporaryFileService tempFileService,
     Location? initialLocation,
+    FormValidationCallback? formValidator,
   }) : _dataService = dataService,
        _imageDataService = imageDataService,
        _locationService = locationService,
        _imagePickerService = imagePickerService,
        _tempFileService = tempFileService,
        _initialLocation = initialLocation {
+    _validateFormCallback =
+        formValidator ?? (() => _formKey.currentState?.validate() ?? false);
     _initialize();
   }
 
@@ -42,10 +52,8 @@ class EditLocationViewModel extends ChangeNotifier {
   late TextEditingController nameController;
   late TextEditingController descriptionController;
   late TextEditingController addressController;
-  final GlobalKey<FormState> formKey = GlobalKey<FormState>();
 
   List<ImageIdentifier> _currentImages = [];
-
   List<ImageIdentifier> get currentImages => List.unmodifiable(_currentImages);
 
   List<String> _initialPersistedGuids = [];
@@ -61,8 +69,15 @@ class EditLocationViewModel extends ChangeNotifier {
   bool _deviceHasLocationService = true;
   bool get deviceHasLocationService => _deviceHasLocationService;
 
+  // true if request for permission has been attempted but denied
+  bool _locationPermissionDenied = false;
+  bool get locationPermissionDenied => _locationPermissionDenied;
+
   bool _isSaving = false;
   bool get isSaving => _isSaving;
+
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  GlobalKey<FormState> get formKey => _formKey;
 
   // --- Initialization ---
   void _initialize() {
@@ -83,7 +98,16 @@ class EditLocationViewModel extends ChangeNotifier {
           .toList();
     }
     _initializeTempDirectory();
-    checkLocationServiceStatus();
+  }
+
+  Future<void> refreshLocationServiceStatus() async {
+    bool previousStatus = _deviceHasLocationService;
+    _deviceHasLocationService = await _locationService
+        .isServiceEnabledAndPermitted();
+    if (previousStatus != _deviceHasLocationService) {
+      _locationPermissionDenied = !_deviceHasLocationService;
+      notifyListeners();
+    }
   }
 
   Future<void> _initializeTempDirectory() async {
@@ -111,16 +135,42 @@ class EditLocationViewModel extends ChangeNotifier {
   Future<void> getCurrentAddress() async {
     if (_isGettingLocation) return;
     _isGettingLocation = true;
+    _locationPermissionDenied = false;
+    _deviceHasLocationService = true; // Assume true until a problem is found
     notifyListeners();
 
     try {
       String? address = await _locationService.getCurrentAddress();
       if (address != null) {
         addressController.text = address;
+        _deviceHasLocationService = true;
+      } else {
+        _logger.warning("getCurrentAddress returned null but no exception.");
       }
-    } catch (e) {
-      _logger.severe("Error getting current address: $e");
-      await checkLocationServiceStatus();
+    } on LocationPermissionDeniedException catch (e) {
+      // Custom exception from your ILocationService
+      _logger.warning("Location permission denied: $e");
+      _deviceHasLocationService = false;
+      _locationPermissionDenied = true;
+    } on PermissionDeniedPermanentlyException catch (e) {
+      // Custom exception
+      _logger.warning("Location permission permanently denied: $e");
+      _deviceHasLocationService = false;
+      _locationPermissionDenied = true;
+      // Optionally, set another flag to prompt user to go to settings
+      // e.g., _shouldShowOpenSettingsPrompt = true;
+    } on OSServiceDisabledException catch (e) {
+      // Custom exception
+      _logger.warning("Location service disabled: $e");
+      _deviceHasLocationService = false;
+      _locationPermissionDenied =
+          true; // Treat as a permission issue for UI message
+    } catch (e, s) {
+      _logger.severe("Error getting current address: $e", s);
+      _deviceHasLocationService =
+          false; // A generic error also means service isn't working as expected
+      _locationPermissionDenied =
+          true; // Show the error message for any failure
     } finally {
       _isGettingLocation = false;
       notifyListeners();
@@ -128,6 +178,14 @@ class EditLocationViewModel extends ChangeNotifier {
   }
 
   Future<void> pickImageFromCamera() async {
+    await _pickImage(ImageSourceType.camera);
+  }
+
+  Future<void> pickImageFromGallery() async {
+    await _pickImage(ImageSourceType.gallery);
+  }
+
+  Future<void> _pickImage(ImageSourceType source) async {
     if (_tempDir == null) {
       _logger.warning(
         "Temporary directory not initialized. Cannot pick image.",
@@ -137,12 +195,10 @@ class EditLocationViewModel extends ChangeNotifier {
 
     try {
       _logger.info("Attempting to pick image from camera...");
-      final File? pickedImageFile = await _imagePickerService
-          .pickImageFromCamera(
-            maxWidth: 1024,
-            maxHeight: 1024,
-            imageQuality: 85,
-          );
+      final File? pickedImageFile = source == ImageSourceType.camera
+          ? await _imagePickerService.pickImageFromCamera()
+          : await _imagePickerService.pickImageFromGallery();
+
       _logger.info(
         "Returned from image picker. Picked file: ${pickedImageFile?.path}",
       );
@@ -191,12 +247,7 @@ class EditLocationViewModel extends ChangeNotifier {
   }
 
   bool _validateForm() {
-    if (!(formKey.currentState?.validate() ?? false)) {
-      _logger.info("Save attempt failed: Form validation errors.");
-      return false;
-    }
-    formKey.currentState!.save();
-    return true;
+    return _validateFormCallback();
   }
 
   Future<List<String>> _processImagesForSave(
@@ -232,9 +283,12 @@ class EditLocationViewModel extends ChangeNotifier {
       }
 
       // 2. Delete images that were removed from the list
-      final Set<String> finalGuidsSet = Set.from(finalImageGuidsForLocation);
-      List<String> guidsToDeletePermanently = initialImageGuids
-          .where((initialGuid) => !finalGuidsSet.contains(initialGuid))
+      Set<String> currentPersistedGuids = currentImageIdentifiers
+          .whereType<GuidIdentifier>()
+          .map((gi) => gi.guid)
+          .toSet();
+      List<String> guidsToDeletePermanently = _initialPersistedGuids
+          .where((initialGuid) => !currentPersistedGuids.contains(initialGuid))
           .toList();
 
       for (String guidToDelete in guidsToDeletePermanently) {
@@ -272,7 +326,7 @@ class EditLocationViewModel extends ChangeNotifier {
           "Cannot save new images as the image service is unavailable.",
         );
       }
-      _logger.info(
+      _logger.warning(
         "IImageDataService is null. Proceeding without image saving/deletion capabilities.",
       );
       finalImageGuidsForLocation = currentImageIdentifiers
@@ -295,15 +349,18 @@ class EditLocationViewModel extends ChangeNotifier {
 
   Future<bool> saveLocation() async {
     if (_isSaving) return false;
-    if (!_validateForm()) return false;
+    if (!_validateForm()) {
+      _logger.warning("Validation failed. Cannot save location.");
+      return false;
+    }
 
     _isSaving = true;
     notifyListeners();
 
     try {
       final List<String> finalImageGuids = await _processImagesForSave(
-        _currentImages,
-        _initialPersistedGuids,
+        List.from(_currentImages),
+        List.from(_initialPersistedGuids),
       );
 
       final locationToSave = Location(
@@ -333,6 +390,67 @@ class EditLocationViewModel extends ChangeNotifier {
     }
   }
 
+  Widget getImageThumbnailWidget(
+    ImageIdentifier identifier, {
+    required double width,
+    required double height,
+    required BoxFit fit,
+  }) {
+    if (identifier is GuidIdentifier) {
+      if (_imageDataService == null) {
+        _logger.warning(
+          "IImageDataService is null in ViewModel, cannot display persisted image for GUID: ${identifier.guid}",
+        );
+        return SizedBox(
+          // Return a SizedBox or a more specific placeholder
+          width: width,
+          height: height,
+          child: const Center(
+            child: Icon(Icons.error_outline, color: Colors.red, size: 50),
+          ),
+        );
+      }
+
+      return _imageDataService.getUserImage(
+        identifier.guid,
+        width: width,
+        height: height,
+        fit: fit,
+      );
+    } else if (identifier is TempFileIdentifier) {
+      return Image.file(
+        identifier.file,
+        width: width,
+        height: height,
+        fit: fit,
+        errorBuilder: (context, error, stackTrace) {
+          _logger.severe(
+            "Error loading TEMP image ${identifier.file.path} in ViewModel: $error",
+            error,
+            stackTrace,
+          );
+          return SizedBox(
+            // Return a SizedBox or a more specific placeholder
+            width: width,
+            height: height,
+            child: const Center(
+              child: Icon(Icons.broken_image, color: Colors.grey, size: 50),
+            ),
+          );
+        },
+      );
+    }
+    // Fallback for unknown types, though ideally your ImageIdentifier hierarchy is sealed/exhaustive
+    _logger.warning(
+      "Unknown ImageIdentifier type encountered in ViewModel.getImageThumbnailWidget: ${identifier.runtimeType}",
+    );
+    return SizedBox(
+      width: width,
+      height: height,
+      child: const Center(child: Icon(Icons.help_outline)),
+    );
+  }
+
   Future<void> handleDiscardOrPop() async {
     _logger.info("Handling discard or pop. Cleaning up session resources.");
     await _cleanupTempDir();
@@ -353,22 +471,29 @@ class EditLocationViewModel extends ChangeNotifier {
     }
   }
 
+  bool _isDisposed = false;
+  bool get isDisposed => _isDisposed;
+
   @override
   void dispose() {
+    if (_isDisposed) return;
+
+    _logger.finer("Disposing EditLocationViewModel.");
     nameController.dispose();
     descriptionController.dispose();
     addressController.dispose();
-    // Important: Cleanup should ideally be tied to view model lifecycle if it's
-    // scoped to the page. If it's a shared ViewModel, be careful.
-    // If using WillPopScope and custom back button in UI to call handleDiscardOrPop,
-    // this explicit call here might be redundant or for safety.
-    // Consider if _locationSuccessfullySaved is still needed or if logic flows ensure cleanup.
-    if (!_isSaving) {
-      // Or a more robust check if it was not saved
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-        await _cleanupTempDir();
+
+    if (_tempDir != null) {
+      _logger.warning(
+        "ViewModel disposed, but temp directory was not cleaned up. Attempting cleanup now. This might indicate an unhandled exit path.",
+      );
+
+      _cleanupTempDir().catchError((e, s) {
+        _logger.severe("Error during fallback cleanup in dispose: $e", s);
       });
     }
+
+    _isDisposed = true;
     super.dispose();
   }
 }

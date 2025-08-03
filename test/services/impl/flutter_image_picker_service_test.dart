@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image_picker/image_picker.dart';
@@ -8,46 +7,17 @@ import 'package:mockito/annotations.dart';
 
 import 'package:stuff/services/impl/flutter_image_picker_service.dart';
 import 'package:stuff/services/permission_service_interface.dart';
+import '../../utils/test_logger_helper.dart';
 
 // import generated mock file
 import 'flutter_image_picker_service_test.mocks.dart';
-
-// --- Test Logger Helper ---
-List<LogRecord> _capturedLogs = [];
-StreamSubscription<LogRecord>? _logSubscription;
-
-void _startCapturingLogs() {
-  _capturedLogs.clear();
-  _logSubscription = Logger.root.onRecord.listen((LogRecord rec) {
-    if (rec.loggerName == 'FlutterImagePickerService') {
-      _capturedLogs.add(rec);
-    }
-  });
-}
-
-void _stopCapturingLogs() {
-  _logSubscription?.cancel();
-  _logSubscription = null;
-}
-
-LogRecord? _findLogWithMessage(String messagePart, {Level? level}) {
-  return _capturedLogs.cast<LogRecord?>().firstWhere(
-    (log) =>
-        log!.message.contains(messagePart) &&
-        (level == null || log.level == level),
-    orElse: () => null,
-  );
-}
 
 @GenerateMocks([ImagePicker, IPermissionService])
 void main() {
   late FlutterImagePickerService service;
   late MockImagePicker mockImagePicker;
   late MockIPermissionService mockPermissionService;
-
-  setUpAll(() {
-    Logger.root.level = Level.ALL; // Capture all log levels for testing
-  });
+  late TestLoggerManager loggerManager;
 
   setUp(() {
     mockImagePicker = MockImagePicker();
@@ -56,17 +26,18 @@ void main() {
       imagePicker: mockImagePicker,
       permissionService: mockPermissionService,
     );
-    _startCapturingLogs();
+    loggerManager = TestLoggerManager();
+    loggerManager.startCapture();
   });
 
   tearDown(() {
-    _stopCapturingLogs();
+    loggerManager.stopCapture();
   });
 
   group('pickImageFromCamera', () {
-    const double defaultMaxWidth = 1024;
-    const double defaultMaxHeight = 1024;
-    const int defaultImageQuality = 85;
+    const double defaultMaxWidth = kDefaultImageMaxWidth;
+    const double defaultMaxHeight = kDefaultImageMaxHeight;
+    const int defaultImageQuality = kDefaultImageQuality;
     final mockXFile = XFile('fake_path/camera_image.jpg');
 
     test(
@@ -100,8 +71,11 @@ void main() {
         );
 
         await Future.delayed(Duration.zero); // Allow logs to process
+
+        await pumpEventQueue();
+
         expect(
-          _findLogWithMessage(
+          loggerManager.findLogWithMessage(
             'Camera permission denied.',
             level: Level.WARNING,
           ),
@@ -250,7 +224,7 @@ void main() {
         );
         await Future.delayed(Duration.zero); // Allow logs to process
         expect(
-          _findLogWithMessage(
+          loggerManager.findLogWithMessage(
             'Error picking image from camera: $exception',
             level: Level.SEVERE,
           ),
@@ -284,7 +258,7 @@ void main() {
         ); // Ensure picker is not called
         await Future.delayed(Duration.zero);
         expect(
-          _findLogWithMessage(
+          loggerManager.findLogWithMessage(
             'Error picking image from camera: $exception',
             level: Level.SEVERE,
           ),
@@ -295,9 +269,9 @@ void main() {
   });
 
   group('pickImageFromGallery', () {
-    const double defaultMaxWidth = 1024;
-    const double defaultMaxHeight = 1024;
-    const int defaultImageQuality = 85;
+    const double defaultMaxWidth = kDefaultImageMaxWidth;
+    const double defaultMaxHeight = kDefaultImageMaxHeight;
+    const int defaultImageQuality = kDefaultImageQuality;
     final mockXFile = XFile('fake_path/gallery_image.jpg');
 
     test(
@@ -322,7 +296,7 @@ void main() {
         verifyNever(mockImagePicker.pickImage(source: anyNamed('source')));
         await Future.delayed(Duration.zero);
         expect(
-          _findLogWithMessage(
+          loggerManager.findLogWithMessage(
             'Gallery permission denied.',
             level: Level.WARNING,
           ),
@@ -466,7 +440,7 @@ void main() {
         );
         await Future.delayed(Duration.zero);
         expect(
-          _findLogWithMessage(
+          loggerManager.findLogWithMessage(
             'Error picking image from gallery: $exception',
             level: Level.SEVERE,
           ),
@@ -500,7 +474,7 @@ void main() {
         ); // Ensure picker is not called
         await Future.delayed(Duration.zero);
         expect(
-          _findLogWithMessage(
+          loggerManager.findLogWithMessage(
             'Error picking image from gallery: $exception',
             level: Level.SEVERE,
           ),

@@ -5,14 +5,12 @@ import 'package:provider/provider.dart';
 import 'package:stuff/services/image_data_service_interface.dart';
 import '../models/location_model.dart';
 import '../services/data_service_interface.dart';
-import 'edit_location_page.dart';
+import '../routing/app_routes.dart';
 
 final Logger _logger = Logger('LocationsPage');
 
 class LocationsPage extends StatefulWidget {
-  final Function(Location) onViewLocationContents;
-
-  const LocationsPage({super.key, required this.onViewLocationContents});
+  const LocationsPage({super.key});
 
   @override
   State<LocationsPage> createState() => _LocationsPageState();
@@ -39,28 +37,33 @@ class _LocationsPageState extends State<LocationsPage> {
     _logger.info("RefreshIndicator completed.");
   }
 
-  Future<void> _navigateAndAwaitChanges(Widget page) async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => page),
-    );
-
-    _logger.info(
-      "Returned from a page navigation. Stream should handle UI updates.",
-    );
-  }
+  // Future<void> _navigateAndAwaitChanges(Widget page) async {
+  //   await Navigator.push(
+  //     context,
+  //     MaterialPageRoute(builder: (context) => page),
+  //   );
+  //
+  //   _logger.info(
+  //     "Returned from a page navigation. Stream should handle UI updates.",
+  //   );
+  // }
 
   // --- Actions ---
   void _editLocationInfo(Location location) {
-    _navigateAndAwaitChanges(EditLocationPage(initialLocation: location));
+    _logger.info("Navigating to edit location: ${location.name}");
+    Navigator.of(
+      context,
+    ).pushNamed(AppRoutes.editLocation, arguments: location);
   }
 
   void _addNewLocation() {
-    _navigateAndAwaitChanges(const EditLocationPage());
+    _logger.info("Navigating to add new location page.");
+    Navigator.of(context).pushNamed(AppRoutes.addLocation);
   }
 
   void _viewLocationContents(Location location) {
-    widget.onViewLocationContents(location);
+    _logger.info("Navigating to view contents for location: ${location.name}");
+    Navigator.of(context).pushNamed(AppRoutes.rooms, arguments: location);
   }
 
   Widget _buildLoadingIndicator() {
@@ -71,7 +74,7 @@ class _LocationsPageState extends State<LocationsPage> {
 
   Widget _buildErrorState(AsyncSnapshot<List<Location>> snapshot) {
     _logger.severe(
-      "Error in FutureBuilder: ${snapshot.error}",
+      "Error in StreamBuilder: ${snapshot.error}",
       snapshot.error,
       snapshot.stackTrace,
     );
@@ -98,20 +101,36 @@ class _LocationsPageState extends State<LocationsPage> {
   }
 
   Widget _buildEmptyState() {
-    _logger.info("FutureBuilder: No locations found or data is null/empty.");
-    // LayoutBuilder ensures SingleChildScrollView has constraints to work correctly when empty
+    _logger.info("StreamBuilder: No locations found or data is null/empty.");
     return LayoutBuilder(
       builder: (context, constraints) {
         return SingleChildScrollView(
-          physics:
-              const AlwaysScrollableScrollPhysics(), // Important for empty list refresh
+          physics: const AlwaysScrollableScrollPhysics(),
           child: ConstrainedBox(
             constraints: BoxConstraints(minHeight: constraints.maxHeight),
-            child: const Center(
+            child: Center(
               child: Padding(
-                padding: EdgeInsets.all(16.0),
-                child: Text(
-                  'No locations found. Tap + to add one or pull down to refresh.',
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                      'No locations found. Tap + to add one or pull down to refresh.',
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 20),
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.add_location_alt_outlined),
+                      label: const Text('Add First Location'),
+                      onPressed: _addNewLocation,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        foregroundColor: Theme.of(
+                          context,
+                        ).colorScheme.onPrimary,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -245,6 +264,7 @@ class _LocationsPageState extends State<LocationsPage> {
     IImageDataService? imageDataService,
   ) {
     return ListView.builder(
+      key: const Key('locations_list_view'),
       itemCount: locations.length,
       itemBuilder: (context, index) {
         final location = locations[index];
@@ -253,84 +273,55 @@ class _LocationsPageState extends State<LocationsPage> {
     );
   }
 
-  Widget _buildFloatingActionButton() {
-    return Positioned(
-      bottom: 16.0,
-      right: 16.0,
-      child: FloatingActionButton(
-        onPressed: _addNewLocation,
-        tooltip: 'Add Location',
-        child: const Icon(Icons.add),
-      ),
-    );
-  }
-
   // --- Main Build Method (Refactored) ---
   @override
   Widget build(BuildContext context) {
-    // final currentImageDataService = Provider.of<IImageDataService?>(context, listen: false);
-    // _logger.info("LocationsPage build: currentImageDataService is ${currentImageDataService == null ? 'NULL' : 'AVAILABLE'}");
+    _logger.info("LocationsPage building its content.");
 
-    // if (currentImageDataService == null) {
-    //   _logger.warning("ImageDataService is null in LocationsPage build. FutureProvider might still be loading or service not available.");
-    // }
+    return RefreshIndicator(
+      key: const Key("locations_refresh_indicator"),
+      onRefresh: _handleRefresh,
+      child: Consumer<IImageDataService?>(
+        builder: (context, imageDataServiceFromConsumer, child) {
+          _logger.info(
+            "LocationsPage Consumer<IImageDataService>: Service is ${imageDataServiceFromConsumer == null ? 'NULL' : 'AVAILABLE'}",
+          );
 
-    return Scaffold(
-      body: Stack(
-        children: [
-          RefreshIndicator(
-            key: const Key("locations_refresh_indicator"),
-            onRefresh: _handleRefresh,
-            child: Consumer<IImageDataService?>(
-              builder: (context, imageDataServiceFromConsumer, child) {
-                _logger.info(
-                  "LocationsPage Consumer<IImageDataService>: Service is ${imageDataServiceFromConsumer == null ? 'NULL' : 'AVAILABLE'}",
+          return StreamBuilder<List<Location>>(
+            stream: _locationsStream,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting &&
+                  !(snapshot.hasData || snapshot.hasError)) {
+                // Show loading only if it's the initial wait and no data/error yet.
+                // If it's ConnectionState.waiting but hasData, it's likely a stream update.
+                _logger.fine(
+                  "StreamBuilder: ConnectionState.waiting (initial load likely)",
                 );
+                return _buildLoadingIndicator();
+              }
+              if (snapshot.hasError) {
+                _logger.warning("StreamBuilder: Error: ${snapshot.error}");
+                return _buildErrorState(snapshot);
+              }
+              if (!snapshot.hasData ||
+                  snapshot.data == null ||
+                  snapshot.data!.isEmpty) {
+                _logger.info("StreamBuilder: No data or empty list.");
+                return _buildEmptyState();
+              }
 
-                if (imageDataServiceFromConsumer == null) {
-                  // _isAttemptingToLoadImages checks if locations have imageGuids
-                  _logger.info(
-                    "ImageDataService is null, but images are expected. Showing main loading indicator.",
-                  );
-                  // Show a loading indicator for the whole list, or a modified empty/loading state for list items
-                  return _buildLoadingIndicator(); // Or a more specific "loading image service" indicator
-                }
-
-                return StreamBuilder<List<Location>>(
-                  stream: _locationsStream,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      _logger.fine("StreamBuilder snapshot: waiting");
-                      return _buildLoadingIndicator();
-                    }
-                    if (snapshot.hasError) {
-                      _logger.warning(
-                        "StreamBuilder snapshot: hasError: ${snapshot.error}",
-                      );
-                      return _buildErrorState(snapshot);
-                    }
-                    if (!snapshot.hasData ||
-                        snapshot.data == null ||
-                        snapshot.data!.isEmpty) {
-                      _logger.info(
-                        "StreamBuilder snapshot: no data or empty list.",
-                      );
-                      return _buildEmptyState();
-                    }
-                    _logger.fine(
-                      "StreamBuilder snapshot: hasData with ${snapshot.data!.length} items.",
-                    );
-                    return _buildLocationsList(
-                      snapshot.data!,
-                      imageDataServiceFromConsumer,
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-          _buildFloatingActionButton(),
-        ],
+              _logger.fine(
+                "StreamBuilder: HasData with ${snapshot.data!.length} items.",
+              );
+              // Pass the potentially null imageDataServiceFromConsumer.
+              // _buildLocationsList and _buildLocationCard will handle it.
+              return _buildLocationsList(
+                snapshot.data!,
+                imageDataServiceFromConsumer,
+              );
+            },
+          );
+        },
       ),
     );
   }

@@ -10,8 +10,14 @@ import 'package:path_provider/path_provider.dart';
 import 'package:stuff/services/image_data_service_interface.dart';
 
 import 'pages/rooms_page.dart';
+import 'routing/app_routes.dart';
 import 'pages/locations_page.dart';
+import 'pages/edit_location_page.dart';
+import 'pages/containers_page.dart';
+import 'pages/items_page.dart';
 import 'models/location_model.dart';
+import 'models/item_page_arguments.dart';
+import 'models/room_data.dart';
 import 'services/impl/hive_db_data_service.dart';
 import 'services/utils/sample_data_populator.dart';
 import 'services/data_service_interface.dart';
@@ -22,6 +28,7 @@ import 'services/impl/flutter_image_picker_service.dart';
 import 'services/image_picker_service_interface.dart';
 import 'services/temporary_file_service_interface.dart';
 import 'services/impl/path_provider_temporary_file_service.dart';
+import 'notifiers/app_bar_title_notifier.dart';
 
 final _mainLogger = Logger('AppInitializer');
 
@@ -100,7 +107,7 @@ Future<void> _initializeHive() async {
     _mainLogger.info("Hive initialized successfully.");
   } catch (e, s) {
     _mainLogger.severe("Error initializing Hive", e, s);
-    rethrow; // Re-throw to be caught by runZonedGuarded or main's try-catch
+    rethrow;
   }
 }
 
@@ -126,68 +133,95 @@ Future<IImageDataService?> _createLocalAppImageDataService() async {
     return service;
   } catch (e, s) {
     _mainLogger.severe('Failed to create LocalAppImageDataService', e, s);
-    // Depending on how critical this is, you might rethrow or return null
-    return null; // Or rethrow if it's a critical failure for app start
+    return null; // Handled by FutureProvider's catchError
   }
 }
 
-// --- Main Application Entry Point --- This is where the magic happens!
+/// Data class to hold essential initialized services.
+class EssentialServices {
+  final IDataService dataService;
+  // Add other synchronously initialized, essential services here if any in the future
 
+  EssentialServices({required this.dataService});
+}
+
+/// Initializes core application services that MUST be available before the app runs.
+Future<EssentialServices> _initializeAppServices() async {
+  _mainLogger.info("Starting core application services initialization...");
+
+  // 1. Configure Logging (should be done first)
+  await _configureLogging();
+
+  // 2. Initialize Hive (dependency for DataService)
+  await _initializeHive();
+
+  // 3. Initialize DataService (depends on Hive)
+  final dataService = await _initializeDataService();
+
+  _mainLogger.info("Core application services initialized successfully.");
+  return EssentialServices(dataService: dataService);
+}
+
+// --- Main Application Entry Point --- This is where the magic happens!
 Future<void> main() async {
   runZonedGuarded<Future<void>>(
     () async {
       WidgetsFlutterBinding.ensureInitialized();
+      _mainLogger.info("Flutter bindings ensured.");
 
-      await _configureLogging();
-      _mainLogger.info(
-        "AppInitializer: Flutter bindings ensured. Configuring logging...",
-      );
-      _mainLogger.info("Application starting...");
-
-      // 3. Initialize Core Services
-      IDataService dataService;
+      EssentialServices essentialServices;
       try {
-        await _initializeHive();
-        dataService = await _initializeDataService();
+        essentialServices = await _initializeAppServices();
       } catch (error, stackTrace) {
         _mainLogger.shout(
-          'CRITICAL_ERROR_UNCAUGHT_BY_RUNZONEDGUARDED: $error',
+          'CRITICAL FAILURE during core services initialization. App cannot start.',
           error,
           stackTrace,
         );
+        // TODO: display error page to user:
+        // i.e., runApp(ErrorDisplayApp(error))
         return;
       }
 
       _mainLogger.info(
-        "Core services initialized. Setting up providers and running app.",
+        "Essential services obtained. Setting up providers and running UI.",
       );
 
-      // 4. Run the App with Providers
       runApp(
         MultiProvider(
           providers: [
-            Provider<IDataService>.value(value: dataService),
+            Provider<IDataService>.value(value: essentialServices.dataService),
+            // --- Other services that are quick to create or don't need async init ---
+            Provider<ILocationService>(
+              create: (_) {
+                _mainLogger.info("Creating GeolocatorLocationService.");
+                return GeolocatorLocationService();
+              },
+            ),
+            Provider<IImagePickerService>(
+              create: (_) {
+                _mainLogger.info("Creating FlutterImagePickerService.");
+                return FlutterImagePickerService();
+              },
+            ),
+            Provider<ITemporaryFileService>(
+              create: (_) {
+                _mainLogger.info("Creating PathProviderTemporaryFileService.");
+                return PathProviderTemporaryFileService();
+              },
+            ),
+            // --- Asynchronously initialized services (can be loaded while showing initial UI) ---
             FutureProvider<IImageDataService?>(
               create: (_) => _createLocalAppImageDataService(),
               initialData: null,
               catchError: (context, error) {
                 _mainLogger.severe(
-                  'Error in FutureProvider for IImageDataService',
+                  'FutureProvider for IImageDataService caught an error during creation.',
                   error,
-                  (error is Error ? error.stackTrace : null),
+                  (error is Error ? error.stackTrace : StackTrace.current),
                 );
                 return null;
               },
-            ),
-            // Other synchronous services can be directly provided
-            Provider<ILocationService>(
-              create: (_) => GeolocatorLocationService(),
-            ),
-            Provider<IImagePickerService>(
-              create: (_) => FlutterImagePickerService(),
-            ),
-            Provider<ITemporaryFileService>(
-              create: (_) => PathProviderTemporaryFileService(),
             ),
           ],
           child: const MyApp(),
@@ -203,7 +237,7 @@ Future<void> main() async {
       // 2. Asynchronous errors that weren't caught by `await` and propagated up.
       // At this point, logging should be configured.
       _mainLogger.shout(
-        'CRITICAL_ERROR_UNCAUGHT_BY_RUNZONEDGUARDED: $error',
+        'GLOBAL_UNCAUGHT_ERROR in runZonedGuarded: $error',
         error,
         stackTrace,
       );
@@ -222,33 +256,226 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
         useMaterial3: true,
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.teal,
-          foregroundColor: Colors.white,
-        ),
       ),
-      home: const MyHomePageWrapper(),
+      initialRoute: AppRoutes.locations,
+      onGenerateRoute: _onGenerateRoute,
+    );
+  }
+
+  // Route generator
+  static Route<dynamic>? _onGenerateRoute(RouteSettings settings) {
+    _mainLogger.info("Navigating to route: ${settings.name}");
+    switch (settings.name) {
+      case AppRoutes.locations:
+        return MaterialPageRoute(
+          builder: (_) => MyHomePageWrapper(
+            initialPageBuilder: (context) => const LocationsPage(),
+            appBarTitle: 'Locations',
+            floatingActionButtonBuilder: (fabContext) {
+              return FloatingActionButton(
+                key: const ValueKey('add_location_fab'), // Good for testing
+                onPressed: () {
+                  Navigator.of(fabContext).pushNamed(AppRoutes.addLocation);
+                },
+                tooltip: 'Add Location',
+                child: const Icon(Icons.add_location_alt_outlined),
+              );
+            },
+          ),
+        );
+      case AppRoutes.addLocation:
+        return MaterialPageRoute(
+          builder: (_) => MyHomePageWrapper(
+            // Assuming EditLocationPage uses the common scaffold
+            initialPageBuilder: (context) =>
+                const EditLocationPage(), // No initialLocation for new
+            appBarTitle: 'Add New Location',
+            showBackButton: true,
+          ),
+        );
+      case AppRoutes.editLocation:
+        if (settings.arguments is Location) {
+          final location = settings.arguments as Location;
+          return MaterialPageRoute(
+            builder: (_) => MyHomePageWrapper(
+              // Assuming EditLocationPage uses the common scaffold
+              initialPageBuilder: (context) =>
+                  EditLocationPage(initialLocation: location),
+              appBarTitle: 'Edit ${location.name}',
+              showBackButton: true,
+            ),
+          );
+        }
+        _mainLogger.severe(
+          "Incorrect arguments for ${AppRoutes.editLocation}: ${settings.arguments}",
+        );
+        return _errorRoute("Invalid arguments for Edit Location page");
+      case AppRoutes.rooms:
+        if (settings.arguments is Location) {
+          // Expecting a Location object
+          final location = settings.arguments as Location;
+          return MaterialPageRoute(
+            builder: (_) => MyHomePageWrapper(
+              initialPageBuilder: (context) => RoomsPage(
+                location: location,
+                updateAppBarTitle: // Pass the actual updateAppBarTitle function from MyHomePageWrapper's state
+                (title) => Provider.of<AppBarTitleNotifier>(
+                  context,
+                  listen: false,
+                ).setTitle(title),
+              ),
+              appBarTitle:
+                  location.name, // Initial title, can be updated by RoomsPage
+              showBackButton: true,
+              // Potentially configure FAB for MyHomePageWrapper here if it's global
+            ),
+            settings: settings, // Pass along settings for nested navigation
+          );
+        }
+        _mainLogger.severe(
+          "Incorrect arguments for ${AppRoutes.rooms}: Expected Location, got ${settings.arguments?.runtimeType}",
+        );
+        return _errorRoute("Invalid arguments for Rooms page");
+
+      case AppRoutes.containers:
+        if (settings.arguments is RoomData) {
+          final roomData = settings.arguments as RoomData;
+          return MaterialPageRoute(
+            builder: (_) => MyHomePageWrapper(
+              // Assuming ContainersPage also uses the wrapper
+              initialPageBuilder: (context) => ContainersPage(
+                roomData: roomData,
+                // updateAppBarTitle: (title) => Provider.of<AppBarTitleNotifier>(context, listen: false).setTitle(title), // If ContainersPage updates title
+              ),
+              appBarTitle:
+                  'Contents of ${roomData.roomName}', // Set initial AppBar title
+              showBackButton: true,
+            ),
+            settings: settings,
+          );
+        }
+        _mainLogger.severe(
+          "Incorrect arguments for ${AppRoutes.containers}: Expected RoomData, got ${settings.arguments?.runtimeType}",
+        );
+        return _errorRoute("Invalid arguments for Containers page");
+
+      // case AppRoutes.addRoom:
+      //   if (settings.arguments is Map<String, String>) {
+      //     final args = settings.arguments as Map<String, String>;
+      //     final locationId = args['locationId'];
+      //     final locationName = args['locationName'];
+      //     if (locationId != null && locationName != null) {
+      //       return MaterialPageRoute(
+      //         builder: (_) => MyHomePageWrapper( // Assuming AddRoomPage also uses the wrapper
+      //           initialPageBuilder: (context) => EditRoomPage( // You'll need to create AddRoomPage
+      //             locationId: locationId,
+      //             locationName: locationName,
+      //             // updateAppBarTitle: ...
+      //           ),
+      //           appBarTitle: 'Add Room to $locationName',
+      //           showBackButton: true,
+      //         ),
+      //         settings: settings,
+      //       );
+      //     }
+      //   }
+      //   _logger.severe("Incorrect arguments for ${AppRoutes.addRoom}: Expected Map with locationId & locationName, got ${settings.arguments?.runtimeType}");
+      //   return _errorRoute("Invalid arguments for Add Room page");
+
+      case AppRoutes.items:
+        if (settings.arguments is ItemPageArguments) {
+          final itemArgs = settings.arguments as ItemPageArguments;
+          // No longer needs MyHomePageWrapper if ItemsPage has its own Scaffold
+          return MaterialPageRoute(
+            builder: (_) => ItemsPage(args: itemArgs),
+            settings: settings,
+          );
+        }
+        _mainLogger.severe(
+          "Incorrect arguments for ${AppRoutes.items}: Expected ItemPageArguments, got ${settings.arguments?.runtimeType}",
+        );
+        return _errorRoute("Invalid arguments for Items page");
+
+      // case AppRoutes.addContainer:
+      //   if (settings.arguments is Map<String, String>) {
+      //     final args = settings.arguments as Map<String, String>;
+      //     final roomId = args['roomId'];
+      //     final roomName = args['roomName'];
+      //     // ... other IDs if needed by AddContainerPage ...
+      //
+      //     if (roomId != null && roomName != null) {
+      //       return MaterialPageRoute(
+      //         // Assuming AddContainerPage has its own Scaffold or is wrapped as needed
+      //         builder: (_) => AddContainerPage( // Create this page
+      //           roomId: roomId,
+      //           roomName: roomName,
+      //           // ... pass other args ...
+      //         ),
+      //         settings: settings,
+      //       );
+      //     }
+      //   }
+      //   _logger.severe("Incorrect arguments for ${AppRoutes.addContainer}: ${settings.arguments}");
+      //   return _errorRoute("Invalid arguments for Add Container page");
+      // case AppRoutes.addItem:
+      //   if (settings.arguments is Map<String, String?>) { // containerId might be null if not used yet
+      //     final args = settings.arguments as Map<String, String?>;
+      //     final containerId = args['containerId'];
+      //     final containerName = args['containerName'];
+      //     // ... other IDs if needed by AddItemPage ...
+      //
+      //     if (containerName != null) { // At least containerName should be there
+      //       return MaterialPageRoute(
+      //         // Assuming AddItemPage has its own Scaffold or is wrapped as needed
+      //         builder: (_) => AddItemPage( // Create this page
+      //           containerId: containerId,
+      //           containerName: containerName,
+      //           // ... pass other args ...
+      //         ),
+      //         settings: settings,
+      //       );
+      //     }
+      //   }
+      //   _logger.severe("Incorrect arguments for ${AppRoutes.addItem}: ${settings.arguments}");
+      //   return _errorRoute("Invalid arguments for Add Item page");
+
+      default:
+        _mainLogger.warning("Unknown route: ${settings.name}");
+        return _errorRoute("Page not found");
+    }
+  }
+
+  static Route<dynamic> _errorRoute(String message) {
+    return MaterialPageRoute(
+      builder: (_) {
+        return Scaffold(
+          appBar: AppBar(title: const Text('Error')),
+          body: Center(child: Text(message)),
+        );
+      },
     );
   }
 }
 
-enum ActiveView { locations, rooms }
-
 class MyHomePageWrapper extends StatefulWidget {
-  const MyHomePageWrapper({super.key});
+  final WidgetBuilder initialPageBuilder;
+  final String appBarTitle;
+  final bool showBackButton;
+  final WidgetBuilder? floatingActionButtonBuilder;
+
+  const MyHomePageWrapper({
+    super.key,
+    required this.initialPageBuilder,
+    required this.appBarTitle,
+    this.showBackButton = false,
+    this.floatingActionButtonBuilder,
+  });
 
   @override
   State<MyHomePageWrapper> createState() => _MyHomePageWrapperState();
 }
 
 class _MyHomePageWrapperState extends State<MyHomePageWrapper> {
-  String _appBarTitle = 'Locations'; // Default title
-  ActiveView _currentView = ActiveView.locations;
-
-  // Parameters for RoomsPage if _currentView is rooms
-  String? _selectedLocationId;
-  String? _selectedLocationName;
-
   Future<void> _resetDatabaseWithSampleData() async {
     final dataService = Provider.of<IDataService>(context, listen: false);
     final imageDataService = Provider.of<IImageDataService?>(
@@ -257,9 +484,6 @@ class _MyHomePageWrapperState extends State<MyHomePageWrapper> {
     );
 
     if (imageDataService == null) {
-      // Handle the case where image service isn't ready.
-      // This might be rare if it's a FutureProvider that has resolved,
-      // but good to be defensive.
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -275,24 +499,22 @@ class _MyHomePageWrapperState extends State<MyHomePageWrapper> {
 
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: const Text('Confirm Reset'),
-          content: const Text(
-            'Are you sure you want to reset ALL inventory data to the sample set? This action cannot be undone.',
+      builder: (BuildContext dialogContext) => AlertDialog(
+        title: const Text('Confirm Reset'),
+        content: const Text(
+          'Reset ALL data to sample set? This cannot be undone.',
+        ),
+        actions: <Widget>[
+          TextButton(
+            child: const Text('Cancel'),
+            onPressed: () => Navigator.of(dialogContext).pop(false),
           ),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('Cancel'),
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-            ),
-            TextButton(
-              child: const Text('Reset All Data'),
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-            ),
-          ],
-        );
-      },
+          TextButton(
+            child: const Text('Reset All Data'),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+          ),
+        ],
+      ),
     );
 
     if (confirmed == true && mounted) {
@@ -300,7 +522,6 @@ class _MyHomePageWrapperState extends State<MyHomePageWrapper> {
         const SnackBar(content: Text('Resetting database... Please wait.')),
       );
 
-      // Use the SampleDataPopulator
       final populator = SampleDataPopulator(
         dataService: dataService,
         imageDataService: imageDataService, // Pass the potentially null service
@@ -308,9 +529,7 @@ class _MyHomePageWrapperState extends State<MyHomePageWrapper> {
 
       try {
         await populator.populate(); // This now handles clearing and populating
-        _mainLogger.info(
-          "Sample data population successful via SampleDataPopulator.",
-        );
+        _mainLogger.info("Sample data population successful.");
         if (mounted) {
           ScaffoldMessenger.of(context).removeCurrentSnackBar();
           ScaffoldMessenger.of(context).showSnackBar(
@@ -318,8 +537,33 @@ class _MyHomePageWrapperState extends State<MyHomePageWrapper> {
               content: Text('Database has been reset with sample data.'),
             ),
           );
-          // Refresh UI - consider a more robust way than just setState
-          setState(() {});
+          // IMPORTANT: How to refresh?
+          // If LocationsPage is currently visible, it needs to be rebuilt.
+          // This can be complex. A simple approach might be to pop all routes and
+          // push the locations route again, or use a more advanced state management
+          // to signal data changes. For now, this setState might not be enough
+          // if the underlying page doesn't listen to a stream that changes.
+          // For a DB reset, forcing a re-fetch in LocationsPage (e.g., in didChangeDependencies
+          // or via a ValueNotifier) is more robust.
+          // A simple (but not always ideal) way:
+          if (ModalRoute.of(context)?.settings.name == AppRoutes.locations) {
+            // If we are on locations page, a simple setState might trigger its rebuild
+            // if it's designed to refetch on build or didChangeDependencies.
+            // More robust: LocationsPage should listen to a stream/notifier from DataService.
+          }
+          Navigator.of(
+            context,
+          ).popUntil((route) => route.isFirst); // Go back to locations
+          if (ModalRoute.of(context)?.settings.name != AppRoutes.locations) {
+            // If not already there
+            Navigator.of(context).pushReplacementNamed(AppRoutes.locations);
+          } else {
+            // If already on locations, we need a way to tell LocationsPage to refresh.
+            // This is where a proper ViewModel or service stream is beneficial.
+            // For now, let's assume LocationsPage will refetch if it's rebuilt.
+            // This setState will rebuild MyHomePageWrapper, if locations page is its child, it might also rebuild.
+            setState(() {});
+          }
         }
       } catch (e, s) {
         _mainLogger.severe("Error during sample data population: $e", e, s);
@@ -336,82 +580,26 @@ class _MyHomePageWrapperState extends State<MyHomePageWrapper> {
     }
   }
 
-  // Callback to update the AppBar title from child pages
-  void _updateAppBarTitle(String newTitle) {
-    if (mounted) {
-      setState(() {
-        _appBarTitle = newTitle;
-      });
-    }
-  }
-
-  // Method to navigate to the Rooms view
-  void _navigateToRooms(Location location) {
-    setState(() {
-      _currentView = ActiveView.rooms;
-      _selectedLocationId = location.id;
-      _selectedLocationName = location.name;
-    });
-  }
-
-  // Method to go back to Locations view from Rooms view
-  void _navigateBackToLocations() {
-    setState(() {
-      _currentView = ActiveView.locations;
-      _selectedLocationId = null;
-      _selectedLocationName = null;
-      _appBarTitle = 'Locations'; // Reset title
-    });
-  }
-
-  Widget _buildBody() {
-    switch (_currentView) {
-      case ActiveView.locations:
-        return LocationsPage(
-          onViewLocationContents: _navigateToRooms,
-          // If LocationsPage ever needs to dynamically set the title (e.g. "Locations (3)")
-          // you could pass it like this:
-          // updateAppBarTitle: _updateAppBarTitle,
-        );
-      case ActiveView.rooms:
-        if (_selectedLocationId != null && _selectedLocationName != null) {
-          return RoomsPage(
-            locationId: _selectedLocationId!,
-            locationName: _selectedLocationName!,
-            updateAppBarTitle: _updateAppBarTitle,
-          );
-        }
-        // Fallback or error state if parameters are missing
-        // This should ideally not be reached if navigation is managed correctly
-        return const Center(
-          child: Text('Error: Location data missing for rooms view.'),
-        );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    bool canGoBackToLocations = _currentView == ActiveView.rooms;
-
     return Scaffold(
       appBar: AppBar(
-        // This is the MAIN AppBar
-        title: Text(_appBarTitle),
-        leading: canGoBackToLocations
+        title: Text(widget.appBarTitle),
+        leading: widget.showBackButton
             ? IconButton(
                 icon: const Icon(Icons.arrow_back),
-                onPressed: _navigateBackToLocations,
-                tooltip: 'Back to Locations',
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                tooltip: 'Back',
               )
-            : (kDebugMode // Only show drawer button if not showing back button AND in debug mode
+            : (kDebugMode
                   ? Builder(
-                      // Use Builder to get context for Scaffold.of
                       builder: (BuildContext appBarContext) {
                         return IconButton(
                           icon: const Icon(Icons.menu),
                           tooltip: 'Developer Options',
                           onPressed: () {
-                            // Use appBarContext which is under the Scaffold
                             Scaffold.of(appBarContext).openDrawer();
                           },
                         );
@@ -419,32 +607,37 @@ class _MyHomePageWrapperState extends State<MyHomePageWrapper> {
                     )
                   : null),
       ),
-      drawer: kDebugMode
+      drawer: kDebugMode && !widget.showBackButton
           ? Drawer(
               child: ListView(
                 padding: EdgeInsets.zero,
                 children: <Widget>[
-                  const DrawerHeader(
-                    decoration: BoxDecoration(color: Colors.teal),
+                  DrawerHeader(
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
                     child: Text(
                       'Developer Options',
-                      style: TextStyle(color: Colors.white, fontSize: 24),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onPrimary,
+                        fontSize: 24,
+                      ),
                     ),
                   ),
                   ListTile(
-                    leading: const Icon(Icons.dataset_outlined),
+                    leading: const Icon(Icons.delete_sweep_outlined),
                     title: const Text('Reset DB with Sample Data'),
                     onTap: () async {
-                      Navigator.pop(context); // Close the drawer first
-                      await _resetDatabaseWithSampleData(); // Call the stateful method
+                      Navigator.pop(context); // Close the drawer
+                      await _resetDatabaseWithSampleData();
                     },
                   ),
-                  // Add other developer options here
                 ],
               ),
             )
           : null,
-      body: _buildBody(),
+      body: widget.initialPageBuilder(context),
+      floatingActionButton: widget.floatingActionButtonBuilder?.call(context),
     );
   }
 }
