@@ -9,6 +9,10 @@ import 'permission_handler_service.dart';
 
 final Logger _logger = Logger('FlutterImagePickerService');
 
+const double kDefaultImageMaxWidth = 1920.0;
+const double kDefaultImageMaxHeight = 1200.0;
+const int kDefaultImageQuality = 85;
+
 class FlutterImagePickerService implements IImagePickerService {
   final ImagePicker _imagePickerInstance;
   final IPermissionService _permissionService;
@@ -23,9 +27,9 @@ class FlutterImagePickerService implements IImagePickerService {
 
   @override
   Future<File?> pickImageFromCamera({
-    double? maxWidth = 1024, // Default sensible values
-    double? maxHeight = 1024,
-    int? imageQuality = 85, // 0-100
+    double? maxWidth = kDefaultImageMaxWidth, // Default sensible values
+    double? maxHeight = kDefaultImageMaxHeight,
+    int? imageQuality = kDefaultImageQuality,
   }) async {
     try {
       final bool hasPermission = await _permissionService
@@ -54,9 +58,9 @@ class FlutterImagePickerService implements IImagePickerService {
 
   @override
   Future<File?> pickImageFromGallery({
-    double? maxWidth = 1024,
-    double? maxHeight = 1024,
-    int? imageQuality = 85,
+    double? maxWidth = kDefaultImageMaxWidth,
+    double? maxHeight = kDefaultImageMaxHeight,
+    int? imageQuality = kDefaultImageQuality,
   }) async {
     try {
       final bool hasPermission = await _permissionService
