@@ -5,8 +5,8 @@ class AppRoutes {
   static const String addLocation = '/addLocation';
 
   static const String rooms = '/rooms';
-  //static const String addRoom = '/addRoom';
-  // static const String editRoom = '/editRoom'; // If you have one
+  static const String addRoom = '/addRoom';
+  static const String editRoom = '/editRoom';
 
   static const String containers = '/containers';
   static const String addContainer = '/addContainer';

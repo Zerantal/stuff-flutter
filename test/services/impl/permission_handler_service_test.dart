@@ -6,7 +6,7 @@ import 'package:geolocator_platform_interface/geolocator_platform_interface.dart
 
 import 'package:stuff/services/impl/permission_handler_service.dart';
 
-import '../../utils/test_logger_helper.dart';
+import '../../utils/test_logger_manager.dart';
 
 class MockPermissionHandlerPlatform extends PermissionHandlerPlatform
     with Mock {

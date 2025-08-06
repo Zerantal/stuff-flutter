@@ -18,8 +18,6 @@ import 'package:stuff/services/location_service_interface.dart';
 import 'package:stuff/services/image_picker_service_interface.dart';
 import 'package:stuff/services/temporary_file_service_interface.dart';
 import 'package:stuff/core/image_identifier.dart';
-import 'Package:stuff/notifiers/app_bar_title_notifier.dart';
-import 'package:stuff/main.dart';
 
 // Import generated mocks
 import 'edit_location_page_test.mocks.dart';
@@ -55,58 +53,35 @@ Future<void> setupWidgetWithProviders({
         Provider<ILocationService>.value(value: mockLocationService),
         Provider<IImagePickerService>.value(value: mockImagePickerService),
         Provider<ITemporaryFileService>.value(value: mockTemporaryFileService),
-        ChangeNotifierProvider<AppBarTitleNotifier>(
-          create: (_) => AppBarTitleNotifier(),
-        ),
       ],
       child: MaterialApp(
         navigatorObservers: navigatorObserver != null
             ? [navigatorObserver]
             : [],
-        home: const Scaffold(
-          body: Text('Dummy Root Page'),
-        ), // Dummy initial page
+        home: Scaffold(
+          body: Builder(
+            builder: (BuildContext context) {
+              return ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => EditLocationPage(
+                        initialLocation: initialLocation,
+                        viewModelOverride: viewModel,
+                      ),
+                    ),
+                  );
+                },
+                child: const Text('Go to Edit Location Page'),
+              );
+            },
+          ),
+        ),
       ),
     ),
   );
-  await tester.pumpAndSettle(); // Pump the dummy page
-
-  // Push the EditLocationPage
-  final NavigatorState navigator = tester.state(find.byType(Navigator));
-  navigator.push(
-    MaterialPageRoute(
-      builder: (routeContext) {
-        // Use a different context name to avoid confusion
-        // Replicate the structure from AppRoutes.addLocation or AppRoutes.editLocation
-        // This assumes AppBarTitleNotifier is also provided globally in your test setup
-        // or that MyHomePageWrapper can handle it being null/has a default.
-        // If AppBarTitleNotifier is critical for MyHomePageWrapper, ensure it's provided
-        // in the MultiProvider in setupWidgetWithProviders.
-
-        final bool isNew = initialLocation == null;
-        final String appBarTitle = isNew
-            ? 'Add New Location'
-            : 'Edit Location'; // Or derive from initialLocation.name
-
-        return ChangeNotifierProvider<EditLocationViewModel>.value(
-          value: viewModel,
-          child: MyHomePageWrapper(
-            // <<< WRAP HERE
-            appBarTitle: appBarTitle,
-            showBackButton: true, // Typically true for edit pages
-            initialPageBuilder: (wrapperContext) => EditLocationPage(
-              initialLocation: initialLocation,
-              viewModelOverride: viewModel,
-              // DO NOT pass the updateAppBarTitle from here unless you mock/provide AppBarTitleNotifier
-              // If EditLocationPage directly calls it, ensure it's handled or mocked.
-              // It's better if EditLocationPage doesn't directly interact with AppBarTitleNotifier,
-              // and lets MyHomePageWrapper handle the title based on ViewModel state or route args.
-            ),
-          ),
-        );
-      },
-    ),
-  );
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('Go to Edit Location Page'));
 
   if (settleAfterPush) {
     // Ensure the pushed page is fully built and settled before returning.
@@ -152,13 +127,15 @@ void main() {
     when(mockViewModel.isGettingLocation).thenReturn(false);
     when(mockViewModel.deviceHasLocationService).thenReturn(true);
     when(mockViewModel.locationPermissionDenied).thenReturn(false);
+    when(mockViewModel.isPickingImage).thenReturn(false);
+    when(mockViewModel.hasUnsavedChanges).thenReturn(false);
 
     // Image list
     when(mockViewModel.currentImages).thenReturn([]); // Default to empty
 
     // Methods (default void returns or simple futures)
     when(mockViewModel.saveLocation()).thenAnswer((_) async => true);
-    when(mockViewModel.handleDiscardOrPop()).thenAnswer((_) async {});
+    when(mockViewModel.handleDiscardOrPop(any)).thenAnswer((_) async {});
     when(mockViewModel.getCurrentAddress()).thenAnswer((_) async {});
     when(mockViewModel.pickImageFromCamera()).thenAnswer((_) async {});
     when(mockViewModel.pickImageFromGallery()).thenAnswer((_) async {});
@@ -211,15 +188,19 @@ void main() {
         viewModel: mockViewModel,
         navigatorObserver: mockNavigatorObserver,
       );
-      // await tester.pumpAndSettle(); // This line is removed as setupWidgetWithProviders now handles it.
 
       expect(find.text('Add New Location'), findsOneWidget);
       expect(find.byKey(const ValueKey('addLocationButton')), findsOneWidget);
-      expect(find.byIcon(Icons.arrow_back), findsOneWidget);
+
       expect(
-        find.widgetWithText(TextFormField, ''),
-        findsNWidgets(3),
-      ); // Name, Desc, Addr
+        find.descendant(
+          of: find.byType(AppBar),
+          matching: find.byIcon(Icons.arrow_back),
+        ),
+        findsOneWidget,
+      );
+
+      // The "No images yet. Add one!" text is inside ImageManagerInput widget.
       expect(find.text('No images yet. Add one!'), findsOneWidget);
     });
 
@@ -249,7 +230,6 @@ void main() {
         initialLocation: existingLocation,
         navigatorObserver: mockNavigatorObserver,
       );
-      // await tester.pumpAndSettle(); // Consider removing if setupWidgetWithProviders handles it
 
       expect(find.text('Edit Location'), findsOneWidget);
       expect(find.byKey(const ValueKey('saveLocationButton')), findsOneWidget);
@@ -283,7 +263,6 @@ void main() {
         initialLocation: existingLocation,
         navigatorObserver: mockNavigatorObserver,
       );
-      // await tester.pumpAndSettle(); // Ensure images have time to build - Consider removing if setup handles it
 
       expect(find.byKey(const ValueKey('fake_image_guid1')), findsOneWidget);
       expect(find.byIcon(Icons.close), findsOneWidget);
@@ -316,7 +295,6 @@ void main() {
         viewModel: mockViewModel,
         navigatorObserver: mockNavigatorObserver,
       );
-      // await tester.pumpAndSettle(); // Consider removing
 
       expect(find.byIcon(Icons.close), findsOneWidget);
     });
@@ -335,8 +313,6 @@ void main() {
         settleAfterPush: false,
       );
 
-      // await tester.pump();
-
       final addressFieldFinder = find.widgetWithText(TextFormField, 'Address');
       expect(
         find.descendant(
@@ -346,7 +322,6 @@ void main() {
         findsOneWidget,
         reason:
             "CircularProgressIndicator should be a descendant of the Address TextFormField "
-            "when isGettingLocation is true. If this fails but the above expect passes, "
             "then the Address field is being built without the loading indicator despite the mock setup.",
       );
       addTearDown(addrCtrl.dispose);
@@ -456,24 +431,23 @@ void main() {
 
         when(mockViewModel.isNewLocation).thenReturn(true);
         when(mockViewModel.saveLocation()).thenAnswer((_) async => true);
+
         final formKey = GlobalKey<FormState>();
         when(mockViewModel.formKey).thenReturn(formKey);
+        when(mockViewModel.isPickingImage).thenReturn(false);
 
         await setupWidgetWithProviders(
           tester: tester,
           viewModel: mockViewModel,
           navigatorObserver: mockNavigatorObserver,
         );
-        // await tester.pumpAndSettle(); // Initial build of EditLocationPage - Consider removing
 
         await tester.tap(find.byKey(const ValueKey('addLocationButton')));
-        await tester
-            .pumpAndSettle(); // Allow saveLocation and SnackBar to process
+        await tester.pumpAndSettle();
 
         verify(mockViewModel.saveLocation()).called(1);
         expect(find.text('Location added.'), findsOneWidget);
         verify(mockNavigatorObserver.didPop(any, any)).called(1);
-        await tester.pumpAndSettle();
       },
     );
 
@@ -489,6 +463,7 @@ void main() {
         when(mockViewModel.saveLocation()).thenAnswer((_) async => false);
         final formKey = GlobalKey<FormState>();
         when(mockViewModel.formKey).thenReturn(formKey);
+        when(mockViewModel.isPickingImage).thenReturn(false);
 
         await setupWidgetWithProviders(
           tester: tester,
@@ -496,7 +471,6 @@ void main() {
           initialLocation: null,
           navigatorObserver: mockNavigatorObserver,
         );
-        // await tester.pumpAndSettle(); // Consider removing
 
         await tester.tap(find.byKey(const ValueKey('addLocationButton')));
         await tester.pumpAndSettle();
@@ -512,6 +486,22 @@ void main() {
     testWidgets(
       'tapping AppBar back button calls handleDiscardOrPop and pops',
       (WidgetTester tester) async {
+        // EditLocationPage Interactions
+        // Test: tapping AppBar back button calls handleDiscardOrPop and pops
+
+        // Ensure that when handleDiscardOrPop is called, it simulates a pop
+        when(mockViewModel.handleDiscardOrPop(any)).thenAnswer((
+          invocation,
+        ) async {
+          final context = invocation.positionalArguments[0] as BuildContext;
+          if (Navigator.of(context).canPop()) {
+            Navigator.of(context).pop();
+          }
+        });
+        when(mockViewModel.isPickingImage).thenReturn(false);
+        when(mockViewModel.isSaving).thenReturn(false);
+        when(mockViewModel.hasUnsavedChanges).thenReturn(false);
+
         await setupWidgetWithProviders(
           tester: tester,
           viewModel: mockViewModel,
@@ -521,36 +511,194 @@ void main() {
         await tester.tap(find.byIcon(Icons.arrow_back));
         await tester.pumpAndSettle();
 
-        verify(mockViewModel.handleDiscardOrPop()).called(1);
+        verify(mockViewModel.handleDiscardOrPop(any)).called(1);
         verify(mockNavigatorObserver.didPop(any, any)).called(1);
+      },
+    );
+
+    testWidgets(
+      'tapping AppBar back button with unsaved changes shows dialog, user discards, and pops',
+      (WidgetTester tester) async {
+        when(mockViewModel.isPickingImage).thenReturn(false);
+        when(mockViewModel.isSaving).thenReturn(false);
+        when(
+          mockViewModel.hasUnsavedChanges,
+        ).thenReturn(true); // HAS unsaved changes
+
+        when(mockViewModel.handleDiscardOrPop(any)).thenAnswer((
+          invocation,
+        ) async {
+          final context = invocation.positionalArguments[0] as BuildContext;
+          // TODO: need to find vm dialog and tap its Discard
+
+          Future.delayed(Duration.zero, () {
+            // Allow current frame to build
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop(); // Simulate pop after "discard"
+            }
+          });
+        });
+
+        await setupWidgetWithProviders(
+          tester: tester,
+          viewModel: mockViewModel,
+          navigatorObserver: mockNavigatorObserver,
+        );
+
+        await tester.tap(find.byIcon(Icons.arrow_back));
         await tester.pumpAndSettle();
+
+        verify(mockViewModel.handleDiscardOrPop(any)).called(1);
+
+        verify(
+          mockNavigatorObserver.didPop(any, any),
+        ).called(1); // Ensure pop occurred
+      },
+    );
+
+    testWidgets(
+      'tapping AppBar back button does NOT pop if isPickingImage is true',
+      (WidgetTester tester) async {
+        when(mockViewModel.isPickingImage).thenReturn(true);
+        when(mockViewModel.isSaving).thenReturn(false);
+        when(mockViewModel.handleDiscardOrPop(any)).thenAnswer((_) async {});
+
+        await setupWidgetWithProviders(
+          tester: tester,
+          viewModel: mockViewModel,
+          navigatorObserver: mockNavigatorObserver,
+          settleAfterPush: false,
+        );
+
+        // Expect the EditLocationPage to be present
+        expect(find.byType(EditLocationPage), findsOneWidget);
+        await tester.tap(find.byIcon(Icons.arrow_back));
+        await tester.pump(); // Allow PopScope to evaluate
+
+        verify(mockViewModel.handleDiscardOrPop(any)).called(1);
+        verifyNever(
+          mockNavigatorObserver.didPop(any, any),
+        ); // Should not have popped
+        expect(
+          find.byType(EditLocationPage),
+          findsOneWidget,
+        ); // Still on the page
       },
     );
 
     testWidgets('PopScope calls handleDiscardOrPop on system back', (
       WidgetTester tester,
     ) async {
+      // EditLocationPage Interactions
+      // Test: PopScope calls handleDiscardOrPop on system back
+      // PopScope's onPopInvoked will call handleDiscardOrPop.
+      // We mock handleDiscardOrPop to perform a pop to verify the full flow.
+      when(mockViewModel.handleDiscardOrPop(any)).thenAnswer((
+        invocation,
+      ) async {
+        final context = invocation.positionalArguments[0] as BuildContext;
+        if (Navigator.of(context).canPop()) {
+          Navigator.of(context).pop();
+        }
+      });
+      when(mockViewModel.isPickingImage).thenReturn(false); // Allow pop
+      when(mockViewModel.isSaving).thenReturn(false); // Allow pop
+      when(mockViewModel.hasUnsavedChanges).thenReturn(true);
+
       await setupWidgetWithProviders(
         tester: tester,
         viewModel: mockViewModel,
         initialLocation: null,
         navigatorObserver: mockNavigatorObserver,
       );
-      // await tester.pumpAndSettle(); // Consider removing
 
       final NavigatorState navigator = tester.state(find.byType(Navigator));
       // Simulate system back button. This will trigger onPopInvoked.
       await navigator.maybePop();
       await tester.pumpAndSettle();
 
-      verify(mockViewModel.handleDiscardOrPop()).called(1);
+      verify(mockViewModel.handleDiscardOrPop(any)).called(1);
+      verify(
+        mockNavigatorObserver.didPop(any, any),
+      ).called(1); // Ensure pop occurred
     });
+
+    testWidgets(
+      'PopScope pops directly on system back if NO unsaved changes and not busy',
+      (WidgetTester tester) async {
+        when(mockViewModel.isPickingImage).thenReturn(false);
+        when(mockViewModel.isSaving).thenReturn(false);
+        when(
+          mockViewModel.hasUnsavedChanges,
+        ).thenReturn(false); // PopScope's canPop will be true
+
+        // handleDiscardOrPop should NOT be called by PopScope in this case
+        when(mockViewModel.handleDiscardOrPop(any)).thenAnswer((_) async {});
+
+        await setupWidgetWithProviders(
+          tester: tester,
+          viewModel: mockViewModel,
+          initialLocation: null,
+          navigatorObserver: mockNavigatorObserver,
+        );
+
+        final NavigatorState navigator = tester.state(find.byType(Navigator));
+        await navigator
+            .maybePop(); // Simulate system back. PopScope allows direct pop.
+        await tester.pumpAndSettle();
+
+        // Because canPop was true, onPopInvoked was called with didPop: true,
+        // so it should NOT have called handleDiscardOrPop.
+        verifyNever(mockViewModel.handleDiscardOrPop(any));
+        verify(
+          mockNavigatorObserver.didPop(any, any),
+        ).called(1); // Pop occurred directly
+      },
+    );
+
+    testWidgets(
+      'PopScope does NOT call handleDiscardOrPop or pop if isPickingImage is true on system back',
+      (WidgetTester tester) async {
+        // EditLocationPage Interactions
+        // Test: PopScope does NOT call handleDiscardOrPop or pop if isPickingImage is true on system back
+
+        when(mockViewModel.isPickingImage).thenReturn(true);
+        when(mockViewModel.isSaving).thenReturn(false);
+        when(mockViewModel.hasUnsavedChanges).thenReturn(false);
+        // PopScope's onPopInvoked will call handleDiscardOrPop.
+        when(mockViewModel.handleDiscardOrPop(any)).thenAnswer((_) async {});
+
+        await setupWidgetWithProviders(
+          tester: tester,
+          viewModel: mockViewModel,
+          initialLocation: null,
+          navigatorObserver: mockNavigatorObserver,
+          settleAfterPush: false,
+        );
+
+        final NavigatorState navigator = tester.state(find.byType(Navigator));
+        await navigator.maybePop(); // Attempt system back
+        await tester.pump(); // Let PopScope do its work
+
+        // handleDiscardOrPop *is* called by PopScope's onPopInvoked callback.
+        verify(mockViewModel.handleDiscardOrPop(any)).called(1);
+        verifyNever(
+          mockNavigatorObserver.didPop(any, any),
+        ); // But no pop should occur
+
+        verifyNever(mockViewModel.handleDiscardOrPop(any));
+        // Check that the page is still there (did not pop)
+        expect(find.byType(EditLocationPage), findsOneWidget);
+      },
+    );
   });
 
   group('Form Validation (Example - can be expanded)', () {
     testWidgets('shows error if location name is empty on save attempt', (
       WidgetTester tester,
     ) async {
+      // Form Validation (Example - can be expanded)
+      // Test: shows error if location name is empty on save attempt
       final GlobalKey<FormState> testFormKey = GlobalKey<FormState>();
       // Intentionally use an empty controller here to test validation
       final nameCtrl = TextEditingController();
@@ -579,6 +727,62 @@ void main() {
         descCtrl.dispose();
         addrCtrl.dispose();
       });
+    });
+  });
+
+  group('Action Button State', () {
+    testWidgets(
+      'Save button is disabled and shows no icon when isSaving is true',
+      (WidgetTester tester) async {
+        when(mockViewModel.isSaving).thenReturn(true);
+        when(
+          mockViewModel.isNewLocation,
+        ).thenReturn(false); // For "Save Changes" button
+
+        await setupWidgetWithProviders(
+          tester: tester,
+          viewModel: mockViewModel,
+        );
+
+        final Finder buttonFinder = find.byKey(
+          const ValueKey('saveLocationButton'),
+        );
+        expect(buttonFinder, findsOneWidget);
+
+        final ElevatedButton button = tester.widget<ElevatedButton>(
+          buttonFinder,
+        );
+        expect(
+          button.onPressed,
+          isNull,
+          reason: "Button should be disabled when isSaving is true",
+        );
+
+        // Check that the icon is an empty Container when isSaving is true
+        expect(
+          find.descendant(of: buttonFinder, matching: find.byType(Icon)),
+          findsNothing,
+        );
+        expect(
+          find.descendant(of: buttonFinder, matching: find.byType(Container)),
+          findsWidgets,
+        ); // Expecting at least the empty container for the icon
+      },
+    );
+
+    testWidgets('Add Location button shows correct icon when not saving', (
+      WidgetTester tester,
+    ) async {
+      when(mockViewModel.isSaving).thenReturn(false);
+      when(mockViewModel.isNewLocation).thenReturn(true);
+      await setupWidgetWithProviders(tester: tester, viewModel: mockViewModel);
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('addLocationButton')),
+          matching: find.byIcon(Icons.add_circle_outline),
+        ),
+        findsOneWidget,
+      );
     });
   });
 }

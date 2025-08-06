@@ -13,10 +13,10 @@ import '../services/exceptions/permission_exceptions.dart';
 import '../services/exceptions/os_service_exceptions.dart';
 import '../models/location_model.dart';
 import '../core/image_identifier.dart';
+import '../core/image_source_type_enum.dart';
+import '../core/helpers/image_picking_and_processing_helper.dart';
 
 final Logger _logger = Logger('EditLocationViewModel');
-
-enum ImageSourceType { camera, gallery }
 
 typedef FormValidationCallback = bool Function();
 
@@ -28,6 +28,8 @@ class EditLocationViewModel extends ChangeNotifier {
   final IImagePickerService _imagePickerService;
   final ITemporaryFileService _tempFileService;
   final Location? _initialLocation;
+
+  late ImagePickingAndProcessingHelper _imagePickingHelper;
 
   EditLocationViewModel({
     required IDataService dataService,
@@ -45,6 +47,14 @@ class EditLocationViewModel extends ChangeNotifier {
        _initialLocation = initialLocation {
     _validateFormCallback =
         formValidator ?? (() => _formKey.currentState?.validate() ?? false);
+
+    _imagePickingHelper = ImagePickingAndProcessingHelper(
+      imagePickerService: _imagePickerService,
+      imageDataService: _imageDataService,
+      tempFileService: _tempFileService,
+      logger: _logger,
+    );
+
     _initialize();
   }
 
@@ -75,6 +85,9 @@ class EditLocationViewModel extends ChangeNotifier {
 
   bool _isSaving = false;
   bool get isSaving => _isSaving;
+
+  bool _isPickingImage = false;
+  bool get isPickingImage => _isPickingImage;
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   GlobalKey<FormState> get formKey => _formKey;
@@ -178,44 +191,51 @@ class EditLocationViewModel extends ChangeNotifier {
   }
 
   Future<void> pickImageFromCamera() async {
-    await _pickImage(ImageSourceType.camera);
+    await _pickImageWithHelper(ImageSourceType.camera);
   }
 
   Future<void> pickImageFromGallery() async {
-    await _pickImage(ImageSourceType.gallery);
+    await _pickImageWithHelper(ImageSourceType.gallery);
   }
 
-  Future<void> _pickImage(ImageSourceType source) async {
-    if (_tempDir == null) {
+  Future<void> _pickImageWithHelper(ImageSourceType source) async {
+    if (_isPickingImage) return; // Prevent concurrent picks
+    _isPickingImage = true;
+    notifyListeners();
+
+    // For EditLocationViewModel, directSave is false because it collects all images
+    // and processes them (including new ones) during the main saveLocation() call.
+    // It uses its own _tempDir for images picked during the session.
+    bool directSave = false;
+
+    if (!directSave && _tempDir == null) {
       _logger.warning(
-        "Temporary directory not initialized. Cannot pick image.",
+        "Temporary directory not initialized. Cannot pick image for non-direct save.",
       );
+      _isPickingImage = false;
+      notifyListeners();
       return;
     }
 
     try {
-      _logger.info("Attempting to pick image from camera...");
-      final File? pickedImageFile = source == ImageSourceType.camera
-          ? await _imagePickerService.pickImageFromCamera()
-          : await _imagePickerService.pickImageFromGallery();
-
-      _logger.info(
-        "Returned from image picker. Picked file: ${pickedImageFile?.path}",
+      final ImageIdentifier? newImageId = await _imagePickingHelper.pickImage(
+        source: source,
+        directSaveWithImageDataService: directSave,
+        sessionTempDir: _tempDir,
       );
 
-      if (pickedImageFile != null) {
-        final File tempCopiedFile = await _tempFileService.copyToTempDir(
-          pickedImageFile,
-          _tempDir!,
-        );
-        _currentImages.add(TempFileIdentifier(tempCopiedFile));
-        _logger.info(
-          "New image picked and copied to temporary location: ${tempCopiedFile.path}",
-        );
-        notifyListeners();
+      if (newImageId != null) {
+        _currentImages.add(newImageId);
+        // notify in finally
       }
     } catch (e, s) {
-      _logger.severe("Error picking/copying image to temp: $e", s);
+      _logger.severe(
+        "Error reported from ImagePickingHelper to ViewModel: $e",
+        s,
+      );
+    } finally {
+      _isPickingImage = false;
+      notifyListeners();
     }
   }
 
@@ -451,8 +471,123 @@ class EditLocationViewModel extends ChangeNotifier {
     );
   }
 
-  Future<void> handleDiscardOrPop() async {
-    _logger.info("Handling discard or pop. Cleaning up session resources.");
+  bool _isHandlingExitAttempt = false;
+
+  bool get hasUnsavedChanges {
+    // 1. Check text fields
+    if (nameController.text.trim() != (_initialLocation?.name ?? '').trim()) {
+      _logger.finer("Unsaved change: Name differs.");
+      return true;
+    }
+    if (descriptionController.text.trim() !=
+        (_initialLocation?.description ?? '').trim()) {
+      _logger.finer("Unsaved change: Description differs.");
+      return true;
+    }
+    if (addressController.text.trim() !=
+        (_initialLocation?.address ?? '').trim()) {
+      _logger.finer("Unsaved change: Address differs.");
+      return true;
+    }
+
+    // 2. Check images
+    // Compare current images (GUIDs of persisted images + TempFileIdentifiers for new ones)
+    // with initial persisted GUIDs.
+
+    // Get GUIDs of currently displayed images that were initially persisted
+    final Set<String> currentPersistedGuidsInUi = _currentImages
+        .whereType<GuidIdentifier>()
+        .map((gi) => gi.guid)
+        .toSet();
+
+    // Get GUIDs that were initially present
+    final Set<String> initialPersistedGuidsSet = _initialPersistedGuids.toSet();
+
+    // Check if any initially persisted image has been removed
+    if (initialPersistedGuidsSet
+        .difference(currentPersistedGuidsInUi)
+        .isNotEmpty) {
+      _logger.finer(
+        "Unsaved change: An initially persisted image was removed.",
+      );
+      return true;
+    }
+    // Check if any persisted image currently in UI wasn't there initially (shouldn't happen if logic is correct, but good for safety)
+    if (currentPersistedGuidsInUi
+        .difference(initialPersistedGuidsSet)
+        .isNotEmpty) {
+      _logger.finer(
+        "Unsaved change: A persisted image was added that wasn't initial (unexpected).",
+      );
+      return true;
+    }
+
+    // Check if any new (temporary) images have been added
+    if (_currentImages.any((img) => img is TempFileIdentifier)) {
+      _logger.finer("Unsaved change: New temporary image(s) added.");
+      return true;
+    }
+
+    // If it's a new location and any field is filled or an image is added, it's an unsaved change.
+    // However, the checks above already cover this implicitly.
+    // For a new location, _initialLocation is null, so initial values are empty strings/lists.
+    // Any text input or image addition will trigger `true` from the checks above.
+
+    _logger.finer("No unsaved changes detected.");
+    return false;
+  }
+
+  Future<void> handleDiscardOrPop(BuildContext context) async {
+    if (_isHandlingExitAttempt) {
+      _logger.info("Exit attempt already in progress. Ignoring.");
+      return;
+    }
+    _isHandlingExitAttempt = true;
+
+    try {
+      _logger.info(
+        "handleDiscardOrPop called. isSaving: $isSaving, isPickingImage: $isPickingImage",
+      );
+      if (isSaving || isPickingImage) {
+        _logger.info("Navigation blocked by isSaving or isPickingImage.");
+        return;
+      }
+
+      if (hasUnsavedChanges && context.mounted) {
+        final bool? discard = await showDialog<bool>(
+          context: context,
+          builder: (BuildContext dialogContext) => AlertDialog(
+            title: const Text('Unsaved Changes'),
+            content: const Text(
+              'You have unsaved changes. Do you want to discard them?',
+            ),
+            actions: <Widget>[
+              TextButton(
+                child: const Text('Cancel'),
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+              ),
+              TextButton(
+                child: const Text('Discard'),
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+              ),
+            ],
+          ),
+        );
+        if (discard != true) {
+          _logger.info("User chose not to discard changes.");
+          return;
+        }
+      }
+
+      // If we reach here, either no unsaved changes or user confirmed discard
+      if (context.mounted && Navigator.of(context).canPop()) {
+        _logger.info("Popping from handleDiscardOrPop.");
+        Navigator.of(context).pop();
+      }
+    } finally {
+      _isHandlingExitAttempt = false;
+    }
+
     await _cleanupTempDir();
   }
 

@@ -13,7 +13,7 @@ import 'package:stuff/services/wrappers/geocoding_wrapper.dart';
 import 'package:stuff/services/permission_service_interface.dart';
 import 'package:stuff/services/exceptions/permission_exceptions.dart';
 import 'package:stuff/services/exceptions/os_service_exceptions.dart';
-import '../../utils/test_logger_helper.dart';
+import '../../utils/test_logger_manager.dart';
 
 // Import the generated mocks file.
 import 'geolocator_location_service_test.mocks.dart';

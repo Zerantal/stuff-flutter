@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
-import '../models/room_data.dart';
+import '../models/room_model.dart';
 import 'package:logging/logging.dart';
 import '../routing/app_routes.dart';
-import '../models/item_page_arguments.dart';
 
 final Logger _logger = Logger('ContainersPage');
 
 class ContainersPage extends StatefulWidget {
-  final RoomData roomData;
+  final Room room;
 
-  const ContainersPage({super.key, required this.roomData});
+  const ContainersPage({super.key, required this.room});
 
   @override
   State<ContainersPage> createState() => _ContainersPageState();
@@ -24,12 +23,11 @@ class _ContainersPageState extends State<ContainersPage> {
   void initState() {
     super.initState();
     _logger.info(
-      "Initializing ContainersPage for Room: ${widget.roomData.roomName} (ID: ${widget.roomData.roomId}) "
-      "in Location: ${widget.roomData.locationName} (ID: ${widget.roomData.locationId})",
+      "Initializing ContainersPage for Room: ${widget.room.name} (ID: ${widget.room.id})",
     );
     // TODO: Fetch actual containers from a data service
     // _containersFuture = _fetchContainersForRoom(widget.roomData.roomId);
-    _containers = _fetchContainersForRoomPlaceholder(widget.roomData.roomId);
+    _containers = _fetchContainersForRoomPlaceholder(widget.room.id);
   }
 
   // Placeholder for data fetching logic - replace with actual data service
@@ -38,7 +36,7 @@ class _ContainersPageState extends State<ContainersPage> {
     // In a real app, this would return List<ContainerModel> from a service
     return List.generate(
       4,
-      (index) => 'Container ${index + 1} in ${widget.roomData.roomName}',
+      (index) => 'Container ${index + 1} in ${widget.room.name}',
     );
   }
 
@@ -48,19 +46,12 @@ class _ContainersPageState extends State<ContainersPage> {
   // }
 
   void _navigateToAddContainer() {
-    _logger.info(
-      "Navigating to add container for room: ${widget.roomData.roomName}",
-    );
+    _logger.info("Navigating to add container for room: ${widget.room.name}");
     // Example: Navigate to a dedicated "Add Container" page
     Navigator.of(context)
         .pushNamed(
           AppRoutes.addContainer, // You would define this route
-          arguments: {
-            'roomId': widget.roomData.roomId,
-            'roomName': widget.roomData.roomName,
-            'locationId': widget.roomData.locationId,
-            'locationName': widget.roomData.locationName,
-          },
+          arguments: {'room': widget.room},
         )
         .then((_) {
           // After AddContainerPage pops, refresh the list if a container was added
@@ -101,20 +92,20 @@ class _ContainersPageState extends State<ContainersPage> {
     // This page manages its own Scaffold and AppBar
     return Scaffold(
       appBar: AppBar(
-        title: Text('Containers in ${widget.roomData.roomName}'),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(20.0),
-          child: Text(
-            widget.roomData.locationName, // Display location context
-            style: TextStyle(
-              fontSize: 14,
-              color:
-                  (Theme.of(context).appBarTheme.foregroundColor ??
-                          Colors.white)
-                      .withAlpha((0.8 * 255).round()),
-            ),
-          ),
-        ),
+        title: Text('Containers in ${widget.room.name}'),
+        // bottom: PreferredSize(
+        //   preferredSize: const Size.fromHeight(20.0),
+        // child: Text(
+        //   widget.roomData.locationName, // Display location context
+        //   style: TextStyle(
+        //     fontSize: 14,
+        //     color:
+        //         (Theme.of(context).appBarTheme.foregroundColor ??
+        //                 Colors.white)
+        //             .withAlpha((0.8 * 255).round()),
+        //   ),
+        // ),
+        // ),
       ),
       // TODO: Replace with FutureBuilder/StreamBuilder using _containersFuture
       body: ListView.builder(
@@ -130,14 +121,15 @@ class _ContainersPageState extends State<ContainersPage> {
             trailing: const Icon(Icons.arrow_forward_ios),
             onTap: () {
               _logger.info("Tapped on container: $containerName");
-              final args = ItemPageArguments(
-                locationName: widget.roomData.locationName,
-                locationId: widget.roomData.locationId,
-                roomName: widget.roomData.roomName,
-                roomId: widget.roomData.roomId,
-                containerName: containerName, // Use actual container.name
-                // containerId: containerId,    // Use actual container.id
-              );
+              final args = null;
+              // final args = ItemPageArguments(
+              //   locationName: widget.roomData.locationName,
+              //   locationId: widget.roomData.locationId,
+              //   roomName: widget.roomData.roomName,
+              //   roomId: widget.roomData.roomId,
+              //   containerName: containerName, // Use actual container.name
+              //   // containerId: containerId,    // Use actual container.id
+              // );
               Navigator.of(context).pushNamed(AppRoutes.items, arguments: args);
             },
           );
