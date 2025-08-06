@@ -1,11 +1,15 @@
 // lib/locations_page.dart
+import 'package:flutter/foundation.dart'; // For kDebugMode
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
-import 'package:stuff/services/image_data_service_interface.dart';
+
+// services and models
+import '../services/image_data_service_interface.dart';
 import '../models/location_model.dart';
 import '../services/data_service_interface.dart';
 import '../routing/app_routes.dart';
+import '../services/utils/sample_data_populator.dart';
 
 final Logger _logger = Logger('LocationsPage');
 
@@ -31,29 +35,9 @@ class _LocationsPageState extends State<LocationsPage> {
   Future<void> _handleRefresh() async {
     _logger.info("Handling refresh via RefreshIndicator...");
     if (mounted) {
-      setState(() {});
       await _dataService.getAllLocations();
     }
     _logger.info("RefreshIndicator completed.");
-  }
-
-  // Future<void> _navigateAndAwaitChanges(Widget page) async {
-  //   await Navigator.push(
-  //     context,
-  //     MaterialPageRoute(builder: (context) => page),
-  //   );
-  //
-  //   _logger.info(
-  //     "Returned from a page navigation. Stream should handle UI updates.",
-  //   );
-  // }
-
-  // --- Actions ---
-  void _editLocationInfo(Location location) {
-    _logger.info("Navigating to edit location: ${location.name}");
-    Navigator.of(
-      context,
-    ).pushNamed(AppRoutes.editLocation, arguments: location);
   }
 
   void _addNewLocation() {
@@ -61,10 +45,128 @@ class _LocationsPageState extends State<LocationsPage> {
     Navigator.of(context).pushNamed(AppRoutes.addLocation);
   }
 
+  void _editLocationInfo(Location location) {
+    _logger.info("Navigating to edit location: ${location.name}");
+    Navigator.of(
+      context,
+    ).pushNamed(AppRoutes.editLocation, arguments: location);
+  }
+
   void _viewLocationContents(Location location) {
     _logger.info("Navigating to view contents for location: ${location.name}");
     Navigator.of(context).pushNamed(AppRoutes.rooms, arguments: location);
   }
+
+  // --- Start of Developer Tools Logic ---
+  Future<void> _resetDatabaseWithSampleData() async {
+    if (!mounted) return;
+
+    final dataService = Provider.of<IDataService>(context, listen: false);
+    final imageDataService = Provider.of<IImageDataService?>(
+      context,
+      listen: false,
+    );
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) => AlertDialog(
+        title: const Text('Confirm Reset'),
+        content: const Text(
+          'Reset ALL data to sample set? This cannot be undone.',
+        ),
+        actions: <Widget>[
+          TextButton(
+            child: const Text('Cancel'),
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+          ),
+          TextButton(
+            child: const Text(
+              'Reset All Data',
+              style: TextStyle(color: Colors.red),
+            ),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Resetting database... Please wait.')),
+      );
+
+      final populator = SampleDataPopulator(
+        dataService: dataService,
+        imageDataService: imageDataService,
+      );
+
+      try {
+        await populator.populate();
+        _logger.info("Sample data population successful from LocationsPage.");
+        if (mounted) {
+          ScaffoldMessenger.of(context).removeCurrentSnackBar();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Database has been reset with sample data.'),
+            ),
+          );
+          // Trigger a refresh of the locations list
+          _handleRefresh();
+        }
+      } catch (e, s) {
+        _logger.severe(
+          "Error during sample data population from LocationsPage: $e",
+          e,
+          s,
+        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).removeCurrentSnackBar();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error resetting database: $e'),
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  Widget? _buildDeveloperDrawer(BuildContext context) {
+    if (!kDebugMode) {
+      return null;
+    }
+    return Drawer(
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: <Widget>[
+          DrawerHeader(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            child: Text(
+              'Developer Options',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onPrimary,
+                fontSize: 24,
+              ),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.delete_sweep_outlined),
+            title: const Text('Reset DB with Sample Data'),
+            onTap: () async {
+              if (Navigator.canPop(context)) {
+                Navigator.pop(context); // Close drawer first
+              }
+              await _resetDatabaseWithSampleData();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+  // --- End of Developer Tools Logic ---
 
   Widget _buildLoadingIndicator() {
     return const Center(
@@ -88,9 +190,13 @@ class _LocationsPageState extends State<LocationsPage> {
             onPressed: () {
               _logger.info("Retrying stream subscription.");
               if (mounted) {
-                setState(() {
-                  _locationsStream = _dataService.getLocationsStream();
-                });
+                // To retry, we need to ensure the stream is re-listened to or re-created.
+                // Calling _handleRefresh might be a good option if it re-fetches
+                // and the stream updates. Or re-assign the stream.
+                _handleRefresh(); // Or:
+                // setState(() {
+                //   _locationsStream = _dataService.getLocationsStream();
+                // });
               }
             },
             child: const Text('Retry Stream'),
@@ -167,7 +273,7 @@ class _LocationsPageState extends State<LocationsPage> {
     }
     // Fallback placeholder
     return Image.asset(
-      'assets/images/location_placeholder.png',
+      'assets/images/location_placeholder.jpg',
       height: 80.0,
       width: 80.0,
       fit: BoxFit.cover,
@@ -183,6 +289,7 @@ class _LocationsPageState extends State<LocationsPage> {
       "Building card for location ${location.name}, imageGuids: ${location.imageGuids}",
     );
     return Card(
+      key: ValueKey('location_card_${location.id}'),
       margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       child: Padding(
         padding: const EdgeInsets.all(12.0),
@@ -273,55 +380,75 @@ class _LocationsPageState extends State<LocationsPage> {
     );
   }
 
-  // --- Main Build Method (Refactored) ---
   @override
   Widget build(BuildContext context) {
     _logger.info("LocationsPage building its content.");
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Locations'),
+        leading: kDebugMode
+            ? Builder(
+                builder: (BuildContext appBarContext) {
+                  return IconButton(
+                    icon: const Icon(Icons.menu),
+                    tooltip: 'Developer Options',
+                    onPressed: () {
+                      Scaffold.of(appBarContext).openDrawer();
+                    },
+                  );
+                },
+              )
+            : null,
+      ),
+      drawer: _buildDeveloperDrawer(context),
+      body: RefreshIndicator(
+        key: const Key("locations_refresh_indicator"),
+        onRefresh: _handleRefresh,
+        child: Consumer<IImageDataService?>(
+          builder: (context, imageDataServiceFromConsumer, child) {
+            _logger.info(
+              "LocationsPage Consumer<IImageDataService>: Service is ${imageDataServiceFromConsumer == null ? 'NULL' : 'AVAILABLE'}",
+            );
 
-    return RefreshIndicator(
-      key: const Key("locations_refresh_indicator"),
-      onRefresh: _handleRefresh,
-      child: Consumer<IImageDataService?>(
-        builder: (context, imageDataServiceFromConsumer, child) {
-          _logger.info(
-            "LocationsPage Consumer<IImageDataService>: Service is ${imageDataServiceFromConsumer == null ? 'NULL' : 'AVAILABLE'}",
-          );
+            return StreamBuilder<List<Location>>(
+              stream: _locationsStream,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting &&
+                    !(snapshot.hasData || snapshot.hasError)) {
+                  _logger.fine(
+                    "StreamBuilder: ConnectionState.waiting (initial load likely)",
+                  );
+                  return _buildLoadingIndicator();
+                }
+                if (snapshot.hasError) {
+                  _logger.warning("StreamBuilder: Error: ${snapshot.error}");
+                  return _buildErrorState(snapshot);
+                }
+                if (!snapshot.hasData ||
+                    snapshot.data == null ||
+                    snapshot.data!.isEmpty) {
+                  _logger.info("StreamBuilder: No data or empty list.");
+                  return _buildEmptyState();
+                }
 
-          return StreamBuilder<List<Location>>(
-            stream: _locationsStream,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting &&
-                  !(snapshot.hasData || snapshot.hasError)) {
-                // Show loading only if it's the initial wait and no data/error yet.
-                // If it's ConnectionState.waiting but hasData, it's likely a stream update.
                 _logger.fine(
-                  "StreamBuilder: ConnectionState.waiting (initial load likely)",
+                  "StreamBuilder: HasData with ${snapshot.data!.length} items.",
                 );
-                return _buildLoadingIndicator();
-              }
-              if (snapshot.hasError) {
-                _logger.warning("StreamBuilder: Error: ${snapshot.error}");
-                return _buildErrorState(snapshot);
-              }
-              if (!snapshot.hasData ||
-                  snapshot.data == null ||
-                  snapshot.data!.isEmpty) {
-                _logger.info("StreamBuilder: No data or empty list.");
-                return _buildEmptyState();
-              }
-
-              _logger.fine(
-                "StreamBuilder: HasData with ${snapshot.data!.length} items.",
-              );
-              // Pass the potentially null imageDataServiceFromConsumer.
-              // _buildLocationsList and _buildLocationCard will handle it.
-              return _buildLocationsList(
-                snapshot.data!,
-                imageDataServiceFromConsumer,
-              );
-            },
-          );
-        },
+                return _buildLocationsList(
+                  snapshot.data!,
+                  imageDataServiceFromConsumer,
+                );
+              },
+            );
+          },
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        key: const ValueKey('add_location_fab'),
+        heroTag: 'locationsPageFAB',
+        onPressed: _addNewLocation, // Use the existing method
+        tooltip: 'Add Location',
+        child: const Icon(Icons.add_location_alt_outlined),
       ),
     );
   }

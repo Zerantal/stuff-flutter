@@ -1,29 +1,29 @@
-// lib/models/location_model.dart
+// lib/models/room_model.dart
 import 'package:hive_ce/hive.dart';
 
 import '../core/models/base_model.dart';
 
-part 'location_model.g.dart';
+part 'room_model.g.dart'; // Ensure you run build_runner after changes
 
-@HiveType(typeId: 0)
-class Location extends BaseModel {
+@HiveType(typeId: 1)
+class Room extends BaseModel {
   @HiveField(3)
-  String name;
+  String locationId; // Foreign key to Location
 
   @HiveField(4)
-  String? description;
+  String name;
 
   @HiveField(5)
-  String? address;
+  String? description;
 
   @HiveField(6)
   List<String>? imageGuids;
 
-  Location({
+  Room({
     super.id,
+    required this.locationId,
     required this.name,
     this.description,
-    this.address,
     List<String>? imageGuids,
     super.createdAt,
     super.updatedAt,

@@ -10,11 +10,12 @@ import '../services/image_data_service_interface.dart';
 import '../services/location_service_interface.dart';
 import '../services/image_picker_service_interface.dart';
 import '../services/temporary_file_service_interface.dart';
+import '../widgets/image_manager_input.dart';
 
 final Logger _logger = Logger('EditLocationPage');
 
 class EditLocationPage extends StatelessWidget {
-  final Location? initialLocation; // Null if adding a new location
+  final Location? initialLocation;
   final EditLocationViewModel? viewModelOverride;
 
   const EditLocationPage({
@@ -113,8 +114,7 @@ class EditLocationPage extends StatelessWidget {
                       ? const Padding(
                           padding: EdgeInsets.all(12.0),
                           child: SizedBox(
-                            width:
-                                20, // Explicit size for CircularProgressIndicator
+                            width: 20,
                             height: 20,
                             child: CircularProgressIndicator(strokeWidth: 2.0),
                           ),
@@ -124,7 +124,7 @@ class EditLocationPage extends StatelessWidget {
                           tooltip: 'Get Current Address',
                           onPressed: viewModel.getCurrentAddress,
                         ))
-                : null, // No icon if service is unavailable
+                : null,
           ),
           maxLines: 2,
         ),
@@ -140,101 +140,101 @@ class EditLocationPage extends StatelessWidget {
     );
   }
 
-  Widget _buildImageSection(
-    BuildContext context,
-    EditLocationViewModel viewModel,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Images', style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(height: 8.0),
-        viewModel.currentImages.isEmpty
-            ? const Center(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 16.0),
-                  child: Text('No images yet. Add one!'),
-                ),
-              )
-            : SizedBox(
-                height: 120.0,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: viewModel.currentImages.length,
-                  itemBuilder: (context, index) {
-                    final imageId = viewModel.currentImages[index];
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8.0),
-                      child: Stack(
-                        children: [
-                          Container(
-                            width: 100.0,
-                            height: 100.0,
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey),
-                              borderRadius: BorderRadius.circular(8.0),
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(7.0),
-                              child: viewModel.getImageThumbnailWidget(
-                                imageId,
-                                width: 100.0,
-                                height: 100.0,
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.all(2.0),
-                            child: Material(
-                              color: Colors.transparent,
-                              shape: const CircleBorder(),
-                              child: InkWell(
-                                onTap: () => viewModel.removeImage(index),
-                                customBorder: const CircleBorder(),
-                                child: Container(
-                                  padding: const EdgeInsets.all(2.0),
-                                  decoration: const BoxDecoration(
-                                    color: Color.fromARGB(128, 0, 0, 0),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(
-                                    Icons.close,
-                                    color: Colors.white,
-                                    size: 18,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ),
-        const SizedBox(height: 12.0),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.camera_alt_outlined),
-              tooltip: 'Add Image from Camera',
-              onPressed: viewModel.pickImageFromCamera,
-              iconSize: 28,
-            ),
-            const SizedBox(width: 16),
-            IconButton(
-              icon: const Icon(Icons.photo_library_outlined),
-              tooltip: 'Add Image from Gallery',
-              onPressed: viewModel.pickImageFromGallery,
-              iconSize: 28,
-            ),
-          ],
-        ),
-      ],
-    );
-  }
+  // Widget _buildImageSection(
+  //   BuildContext context,
+  //   EditLocationViewModel viewModel,
+  // ) {
+  //   return Column(
+  //     crossAxisAlignment: CrossAxisAlignment.start,
+  //     children: [
+  //       Text('Images', style: Theme.of(context).textTheme.titleMedium),
+  //       const SizedBox(height: 8.0),
+  //       viewModel.currentImages.isEmpty
+  //           ? const Center(
+  //               child: Padding(
+  //                 padding: EdgeInsets.symmetric(vertical: 16.0),
+  //                 child: Text('No images yet. Add one!'),
+  //               ),
+  //             )
+  //           : SizedBox(
+  //               height: 120.0,
+  //               child: ListView.builder(
+  //                 scrollDirection: Axis.horizontal,
+  //                 itemCount: viewModel.currentImages.length,
+  //                 itemBuilder: (context, index) {
+  //                   final imageId = viewModel.currentImages[index];
+  //                   return Padding(
+  //                     padding: const EdgeInsets.only(right: 8.0),
+  //                     child: Stack(
+  //                       children: [
+  //                         Container(
+  //                           width: 100.0,
+  //                           height: 100.0,
+  //                           decoration: BoxDecoration(
+  //                             border: Border.all(color: Colors.grey),
+  //                             borderRadius: BorderRadius.circular(8.0),
+  //                           ),
+  //                           child: ClipRRect(
+  //                             borderRadius: BorderRadius.circular(7.0),
+  //                             child: viewModel.getImageThumbnailWidget(
+  //                               imageId,
+  //                               width: 100.0,
+  //                               height: 100.0,
+  //                               fit: BoxFit.cover,
+  //                             ),
+  //                           ),
+  //                         ),
+  //                         Padding(
+  //                           padding: const EdgeInsets.all(2.0),
+  //                           child: Material(
+  //                             color: Colors.transparent,
+  //                             shape: const CircleBorder(),
+  //                             child: InkWell(
+  //                               onTap: () => viewModel.removeImage(index),
+  //                               customBorder: const CircleBorder(),
+  //                               child: Container(
+  //                                 padding: const EdgeInsets.all(2.0),
+  //                                 decoration: const BoxDecoration(
+  //                                   color: Color.fromARGB(128, 0, 0, 0),
+  //                                   shape: BoxShape.circle,
+  //                                 ),
+  //                                 child: const Icon(
+  //                                   Icons.close,
+  //                                   color: Colors.white,
+  //                                   size: 18,
+  //                                 ),
+  //                               ),
+  //                             ),
+  //                           ),
+  //                         ),
+  //                       ],
+  //                     ),
+  //                   );
+  //                 },
+  //               ),
+  //             ),
+  //       const SizedBox(height: 12.0),
+  //       Row(
+  //         mainAxisAlignment: MainAxisAlignment.start,
+  //         children: [
+  //           IconButton(
+  //             icon: const Icon(Icons.camera_alt_outlined),
+  //             tooltip: 'Add Image from Camera',
+  //             onPressed: viewModel.pickImageFromCamera,
+  //             iconSize: 28,
+  //           ),
+  //           const SizedBox(width: 16),
+  //           IconButton(
+  //             icon: const Icon(Icons.photo_library_outlined),
+  //             tooltip: 'Add Image from Gallery',
+  //             onPressed: viewModel.pickImageFromGallery,
+  //             iconSize: 28,
+  //           ),
+  //         ],
+  //       ),
+  //     ],
+  //   );
+  // }
 
   Widget _buildActionButtons(
     BuildContext context,
@@ -245,7 +245,7 @@ class EditLocationPage extends StatelessWidget {
         viewModel.isNewLocation ? 'addLocationButton' : 'saveLocationButton',
       ),
       icon: viewModel.isSaving
-          ? Container()
+          ? Container() // Handled by isLoading in ImageManagerInput or global page lock
           : (viewModel.isNewLocation
                 ? const Icon(Icons.add_circle_outline)
                 : const Icon(Icons.save_outlined)),
@@ -262,14 +262,11 @@ class EditLocationPage extends StatelessWidget {
     );
   }
 
-  // --- Main Build Method ---
   @override
   Widget build(BuildContext context) {
-    // Determine the ViewModel instance to use
     final EditLocationViewModel effectiveViewModel =
         viewModelOverride ??
         () {
-          // Fetch services only if creating the ViewModel here
           final dataService = Provider.of<IDataService>(context, listen: false);
           final imageDataService = Provider.of<IImageDataService?>(
             context,
@@ -301,30 +298,76 @@ class EditLocationPage extends StatelessWidget {
       value: effectiveViewModel,
       child: Consumer<EditLocationViewModel>(
         builder: (context, viewModel, child) {
-          return PopScope(
-            canPop: !viewModel.isSaving,
-            onPopInvokedWithResult: (bool didPop, Object? result) async {
-              _logger.finer(
-                "PopScope (onPopInvokedWithResult): Pop invoked for EditLocationPage. Cleaning up. Result: $result",
-              );
-              if (didPop) {
-                await viewModel.handleDiscardOrPop();
-              }
-            },
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
-              child: Form(
-                key: viewModel.formKey,
-                autovalidateMode: AutovalidateMode.onUserInteraction,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: <Widget>[
-                    _buildFormFields(context, viewModel),
-                    const SizedBox(height: 24.0), // Increased spacing
-                    _buildImageSection(context, viewModel),
-                    const SizedBox(height: 24.0),
-                    _buildActionButtons(context, viewModel),
-                  ],
+          final appBarTitle = viewModel.isNewLocation
+              ? 'Add New Location'
+              : 'Edit Location';
+
+          return Scaffold(
+            appBar: AppBar(
+              title: Text(appBarTitle),
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () async {
+                  _logger.info(
+                    "AppBar back button tapped. Calling viewModel.handleDiscardOrPop.",
+                  );
+                  await viewModel.handleDiscardOrPop(context);
+                },
+              ),
+            ),
+            body: PopScope(
+              canPop:
+                  !viewModel.isSaving &&
+                  !viewModel.isPickingImage &&
+                  !viewModel.hasUnsavedChanges,
+              onPopInvokedWithResult: (bool didPop, Object? result) async {
+                _logger.info(
+                  "PopScope.onPopInvoked: didPop: $didPop, "
+                  "isSaving: ${viewModel.isSaving}, "
+                  "isPickingImage: ${viewModel.isPickingImage}, "
+                  "hasUnsaved: ${viewModel.hasUnsavedChanges}",
+                );
+                if (didPop) return;
+
+                await viewModel.handleDiscardOrPop(context);
+              },
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16.0),
+                child: Form(
+                  key: viewModel.formKey,
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      _buildFormFields(context, viewModel),
+                      const SizedBox(height: 24.0),
+                      ImageManagerInput(
+                        currentImages: viewModel.currentImages,
+                        imageThumbnailBuilder:
+                            (
+                              imageId, {
+                              required width,
+                              required height,
+                              required fit,
+                            }) {
+                              // This lambda directly calls the ViewModel's method
+                              return viewModel.getImageThumbnailWidget(
+                                imageId,
+                                width: width,
+                                height: height,
+                                fit: fit,
+                              );
+                            },
+                        onAddImageFromCamera: viewModel.pickImageFromCamera,
+                        onAddImageFromGallery: viewModel.pickImageFromGallery,
+                        onRemoveImage: viewModel.removeImage,
+                        isLoading: viewModel.isPickingImage,
+                        title: 'Location Images',
+                      ),
+                      const SizedBox(height: 24.0),
+                      _buildActionButtons(context, viewModel),
+                    ],
+                  ),
                 ),
               ),
             ),
