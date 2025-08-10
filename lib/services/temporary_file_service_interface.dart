@@ -1,18 +1,36 @@
 // lib/services/temporary_file_service_interface.dart
 import 'dart:io';
 
+/// Abstraction for staging files under an app-scoped temporary *session* directory.
+///
+/// Typical lifecycle:
+///   final temp = PathProviderTemporaryFileService();
+///   await temp.init(sessionPrefix: 'imgpick');   // optional; lazy-inits on first use
+///   final staged = await temp.copyToTemp(sourceFile);
+///   await temp.deleteFile(staged);               // optional
+///   await temp.clearSession();                   // cleanup when done
+///   temp.dispose();                              // final safety net (sync)
 abstract class ITemporaryFileService {
-  /// Creates a unique temporary directory for a session.
-  /// The [sessionPrefix] helps in identifying the directory's purpose.
-  Future<Directory> createSessionTempDir(String sessionPrefix);
+  /// Prepare a unique session directory under the platform temp directory.
+  /// Implementations may *lazy-init* on first use if this is never called.
+  Future<void> init({String? sessionPrefix});
 
-  /// Copies a source file to the specified temporary directory.
-  /// Returns the copied file.
-  Future<File> copyToTempDir(File sourceFile, Directory tempDir);
+  /// The directory for this session. Throws if not yet initialized and lazy-init
+  /// is not supported by the implementation.
+  Directory get sessionDirectory;
 
-  /// Deletes a file.
+  /// Copy [source] into the session directory and return the staged file.
+  /// If [fileName] is omitted, an implementation-defined unique name is used.
+  Future<File> copyToTemp(File source, {String? fileName});
+
+  /// Delete a file if it exists. Should be resilient and *not* throw on ENOENT.
   Future<void> deleteFile(File file);
 
-  /// Deletes a directory and all its contents.
-  Future<void> deleteDirectory(Directory directory);
+  /// Delete the entire session directory (recursively) and release resources.
+  /// Should be safe to call multiple times.
+  Future<void> clearSession();
+
+  /// Synchronous destructor-style cleanup. Should attempt to remove the session
+  /// directory (recursively) without throwing. Safe to call multiple times.
+  void dispose();
 }

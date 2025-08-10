@@ -1,12 +1,13 @@
 // lib/core/helpers/image_ref.dart
-// Tiny helper for representing image sources in a UI-agnostic way,
+// Tiny helper for representing image sources in a UI-agnostic way.
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 // Platform-specific file provider
 import 'src/image_file_provider_stub.dart'
-if (dart.library.io) 'src/image_file_provider_io.dart' as fileprov;
+    if (dart.library.io) 'src/image_file_provider_io.dart'
+    as fileprov;
 
 /// UI-agnostic image reference your ViewModel can return.
 /// The view converts this to an ImageProvider or Image widget.
@@ -15,7 +16,11 @@ sealed class ImageRef {
   const factory ImageRef.file(String path) = FileImageRef;
   const factory ImageRef.network(String url) = NetworkImageRef;
   const factory ImageRef.memory(Uint8List bytes) = MemoryImageRef;
-  const factory ImageRef.asset(String assetName, {AssetBundle? bundle, String? package}) = AssetImageRef;
+  const factory ImageRef.asset(
+    String assetName, {
+    AssetBundle? bundle,
+    String? package,
+  }) = AssetImageRef;
 }
 
 class FileImageRef extends ImageRef {
@@ -75,7 +80,7 @@ Widget buildImage(
   FilterQuality filterQuality = FilterQuality.medium,
   int? cacheWidth,
   int? cacheHeight,
-  Widget? placeholder,
+  Widget? loadingWidget,
   Widget? errorWidget,
 }) {
   final provider = providerFor(
@@ -93,7 +98,7 @@ Widget buildImage(
     filterQuality: filterQuality,
     loadingBuilder: (context, child, progress) {
       if (progress == null) return child;
-      return placeholder ??
+      return loadingWidget ??
           const SizedBox(
             width: 20,
             height: 20,

@@ -1,17 +1,17 @@
 // lib/widgets/image_manager_input.dart
 import 'package:flutter/material.dart';
-import '../core/image_identifier.dart';
+import '../core/helpers/image_ref.dart';
 
 typedef ImageThumbnailBuilder =
     Widget Function(
-      ImageIdentifier imageIdentifier, {
+      ImageRef imageIdentifier, {
       required double width,
       required double height,
       required BoxFit fit,
     });
 
 class ImageManagerInput extends StatelessWidget {
-  final List<ImageIdentifier> currentImages;
+  final List<ImageRef> currentImages;
   final ImageThumbnailBuilder imageThumbnailBuilder;
   final VoidCallback onAddImageFromCamera;
   final VoidCallback onAddImageFromGallery;

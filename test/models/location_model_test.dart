@@ -19,7 +19,7 @@ void main() {
             name: 'Test Location',
             description: 'A description',
             address: '123 Test St',
-            imageGuids: imageGuids,
+            images: imageGuids,
             createdAt: specificCreatedAt, // Explicitly provide createdAt
             updatedAt: specificUpdatedAt, // Explicitly provide updatedAt
           );
@@ -34,7 +34,7 @@ void main() {
           expect(location.name, 'Test Location');
           expect(location.description, 'A description');
           expect(location.address, '123 Test St');
-          expect(location.imageGuids, equals(imageGuids));
+          expect(location.images, equals(imageGuids));
         },
       );
 
@@ -88,14 +88,11 @@ void main() {
         'imageGuids should default to an empty list if null is passed to constructor',
         () {
           // Act
-          final location = Location(
-            name: 'No Images Location',
-            imageGuids: null,
-          );
+          final location = Location(name: 'No Images Location', images: null);
 
           // Assert
-          expect(location.imageGuids, isNotNull);
-          expect(location.imageGuids, isEmpty);
+          expect(location.images, isNotNull);
+          expect(location.images, isEmpty);
         },
       );
 
@@ -108,8 +105,8 @@ void main() {
             // imageGuids is not provided
           );
           // Assert
-          expect(location.imageGuids, isNotNull);
-          expect(location.imageGuids, isEmpty);
+          expect(location.images, isNotNull);
+          expect(location.images, isEmpty);
         },
       );
 
@@ -123,18 +120,18 @@ void main() {
             name: 'Full Location',
             description: 'Full Desc',
             address: 'Full Address',
-            imageGuids: imgGuids,
+            images: imgGuids,
           );
           final locationMinimal = Location(name: 'Minimal Location');
 
           // Assert
           expect(locationFull.description, 'Full Desc');
           expect(locationFull.address, 'Full Address');
-          expect(locationFull.imageGuids, imgGuids);
+          expect(locationFull.images, imgGuids);
 
           expect(locationMinimal.description, isNull);
           expect(locationMinimal.address, isNull);
-          expect(locationMinimal.imageGuids, isEmpty); // Defaults to empty list
+          expect(locationMinimal.images, isEmpty); // Defaults to empty list
         },
       );
     });

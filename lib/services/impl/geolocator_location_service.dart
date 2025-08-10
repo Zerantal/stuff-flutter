@@ -134,7 +134,8 @@ class GeolocatorLocationService implements ILocationService {
         );
       } catch (e, s) {
         _logger.severe(
-          'An unexpected error occurred in _geolocator.getCurrentPosition: $e',
+          'An unexpected error occurred in _geolocator.getCurrentPosition',
+          e,
           s,
         );
         throw Exception(
@@ -204,7 +205,8 @@ class GeolocatorLocationService implements ILocationService {
       rethrow;
     } catch (e, s) {
       _logger.severe(
-        'Error during geocoding or other issue in getCurrentAddress: $e',
+        'Error during geocoding or other issue in getCurrentAddress',
+        e,
         s,
       );
       return null; // For now, returning null for non-permission/service related geocoding errors

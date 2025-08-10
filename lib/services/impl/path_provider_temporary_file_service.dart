@@ -1,58 +1,89 @@
 // lib/services/path_provider_temporary_file_service.dart
 import 'dart:io';
-import 'package:path_provider/path_provider.dart';
-import 'package:path/path.dart' as p;
-import 'package:uuid/uuid.dart';
 import 'package:logging/logging.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
+import 'package:uuid/uuid.dart';
+
 import '../temporary_file_service_interface.dart';
 
-final Logger _logger = Logger('PathProviderTemporaryFileService');
-const Uuid _uuid = Uuid();
+final _log = Logger('PathProviderTemporaryFileService');
+const _uuid = Uuid();
 
+/// Stages files under `<system temp>/<prefix>-<uuid>/...`.
 class PathProviderTemporaryFileService implements ITemporaryFileService {
-  @override
-  Future<Directory> createSessionTempDir(String sessionPrefix) async {
-    try {
-      final Directory baseTempDir = await getTemporaryDirectory();
-      final String uniqueId = _uuid.v4().substring(0, 8);
-      final Directory sessionDir = Directory(
-        p.join(baseTempDir.path, '${sessionPrefix}_$uniqueId'),
-      );
+  PathProviderTemporaryFileService({
+    String sessionPrefix = 'temp',
+    Directory?
+    baseDirOverride, // for tests; if null, uses getTemporaryDirectory()
+  }) : _sessionPrefix = sessionPrefix,
+       _baseDirOverride = baseDirOverride;
 
-      if (!await sessionDir.exists()) {
-        await sessionDir.create(recursive: true);
-        _logger.info("Created session temporary directory: ${sessionDir.path}");
-      } else {
-        _logger.info(
-          "Session temporary directory already exists: ${sessionDir.path}",
-        );
+  final String _sessionPrefix;
+  final Directory? _baseDirOverride;
+  Directory? _sessionDir;
+
+  // Finalizer to clean up session dir as a last resort if dispose() wasn't called.
+  static final Finalizer<String> _finalizer = Finalizer<String>((path) {
+    try {
+      final dir = Directory(path);
+      if (dir.existsSync()) {
+        dir.deleteSync(recursive: true);
       }
-      return sessionDir;
-    } catch (e, s) {
-      _logger.severe('Failed to create session temporary directory: $e', s);
-      rethrow;
+    } catch (_) {
+      // Best-effort; ignore failures.
     }
+  });
+
+  bool get _isInit => _sessionDir != null;
+
+  @override
+  Directory get sessionDirectory {
+    final dir = _sessionDir;
+    if (dir == null) {
+      throw StateError('TemporaryFileService not initialized');
+    }
+    return dir;
   }
 
   @override
-  Future<File> copyToTempDir(File sourceFile, Directory tempDir) async {
+  Future<void> init({String? sessionPrefix}) async {
+    if (_isInit) return;
+    final base = _baseDirOverride ?? await getTemporaryDirectory();
+    final prefix = sessionPrefix ?? _sessionPrefix;
+    final name = '$prefix-${_uuid.v4()}';
+    final dir = Directory(p.join(base.path, name));
+    await dir.create(recursive: true);
+    _sessionDir = dir;
+
+    // Attach finalizer so the directory is cleaned if GC collects this object.
+    _finalizer.attach(this, dir.path, detach: this);
+
+    _log.info('Session temp dir: ${dir.path}');
+  }
+
+  Future<void> _ensureInit() => _isInit ? Future.value() : init();
+
+  @override
+  Future<File> copyToTemp(File source, {String? fileName}) async {
+    await _ensureInit();
+    // If the source is already inside the session directory, return as-is.
+    final dir = sessionDirectory;
+    final sourcePath = p.normalize(source.path);
+    final dirPath = p.normalize(dir.path);
+    if (p.isWithin(dirPath, sourcePath)) {
+      return source;
+    }
+
+    final ext = p.extension(source.path);
+    final name = fileName ?? '${_uuid.v4()}$ext';
+    final destPath = p.join(dir.path, name);
+
     try {
-      if (!await tempDir.exists()) {
-        _logger.warning(
-          "Target temporary directory ${tempDir.path} does not exist. Attempting to create.",
-        );
-        await tempDir.create(recursive: true);
-      }
-      final String fileName = p.basename(sourceFile.path);
-      final String destinationPath = p.join(tempDir.path, fileName);
-      final File copiedFile = await sourceFile.copy(destinationPath);
-      _logger.info("Copied ${sourceFile.path} to ${copiedFile.path}");
-      return copiedFile;
+      final copied = await source.copy(destPath);
+      return copied;
     } catch (e, s) {
-      _logger.severe(
-        'Failed to copy file ${sourceFile.path} to temp directory ${tempDir.path}: $e',
-        s,
-      );
+      _log.severe('Failed to copy to temp', e, s);
       rethrow;
     }
   }
@@ -62,33 +93,44 @@ class PathProviderTemporaryFileService implements ITemporaryFileService {
     try {
       if (await file.exists()) {
         await file.delete();
-        _logger.info("Deleted temporary file: ${file.path}");
-      } else {
-        _logger.info("Temporary file to delete did not exist: ${file.path}");
+        _log.finer('Deleted temp file: ${file.path}');
       }
     } catch (e, s) {
-      _logger.warning('Failed to delete temporary file ${file.path}: $e', s);
-      // Decide if this should rethrow based on severity
+      _log.warning('Failed to delete temp file: ${file.path}', e, s);
     }
   }
 
   @override
-  Future<void> deleteDirectory(Directory directory) async {
+  Future<void> clearSession() async {
+    final dir = _sessionDir;
+    if (dir == null) return;
     try {
-      if (await directory.exists()) {
-        await directory.delete(recursive: true);
-        _logger.info("Deleted temporary directory: ${directory.path}");
-      } else {
-        _logger.info(
-          "Temporary directory to delete did not exist: ${directory.path}",
-        );
+      if (await dir.exists()) {
+        await dir.delete(recursive: true);
+        _log.info('Cleared session temp dir: ${dir.path}');
       }
     } catch (e, s) {
-      _logger.warning(
-        'Failed to delete temporary directory ${directory.path}: $e',
-        s,
-      );
-      // Decide if this should rethrow
+      _log.warning('Failed clearing session temp dir: ${dir.path}', e, s);
+    } finally {
+      _sessionDir = null;
+      _finalizer.detach(this);
+    }
+  }
+
+  @override
+  void dispose() {
+    final dir = _sessionDir;
+    _sessionDir = null;
+    // Ensure no finalizer action will run later.
+    _finalizer.detach(this);
+    if (dir == null) return;
+    try {
+      if (dir.existsSync()) {
+        dir.deleteSync(recursive: true);
+        _log.info('Disposed session temp dir: ${dir.path}');
+      }
+    } catch (e, s) {
+      _log.warning('Failed disposing session temp dir: ${dir.path}', e, s);
     }
   }
 }

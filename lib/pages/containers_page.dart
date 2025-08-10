@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import '../models/room_model.dart';
 import 'package:logging/logging.dart';
+
+import '../routing/app_route_ext.dart';
 import '../routing/app_routes.dart';
+import '../models/room_model.dart';
 
 final Logger _logger = Logger('ContainersPage');
 
@@ -47,23 +49,8 @@ class _ContainersPageState extends State<ContainersPage> {
 
   void _navigateToAddContainer() {
     _logger.info("Navigating to add container for room: ${widget.room.name}");
-    // Example: Navigate to a dedicated "Add Container" page
-    Navigator.of(context)
-        .pushNamed(
-          AppRoutes.addContainer, // You would define this route
-          arguments: {'room': widget.room},
-        )
-        .then((_) {
-          // After AddContainerPage pops, refresh the list if a container was added
-          // This might involve re-fetching or relying on a stream
-          // For placeholder:
-          // setState(() {
-          //   _containers = _fetchContainersForRoomPlaceholder(widget.roomData.roomId);
-          // });
-          _logger.info(
-            "Returned from AddContainerPage. Consider refreshing container list.",
-          );
-        });
+
+    AppRoutes.containersAdd.go(context, pathParams: {'roomId': widget.room.id});
   }
 
   // void _addNewContainer() {
@@ -130,7 +117,7 @@ class _ContainersPageState extends State<ContainersPage> {
               //   containerName: containerName, // Use actual container.name
               //   // containerId: containerId,    // Use actual container.id
               // );
-              Navigator.of(context).pushNamed(AppRoutes.items, arguments: args);
+              AppRoutes.items.go(context);
             },
           );
         },

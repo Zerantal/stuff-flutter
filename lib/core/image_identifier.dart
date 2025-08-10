@@ -3,6 +3,7 @@ import 'dart:io';
 
 abstract class ImageIdentifier {}
 
+// images that have been persisted to storage
 class GuidIdentifier implements ImageIdentifier {
   final String guid; // "guid.ext" as returned by IImageDataService
   GuidIdentifier(this.guid);
@@ -18,6 +19,7 @@ class GuidIdentifier implements ImageIdentifier {
   int get hashCode => guid.hashCode;
 }
 
+// images that have not yet been persisted to storage
 class TempFileIdentifier implements ImageIdentifier {
   final File file; // Temporary file
   TempFileIdentifier(this.file);

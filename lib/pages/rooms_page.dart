@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
+import 'package:stuff/services/image_data_service_legacy_shim.dart';
 // Models and Services
 import '../models/location_model.dart';
 import '../models/room_model.dart';

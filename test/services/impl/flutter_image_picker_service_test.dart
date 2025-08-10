@@ -49,16 +49,8 @@ void main() {
         ).thenAnswer((_) async => false);
 
         // ACT & ASSERT
-        expect(
-          () => service.pickImageFromCamera(),
-          throwsA(
-            isA<Exception>().having(
-              (e) => e.toString(),
-              'toString',
-              'Exception: Camera permission denied.',
-            ),
-          ),
-        );
+        File? result = await service.pickImageFromCamera();
+        expect(result, isNull);
 
         // Verify no interaction with image picker if permission denied
         verifyNever(
@@ -76,7 +68,7 @@ void main() {
 
         expect(
           loggerManager.findLogWithMessage(
-            'Camera permission denied.',
+            'Permission denied for ImageSource.camera',
             level: Level.WARNING,
           ),
           isNotNull,
@@ -225,7 +217,8 @@ void main() {
         await Future.delayed(Duration.zero); // Allow logs to process
         expect(
           loggerManager.findLogWithMessage(
-            'Error picking image from camera: $exception',
+            'Error picking image from ImageSource.camera',
+            error: exception,
             level: Level.SEVERE,
           ),
           isNotNull,
@@ -259,7 +252,8 @@ void main() {
         await Future.delayed(Duration.zero);
         expect(
           loggerManager.findLogWithMessage(
-            'Error picking image from camera: $exception',
+            'Error picking image from ImageSource.camera',
+            error: exception,
             level: Level.SEVERE,
           ),
           isNotNull,
@@ -283,21 +277,15 @@ void main() {
         ).thenAnswer((_) async => false);
 
         // ACT & ASSERT
-        expect(
-          () => service.pickImageFromGallery(),
-          throwsA(
-            isA<Exception>().having(
-              (e) => e.toString(),
-              'toString',
-              'Exception: Gallery permission denied.',
-            ),
-          ),
-        );
+        final File? result = await service.pickImageFromGallery();
+        expect(result, isNull);
+
         verifyNever(mockImagePicker.pickImage(source: anyNamed('source')));
+
         await Future.delayed(Duration.zero);
         expect(
           loggerManager.findLogWithMessage(
-            'Gallery permission denied.',
+            'Permission denied for ImageSource.gallery',
             level: Level.WARNING,
           ),
           isNotNull,
@@ -441,7 +429,8 @@ void main() {
         await Future.delayed(Duration.zero);
         expect(
           loggerManager.findLogWithMessage(
-            'Error picking image from gallery: $exception',
+            'Error picking image from ImageSource.gallery',
+            error: exception,
             level: Level.SEVERE,
           ),
           isNotNull,
@@ -475,7 +464,8 @@ void main() {
         await Future.delayed(Duration.zero);
         expect(
           loggerManager.findLogWithMessage(
-            'Error picking image from gallery: $exception',
+            'Error picking image from ImageSource.gallery',
+            error: exception,
             level: Level.SEVERE,
           ),
           isNotNull,

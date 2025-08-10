@@ -35,7 +35,8 @@ class SampleDataPopulator {
       return file;
     } catch (e) {
       _logger.warning(
-        'Failed to convert asset $assetPath to temporary file: $e',
+        'Failed to convert asset $assetPath to temporary file',
+        e,
       );
       return null;
     }
@@ -56,14 +57,15 @@ class SampleDataPopulator {
     File? tempImageFile = await _assetToTempFile(assetPath);
     if (tempImageFile != null) {
       try {
-        final guid = await imageDataService!.saveUserImage(tempImageFile);
+        final guid = await imageDataService!.saveImage(tempImageFile);
         imageGuids.add(guid);
         _logger.info(
           "Sample '$imageFriendlyName' ($assetPath) saved with GUID: $guid",
         );
       } catch (e) {
         _logger.warning(
-          "Failed to save sample asset '$assetPath' via IImageDataService: $e",
+          "Failed to save sample asset '$assetPath' via IImageDataService",
+          e,
         );
       } finally {
         try {
@@ -99,14 +101,10 @@ class SampleDataPopulator {
         _logger.info(
           "Attempting to clear all user images via IImageDataService...",
         );
-        await imageDataService!.clearAllUserImages();
+        await imageDataService!.deleteAllImages();
         _logger.info("Successfully cleared all user images.");
       } catch (e, s) {
-        _logger.severe(
-          "Error clearing user images during population: $e",
-          e,
-          s,
-        );
+        _logger.severe("Error clearing user images during population", e, s);
       }
     } else {
       _logger.info(
@@ -170,21 +168,21 @@ class SampleDataPopulator {
         name: 'Cozy Home',
         description: 'Primary residence with a small garden.',
         address: '123 Sample St, Testville',
-        imageGuids: homeImageGuids,
+        images: homeImageGuids,
       ),
       Location(
         id: officeLocationId,
         name: 'Downtown Office',
         description: 'Vacuum cleaner business.',
         address: '456 Dev Ave, Coder City',
-        imageGuids: officeImageGuids,
+        images: officeImageGuids,
       ),
       Location(
         id: lakehouseLocationId,
         name: 'Lakehouse Retreat',
         description: 'Vacation property by the lake.',
         address: '789 Shore Ln, Mockington',
-        imageGuids: [], // No specific image for this sample
+        images: [], // No specific image for this sample
       ),
     ];
 
@@ -193,7 +191,7 @@ class SampleDataPopulator {
         await dataService.addLocation(location);
         _logger.finer("Added sample location: ${location.name}");
       } catch (e) {
-        _logger.warning("Failed to add sample location '${location.name}': $e");
+        _logger.warning("Failed to add sample location '${location.name}'", e);
       }
     }
 
@@ -248,7 +246,7 @@ class SampleDataPopulator {
           "Added sample room: ${room.name} to location ID ${room.locationId} (Room ID: ${room.id})",
         );
       } catch (e) {
-        _logger.warning("Failed to add sample room '${room.name}': $e");
+        _logger.warning("Failed to add sample room '${room.name}'", e);
       }
     }
     _logger.info("${roomsToCreate.length} sample rooms processed.");

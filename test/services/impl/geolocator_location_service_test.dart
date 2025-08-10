@@ -454,9 +454,7 @@ void main() {
             isA<Exception>().having(
               (e) => e.toString(),
               'toString',
-              contains(
-                'An unexpected error occurred while fetching location: $geolocatorException',
-              ),
+              contains('An unexpected error occurred while fetching location'),
             ),
           ),
         );
@@ -464,7 +462,7 @@ void main() {
 
         expect(
           loggerManager.findLogWithMessage(
-            'An unexpected error occurred in _geolocator.getCurrentPosition: $geolocatorException',
+            'An unexpected error occurred in _geolocator.getCurrentPosition',
             level: Level.SEVERE,
           ),
           isNotNull,
@@ -602,16 +600,15 @@ void main() {
             isA<Exception>().having(
               (e) => e.toString(),
               'toString',
-              contains(
-                'An unexpected error occurred while fetching location: $exception',
-              ),
+              contains('An unexpected error occurred while fetching location'),
             ),
           ),
         );
         await Future.delayed(Duration.zero);
         expect(
           loggerManager.findLogWithMessage(
-            'An unexpected error occurred in _geolocator.getCurrentPosition: $exception',
+            'An unexpected error occurred in _geolocator.getCurrentPosition',
+            error: exception,
             level: Level.SEVERE,
           ),
           isNotNull,
@@ -863,7 +860,8 @@ void main() {
         expect(
           loggerManager.findLogWithMessage(
             // CHANGED: Match the new log message format in getCurrentAddress for this case
-            'Error during geocoding or other issue in getCurrentAddress: $geocodingException',
+            'Error during geocoding or other issue in getCurrentAddress',
+            error: geocodingException,
             level: Level.SEVERE,
           ),
           isNotNull,

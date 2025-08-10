@@ -1,44 +1,22 @@
+// lib/services/image_data_service_interface.dart
 import 'dart:io';
 
-import 'package:flutter/material.dart';
+import '../core/helpers/image_ref.dart';
 
 abstract class IImageDataService {
-  /// Loads and returns an image widget based on a user-data image GUID.
-  ///
-  /// [imageGuid] is the unique identifier for the user's image.
-  ///
-  /// The service implementation will resolve this GUID to an actual image source
-  /// (e.g., a local file path derived from the GUID, or a cloud storage URL).
-  ///
-  /// Returns a widget (typically an Image widget or a specific placeholder on error).
-  Widget getUserImage(
-    String imageGuid, {
-    double? width,
-    double? height,
-    BoxFit? fit,
-  });
+  /// Idempotent initialization (e.g., create directories, open caches).
+  Future<void> init();
 
-  Future<String> saveUserImage(File imageFile); // Returns GUID
-  Future<void> deleteUserImage(String imageGuid);
-  Future<void> clearAllUserImages();
+  /// Observability; not required to use.
+  bool get isInitialized;
+
+  /// Resolve a GUID to an image reference.
+  /// If [verifyExists] is false, implementations may skip I/O and return a best-effort ref.
+  Future<ImageRef?> getImage(String imageGuid, {bool verifyExists = true});
+
+  /// Persist a file and return a GUID (usually filename with extension).
+  Future<String> saveImage(File imageFile);
+
+  Future<void> deleteImage(String imageGuid);
+  Future<void> deleteAllImages();
 }
-
-// New file:
-// import 'dart:io';
-//
-// import '../core/helpers/image_ref.dart';
-//
-// abstract class IImageDataService {
-//   /// Loads and returns a image reference on a data image GUID.
-//   ///
-//   /// [imageGuid] is the unique identifier for the user's image.
-//   ///
-//   /// The service implementation will resolve this GUID to an actual image source
-//   /// (e.g., a local file path derived from the GUID, or a cloud storage URL).
-//   ///
-//   /// Returns an ImageRef, which a widget can then load.
-//   ImageRef? getImage(String imageGuid);
-//   Future<String> saveImage(File imageFile); // Returns image GUID
-//   Future<void> deleteImage(String imageGuid);
-//   Future<void> deleteAllImages();
-// }

@@ -6,6 +6,7 @@ import '../models/location_model.dart';
 import '../models/room_model.dart';
 import '../services/data_service_interface.dart';
 import '../routing/app_routes.dart';
+import '../routing/app_route_ext.dart';
 
 final Logger _logger = Logger('RoomsViewModel');
 
@@ -33,24 +34,25 @@ class RoomsViewModel extends ChangeNotifier {
     _logger.info(
       "Navigating to add new room for location: ${_currentLocation.name}",
     );
-    Navigator.of(
+
+    AppRoutes.roomsAdd.go(
       context,
-    ).pushNamed(AppRoutes.addRoom, arguments: _currentLocation);
+      pathParams: {'locationId': _currentLocation.id},
+    );
   }
 
   // Action: Navigate to edit an existing room
   void navigateToEditRoom(BuildContext context, Room room) {
     _logger.info("Navigating to edit room: ${room.name}");
-    Navigator.of(context).pushNamed(
-      AppRoutes.editRoom,
-      arguments: {'parentLocation': _currentLocation, 'room': room},
-    );
+
+    AppRoutes.roomsEdit.go(context, pathParams: {'roomId': room.id});
   }
 
   // Action: Navigate to view contents of a room (e.g., items within the room)
   void navigateToViewRoomContents(BuildContext context, Room room) {
     _logger.info("Navigating to view contents for room: ${room.name}");
-    Navigator.of(context).pushNamed(AppRoutes.containers, arguments: room);
+
+    AppRoutes.containers.go(context, pathParams: {'roomId': room.id});
   }
 
   // Action: Delete a room
