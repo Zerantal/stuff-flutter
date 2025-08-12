@@ -24,8 +24,8 @@ Future<void> bootstrap(Widget Function() appBuilder) async {
       _setupFlutterErrorHooks();
 
       try {
-        await _initHiveAndRegisterAdapters();
-        final ds = await _initDataService();
+        // await _initHiveAndRegisterAdapters();
+        final ds = await _initHiveAndGetDataService();
 
         essentialServices = EssentialServices(dataService: ds);
       } catch (error, stackTrace) {
@@ -59,13 +59,10 @@ void _setupFlutterErrorHooks() {
   };
 }
 
-Future<void> _initHiveAndRegisterAdapters() async {
+Future<IDataService> _initHiveAndGetDataService() async {
   _log.info('Initializing Hive...');
-  final appDocDir = await getApplicationDocumentsDirectory();
-  await Hive.initFlutter(appDocDir.path);
-}
+  await Hive.initFlutter('database');
 
-Future<IDataService> _initDataService() async {
   _log.info('Creating/initializing DataService (HiveDbDataService)...');
   final IDataService ds = HiveDbDataService();
   await ds.init();
