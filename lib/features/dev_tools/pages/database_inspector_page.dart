@@ -75,9 +75,7 @@ class _DatabaseInspectorPageState extends State<DatabaseInspectorPage>
     };
     await Clipboard.setData(ClipboardData(text: data));
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Copied!')),
-    );
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Copied!')));
   }
 }
 
@@ -119,11 +117,14 @@ class _LocationsTab extends StatelessWidget {
               final filtered = q.isEmpty
                   ? list
                   : list.where((l) {
-                final name = l.name.toLowerCase();
-                final desc = (l.description ?? '').toLowerCase();
-                final addr = (l.address ?? '').toLowerCase();
-                return name.contains(q) || desc.contains(q) || addr.contains(q) || l.id.contains(q);
-              }).toList();
+                      final name = l.name.toLowerCase();
+                      final desc = (l.description ?? '').toLowerCase();
+                      final addr = (l.address ?? '').toLowerCase();
+                      return name.contains(q) ||
+                          desc.contains(q) ||
+                          addr.contains(q) ||
+                          l.id.contains(q);
+                    }).toList();
 
               if (filtered.isEmpty) {
                 return const Center(child: Text('No locations match the filter.'));
@@ -176,7 +177,8 @@ class _RoomsTabState extends State<_RoomsTab> {
                     hintText: 'Enter a locationId to load its rooms',
                     border: OutlineInputBorder(),
                   ),
-                  onSubmitted: (_) => setState(() => _currentLocId = widget.locationIdCtrl.text.trim()),
+                  onSubmitted: (_) =>
+                      setState(() => _currentLocId = widget.locationIdCtrl.text.trim()),
                 ),
               ),
               const SizedBox(width: 8),
@@ -192,26 +194,26 @@ class _RoomsTabState extends State<_RoomsTab> {
           child: _currentLocId == null || _currentLocId!.isEmpty
               ? const Center(child: Text('Enter a Location ID and tap Load.'))
               : FutureBuilder<List<Room>>(
-            future: data.getRoomsForLocation(_currentLocId!),
-            builder: (context, snap) {
-              if (snap.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              if (snap.hasError) {
-                return _ErrorPanel(error: snap.error);
-              }
-              final rooms = snap.data ?? const <Room>[];
-              if (rooms.isEmpty) {
-                return const Center(child: Text('No rooms for this location.'));
-              }
-              return ListView.separated(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                itemCount: rooms.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 8),
-                itemBuilder: (context, i) => _RoomCard(room: rooms[i]),
-              );
-            },
-          ),
+                  future: data.getRoomsForLocation(_currentLocId!),
+                  builder: (context, snap) {
+                    if (snap.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (snap.hasError) {
+                      return _ErrorPanel(error: snap.error);
+                    }
+                    final rooms = snap.data ?? const <Room>[];
+                    if (rooms.isEmpty) {
+                      return const Center(child: Text('No rooms for this location.'));
+                    }
+                    return ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                      itemCount: rooms.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 8),
+                      itemBuilder: (context, i) => _RoomCard(room: rooms[i]),
+                    );
+                  },
+                ),
         ),
       ],
     );
@@ -351,7 +353,8 @@ class _ErrorPanel extends StatelessWidget {
   }
 }
 
-String _formatLocation(Location l) => '''
+String _formatLocation(Location l) =>
+    '''
 Location(
   id: ${l.id},
   name: ${l.name},
@@ -360,7 +363,8 @@ Location(
   images: [${l.images.join(', ')}],
 )''';
 
-String _formatRoom(Room r) => '''
+String _formatRoom(Room r) =>
+    '''
 Room(
   id: ${r.id},
   name: ${r.name},
@@ -371,7 +375,5 @@ Room(
 Future<void> _copyText(BuildContext context, String text) async {
   await Clipboard.setData(ClipboardData(text: text));
   if (!context.mounted) return;
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(content: Text('Copied')),
-  );
+  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Copied')));
 }
