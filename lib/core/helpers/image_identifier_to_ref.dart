@@ -27,8 +27,8 @@ Future<List<ImageRef>> toImageRefs(
   IImageDataService imageDataService, {
   bool verifyExists = false,
 }) async {
-    final refs = await Future.wait(
-      ids.map((e) => toImageRef(e, imageDataService, verifyExists: verifyExists)),
-    );
-    return refs.where((ref) => ref != null).cast<ImageRef>().toList();
+  final refs = await Future.wait(
+    ids.map((e) => toImageRef(e, imageDataService, verifyExists: verifyExists)),
+  );
+  return refs.where((ref) => ref != null).cast<ImageRef>().toList();
 }

@@ -6,10 +6,10 @@ import '../../services/image_data_service_interface.dart';
 /// Converts a mixed list of identifiers to GUIDs, persisting temp files via [store].
 /// Preserves original ordering. Optionally deletes temp sources on success.
 Future<List<String>> ensureGuids(
-    List<ImageIdentifier> ids,
-    IImageDataService store, {
-      bool deleteTempOnSuccess = false,
-    }) async {
+  List<ImageIdentifier> ids,
+  IImageDataService store, {
+  bool deleteTempOnSuccess = false,
+}) async {
   final guids = List<String>.filled(ids.length, '', growable: false);
 
   // Collect temp files and remember their indexes so we can refill in place.
@@ -27,7 +27,10 @@ Future<List<String>> ensureGuids(
   }
 
   if (tempFiles.isNotEmpty) {
-    final saved = await store.saveImages(tempFiles, deleteSource: deleteTempOnSuccess);
+    final saved = await store.saveImages(
+      tempFiles,
+      deleteSource: deleteTempOnSuccess,
+    );
     for (var j = 0; j < saved.length; j++) {
       guids[tempIndexes[j]] = saved[j];
     }

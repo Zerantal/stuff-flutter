@@ -15,7 +15,6 @@ Future<File> _identityProcessor(File f) async => f;
 
 final Logger _log = Logger('ImagePickerController');
 
-
 /// A small, test-friendly façade that owns the “pick / process / persist” flow.
 /// - No UI or VM state here.
 /// - No mixins; everything is explicit and injectable.

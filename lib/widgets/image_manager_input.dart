@@ -43,28 +43,28 @@ class ImageManagerInput extends StatelessWidget {
     final items = <Widget>[];
 
     for (var i = 0; i < images.length; i++) {
-      items.add(_ThumbTile(
-        key: Key('img_tile_$i'),
-        image: images[i],
-        size: tileSize,
-        placeholderAsset: placeholderAsset,
-        onRemove: () => onRemoveAt(i),
-      ));
+      items.add(
+        _ThumbTile(
+          key: Key('img_tile_$i'),
+          image: images[i],
+          size: tileSize,
+          placeholderAsset: placeholderAsset,
+          onRemove: () => onRemoveAt(i),
+        ),
+      );
     }
 
-    items.add(_AddTile(
-      key: const Key('img_tile_add'),
-      size: tileSize,
-      spacing: spacing,
-      placeholderAsset: placeholderAsset,
-      onPicked: onImagePicked,
-    ));
-
-    return Wrap(
-      spacing: spacing,
-      runSpacing: spacing,
-      children: items,
+    items.add(
+      _AddTile(
+        key: const Key('img_tile_add'),
+        size: tileSize,
+        spacing: spacing,
+        placeholderAsset: placeholderAsset,
+        onPicked: onImagePicked,
+      ),
     );
+
+    return Wrap(spacing: spacing, runSpacing: spacing, children: items);
   }
 }
 
@@ -155,7 +155,11 @@ class _AddTile extends StatelessWidget {
     final store = context.read<IImageDataService?>();
 
     // Local controller for this tile (keeps widget self-contained)
-    final controller = ImagePickerController(picker: picker, store: store, temp: temp);
+    final controller = ImagePickerController(
+      picker: picker,
+      store: store,
+      temp: temp,
+    );
 
     Future<void> handleAction(_AddAction action) async {
       PickResult r;
@@ -207,8 +211,14 @@ class _AddTile extends StatelessWidget {
               context: context,
               position: const RelativeRect.fromLTRB(200, 200, 0, 0),
               items: const [
-                PopupMenuItem(value: _AddAction.gallery, child: Text('Pick from Gallery')),
-                PopupMenuItem(value: _AddAction.camera, child: Text('Take Photo')),
+                PopupMenuItem(
+                  value: _AddAction.gallery,
+                  child: Text('Pick from Gallery'),
+                ),
+                PopupMenuItem(
+                  value: _AddAction.camera,
+                  child: Text('Take Photo'),
+                ),
               ],
             );
             if (action != null) {

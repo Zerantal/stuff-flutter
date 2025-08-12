@@ -13,11 +13,9 @@ import '../image_data_service_interface.dart';
 /// - getImage() returns ImageRef.file(...)
 /// - saveImage() copies or moves (when deleteSource: true)
 class LocalImageDataService extends IImageDataService {
-  LocalImageDataService({
-    String? subdirectoryName,
-    Directory? rootOverride,
-  })  : _subdir = subdirectoryName ?? 'images',
-        _rootOverride = rootOverride;
+  LocalImageDataService({String? subdirectoryName, Directory? rootOverride})
+    : _subdir = subdirectoryName ?? 'images',
+      _rootOverride = rootOverride;
 
   final Logger _log = Logger('LocalImageDataService');
   final String _subdir;
@@ -69,7 +67,10 @@ class LocalImageDataService extends IImageDataService {
   // ---- Queries --------------------------------------------------------------
 
   @override
-  Future<ImageRef?> getImage(String imageGuid, {bool verifyExists = true}) async {
+  Future<ImageRef?> getImage(
+    String imageGuid, {
+    bool verifyExists = true,
+  }) async {
     if (!_initialized) await init();
 
     final safeGuid = _sanitizeGuid(imageGuid);
@@ -113,7 +114,11 @@ class LocalImageDataService extends IImageDataService {
     if (await destFile.exists()) {
       final altGuid = '${_uuid.v4()}$ext';
       final altDest = File(p.join(rootDir.path, altGuid));
-      return _copyOrMove(imageFile, altDest, deleteSource: deleteSource).then((_) => altGuid);
+      return _copyOrMove(
+        imageFile,
+        altDest,
+        deleteSource: deleteSource,
+      ).then((_) => altGuid);
     }
 
     await _copyOrMove(imageFile, destFile, deleteSource: deleteSource);
@@ -167,7 +172,8 @@ class LocalImageDataService extends IImageDataService {
   /// Reject anything that isn't a bare filename (defense-in-depth).
   static String _sanitizeGuid(String guid) {
     final g = guid.trim();
-    if (g.isEmpty) throw ArgumentError.value(guid, 'imageGuid', 'Empty GUID/filename');
+    if (g.isEmpty)
+      throw ArgumentError.value(guid, 'imageGuid', 'Empty GUID/filename');
 
     // Normalize separators for checks.
     final n = g.replaceAll('\\', '/');
@@ -211,10 +217,10 @@ class LocalImageDataService extends IImageDataService {
   ///   (e.g., across devices), fall back to copy + delete.
   /// - When [deleteSource] is false: copy only.
   Future<void> _copyOrMove(
-      File src,
-      File dest, {
-        required bool deleteSource,
-      }) async {
+    File src,
+    File dest, {
+    required bool deleteSource,
+  }) async {
     if (deleteSource) {
       try {
         // Attempt a fast move first (same-volume rename).

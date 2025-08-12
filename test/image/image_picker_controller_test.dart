@@ -133,10 +133,7 @@ void main() {
       final f = File('/tmp/to-save.jpg');
       when(() => store.saveImage(f)).thenAnswer((_) async => 'guid-123');
 
-      final c = ImagePickerController(
-        picker: picker,
-        store: store,
-      );
+      final c = ImagePickerController(picker: picker, store: store);
 
       final r = await c.persistTemp(f);
       expect(r, isA<SavedGuid>());
@@ -149,10 +146,7 @@ void main() {
       final f = File('/tmp/to-save.jpg');
       when(() => store.saveImage(f)).thenThrow(StateError('oops'));
 
-      final c = ImagePickerController(
-        picker: picker,
-        store: store,
-      );
+      final c = ImagePickerController(picker: picker, store: store);
 
       final r = await c.persistTemp(f);
       expect(r, isA<PickFailed>());
@@ -171,11 +165,7 @@ void main() {
       when(() => temp.copyToTemp(src)).thenAnswer((_) async => staged);
       when(() => store.saveImage(staged)).thenAnswer((_) async => 'g-001');
 
-      final c = ImagePickerController(
-        picker: picker,
-        temp: temp,
-        store: store,
-      );
+      final c = ImagePickerController(picker: picker, temp: temp, store: store);
 
       final r = await c.pickFromGalleryAndPersist();
       expect(r, isA<SavedGuid>());
@@ -189,11 +179,7 @@ void main() {
     test('pickFromCameraAndPersist passes through cancel', () async {
       when(() => picker.pickImageFromCamera()).thenAnswer((_) async => null);
 
-      final c = ImagePickerController(
-        picker: picker,
-        temp: temp,
-        store: store,
-      );
+      final c = ImagePickerController(picker: picker, temp: temp, store: store);
 
       final r = await c.pickFromCameraAndPersist();
       expect(r, isA<PickCancelled>());

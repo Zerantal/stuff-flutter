@@ -33,4 +33,22 @@ abstract class ITemporaryFileService {
   /// Synchronous destructor-style cleanup. Should attempt to remove the session
   /// directory (recursively) without throwing. Safe to call multiple times.
   void dispose();
+
+  // --------- New interface ----------------
+
+  /// Creates a new staging session under Application Support (not OS cache).
+  Future<TempSession> startSession({String? label});
+
+  /// Best-effort cleanup of old sessions.
+  Future<int> sweepExpired({Duration maxAge});
+}
+
+abstract class TempSession {
+  Directory get dir;
+
+  /// Import a picked file into this session (copy or move).
+  Future<File> importFile(File src, {String? preferredName, bool deleteSource = true});
+
+  /// Dispose of this session; optionally delete contents.
+  Future<void> dispose({bool deleteContents = true});
 }

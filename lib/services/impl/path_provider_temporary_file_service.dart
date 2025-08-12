@@ -133,4 +133,16 @@ class PathProviderTemporaryFileService implements ITemporaryFileService {
       _log.warning('Failed disposing session temp dir: ${dir.path}', e, s);
     }
   }
+
+  @override
+  Future<TempSession> startSession({String? label}) {
+    // TODO: implement startSession
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<int> sweepExpired({Duration maxAge}) {
+    // TODO: implement sweepExpired
+    throw UnimplementedError();
+  }
 }

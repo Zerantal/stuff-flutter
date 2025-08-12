@@ -13,7 +13,6 @@ import '../services/location_service_interface.dart';
 import '../services/image_data_service_interface.dart';
 import 'state/edit_location_state.dart';
 
-
 final Logger _log = Logger('EditLocationViewModel');
 
 /// ViewModel for the Edit Location page.
@@ -44,11 +43,11 @@ class EditLocationViewModel extends ChangeNotifier {
     required IImageDataService imageDataService,
     required ILocationService locationService,
     required String? locationId,
-  })  : _data = dataService,
-        _imageStore = imageDataService,
-        _geo = locationService,
-        _locationId = locationId,
-        _isInitialising = locationId != null;
+  }) : _data = dataService,
+       _imageStore = imageDataService,
+       _geo = locationService,
+       _locationId = locationId,
+       _isInitialising = locationId != null;
 
   // Form / state
   final formKey = GlobalKey<FormState>();
@@ -93,7 +92,7 @@ class EditLocationViewModel extends ChangeNotifier {
         _imageIds
           ..clear()
           ..addAll(
-            (_loadedLocation !.images)
+            (_loadedLocation!.images)
                 .where((g) => g.isNotEmpty)
                 .map<GuidIdentifier>((g) => GuidIdentifier(g)),
           );
@@ -233,13 +232,14 @@ class EditLocationViewModel extends ChangeNotifier {
 
     try {
       // A) Remember what was previously persisted for this location
-      final previousGuids = (_loadedLocation?.images ?? const <String>[]).toSet();
+      final previousGuids = (_loadedLocation?.images ?? const <String>[])
+          .toSet();
 
       // B) Persist any temp files → GUIDs (order preserved)
       final guids = await persist.ensureGuids(
         _imageIds,
         _imageStore,
-        deleteTempOnSuccess: true,  // cleanup
+        deleteTempOnSuccess: true, // cleanup
       );
 
       // C) Replace temp identifiers in the VM with their new GUIDs

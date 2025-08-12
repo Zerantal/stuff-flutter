@@ -104,8 +104,9 @@ class _EditLocationScaffold extends StatelessWidget {
         ),
         floatingActionButton: FloatingActionButton.extended(
           key: const Key('save_location_fab'),
-          onPressed:
-              (!isLoading && !vm.isSaving) ? () => _save(context, vm) : null,
+          onPressed: (!isLoading && !vm.isSaving)
+              ? () => _save(context, vm)
+              : null,
           icon: const Icon(Icons.save_outlined),
           label: Text(vm.isNewLocation ? 'Create' : 'Save'),
         ),
@@ -188,8 +189,7 @@ class _EditForm extends StatelessWidget {
                           if (!ok) {
                             messenger.showSnackBar(
                               const SnackBar(
-                                content:
-                                    Text('Unable to get current location'),
+                                content: Text('Unable to get current location'),
                               ),
                             );
                           }
@@ -236,7 +236,9 @@ Future<void> _save(BuildContext context, EditLocationViewModel vm) async {
 
   if (ok) {
     messenger.showSnackBar(
-      SnackBar(content: Text(vm.isNewLocation ? 'Location created' : 'Location saved')),
+      SnackBar(
+        content: Text(vm.isNewLocation ? 'Location created' : 'Location saved'),
+      ),
     );
     if (nav.canPop()) nav.pop();
   } else {
