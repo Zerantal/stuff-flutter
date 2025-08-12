@@ -5,7 +5,6 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:logging/logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import "package:stuff/viewmodels/mixins/has_image_picking.dart";
@@ -27,8 +26,6 @@ void main() {
 
   setUp(() {
     controller = _MockController();
-    // Provide a benign logger to the mixin via the controller getter.
-    when(() => controller.log).thenReturn(Logger('test'));
     vm = _Vm(controller);
     notifyCount = 0;
     vm.addListener(() => notifyCount++);

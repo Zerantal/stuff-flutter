@@ -1,3 +1,5 @@
+// lib/core/image_identifier.dart
+
 // Helper to distinguish image types in our list
 import 'dart:io';
 

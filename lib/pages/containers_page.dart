@@ -108,7 +108,7 @@ class _ContainersPageState extends State<ContainersPage> {
             trailing: const Icon(Icons.arrow_forward_ios),
             onTap: () {
               _logger.info("Tapped on container: $containerName");
-              final args = null;
+              // final args = null;
               // final args = ItemPageArguments(
               //   locationName: widget.roomData.locationName,
               //   locationId: widget.roomData.locationId,

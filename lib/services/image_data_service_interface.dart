@@ -15,8 +15,26 @@ abstract class IImageDataService {
   Future<ImageRef?> getImage(String imageGuid, {bool verifyExists = true});
 
   /// Persist a file and return a GUID (usually filename with extension).
-  Future<String> saveImage(File imageFile);
+  /// Throws on failure.
+  Future<String> saveImage(File imageFile, {bool deleteSource = false});
+
+  /// Convenience batch: persists all files in parallel. Throws if any save fails.
+  Future<List<String>> saveImages(Iterable<File> files, {bool deleteSource = false}) async {
+    return Future.wait(files.map((f) => saveImage(f, deleteSource: deleteSource)));
+  }
 
   Future<void> deleteImage(String imageGuid);
+
+  /// Best-effort batch delete (errors are logged but don’t fail the whole op).
+  Future<void> deleteImages(Iterable<String> guids) async {
+    await Future.wait(guids.map((g) async {
+      try {
+        await deleteImage(g);
+      } catch (_) {
+        // swallow per-file failures; caller already succeeded saving the model
+      }
+    }));
+  }
+
   Future<void> deleteAllImages();
 }

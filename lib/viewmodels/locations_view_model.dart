@@ -21,7 +21,7 @@ class LocationListItem {
 class LocationsViewModel with ChangeNotifier {
   LocationsViewModel({
     required IDataService dataService,
-    IImageDataService? imageDataService,
+    required IImageDataService imageDataService,
   }) : _data = dataService,
        _imageDataService = imageDataService {
     // Map the domain stream to UI-ready items without doing any I/O verification.
@@ -30,23 +30,12 @@ class LocationsViewModel with ChangeNotifier {
   }
 
   final IDataService _data;
-  IImageDataService? _imageDataService;
+  final IImageDataService _imageDataService;
 
   late final Stream<List<LocationListItem>>? locations;
 
   bool _isBusy = false;
   bool get isBusy => _isBusy;
-
-  /// Called by a ProxyProvider when IImageDataService becomes available/changes.
-  void setImageService(IImageDataService? svc) {
-    if (identical(_imageDataService, svc)) return;
-
-    _imageDataService = svc;
-    _log.fine('Image service injected/changed; refreshing items');
-    // Trigger the underlying data stream to emit again so asyncMap re-runs.
-    // No need to await; UI will rebuild when data arrives.
-    unawaited(_data.getAllLocations());
-  }
 
   Future<void> refresh() async {
     _log.fine('Refresh requested');
@@ -83,12 +72,6 @@ class LocationsViewModel with ChangeNotifier {
   Future<List<LocationListItem>> _attachLeadImages(
     List<Location> locations,
   ) async {
-    if (_imageDataService == null) {
-      return locations
-          .map((l) => LocationListItem(location: l, image: null))
-          .toList();
-    }
-
     return Future.wait(
       locations.map((l) async {
         final guid = l.images.isNotEmpty ? l.images.first : null;
@@ -96,7 +79,7 @@ class LocationsViewModel with ChangeNotifier {
 
         try {
           // IMPORTANT: no existence verification; just return a handle.
-          final img = await _imageDataService!.getImage(
+          final img = await _imageDataService.getImage(
             guid,
             verifyExists: false,
           );

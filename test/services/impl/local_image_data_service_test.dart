@@ -29,7 +29,7 @@ void main() {
     await imagesBaseDir.create(recursive: true);
 
     // Point the service at our temp base dir (no path_provider).
-    svc = LocalImageDataService(baseDir: imagesBaseDir, subdirName: 'images');
+    svc = LocalImageDataService(subdirectoryName: 'images', rootOverride: imagesBaseDir);
   });
 
   tearDown(() async {

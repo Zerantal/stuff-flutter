@@ -33,9 +33,9 @@ class AppRouter {
         name: AppRoutes.locationsEdit.name,
         path: AppRoutes.locationsEdit.path,
         builder: (context, state) {
-          final location = state.extra as Location?;
-          if (location == null) return _errorPage('Missing Location for edit');
-          return EditLocationPage(initialLocation: location);
+          final locationId = state.pathParameters['locationId'];
+          if (locationId == null) return _errorPage('Missing Location for edit');
+          return EditLocationPage( locationId: locationId);
         },
       ),
       GoRoute(

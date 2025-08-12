@@ -10,7 +10,7 @@ import '../../services/image_data_service_interface.dart';
 Future<ImageRef?> toImageRef(
   ImageIdentifier id,
   IImageDataService imageDataService, {
-  bool verifyExists = true,
+  bool verifyExists = false,
 }) {
   if (id is GuidIdentifier) {
     return imageDataService.getImage(id.guid, verifyExists: verifyExists);
@@ -22,12 +22,13 @@ Future<ImageRef?> toImageRef(
 }
 
 /// Convert a list of identifiers to refs (order preserved).
-Future<List<ImageRef?>> toImageRefs(
+Future<List<ImageRef>> toImageRefs(
   List<ImageIdentifier> ids,
   IImageDataService imageDataService, {
-  bool verifyExists = true,
+  bool verifyExists = false,
 }) async {
-  return Future.wait(
-    ids.map((e) => toImageRef(e, imageDataService, verifyExists: verifyExists)),
-  );
+    final refs = await Future.wait(
+      ids.map((e) => toImageRef(e, imageDataService, verifyExists: verifyExists)),
+    );
+    return refs.where((ref) => ref != null).cast<ImageRef>().toList();
 }

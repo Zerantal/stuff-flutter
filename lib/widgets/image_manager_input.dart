@@ -1,137 +1,225 @@
 // lib/widgets/image_manager_input.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
 import '../core/helpers/image_ref.dart';
+import '../core/image_identifier.dart';
+import '../image/image_picker_controller.dart';
+import '../image/pick_result.dart';
+import '../services/image_data_service_interface.dart';
+import '../services/image_picker_service_interface.dart';
+import '../services/temporary_file_service_interface.dart';
+import 'image_thumb.dart';
 
-typedef ImageThumbnailBuilder =
-    Widget Function(
-      ImageRef imageIdentifier, {
-      required double width,
-      required double height,
-      required BoxFit fit,
-    });
-
+/// Reusable image manager (grid of thumbnails + “Add” tile).
+/// - Displays [images] (as ImageRef) with remove affordance.
+/// - Performs picking *internally* (camera/gallery) using services from Provider.
+/// - Emits a single [onImagePicked] callback with both the ImageIdentifier (GUID or Temp)
+///   and a ready-to-use ImageRef for the UI.
 class ImageManagerInput extends StatelessWidget {
-  final List<ImageRef> currentImages;
-  final ImageThumbnailBuilder imageThumbnailBuilder;
-  final VoidCallback onAddImageFromCamera;
-  final VoidCallback onAddImageFromGallery;
-  final ValueChanged<int>
-  onRemoveImage; // Passes the index of the image to remove
-  final String title;
-  final bool isLoading; // To disable buttons during operations
-
   const ImageManagerInput({
     super.key,
-    required this.currentImages,
-    required this.imageThumbnailBuilder,
-    required this.onAddImageFromCamera,
-    required this.onAddImageFromGallery,
-    required this.onRemoveImage,
-    this.title = 'Images',
-    this.isLoading = false,
+    required this.images,
+    required this.onRemoveAt,
+    required this.onImagePicked,
+    this.tileSize = 92,
+    this.spacing = 8,
+    this.placeholderAsset,
   });
+
+  final List<ImageRef> images;
+  final void Function(int index) onRemoveAt;
+
+  /// Called when a new image was picked by the widget (camera/gallery).
+  /// Provides both the identifier (TempFileIdentifier or GuidIdentifier) and the UI-ready ImageRef.
+  final void Function(ImageIdentifier id, ImageRef ref) onImagePicked;
+
+  final double tileSize;
+  final double spacing;
+  final String? placeholderAsset;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    final items = <Widget>[];
+
+    for (var i = 0; i < images.length; i++) {
+      items.add(_ThumbTile(
+        key: Key('img_tile_$i'),
+        image: images[i],
+        size: tileSize,
+        placeholderAsset: placeholderAsset,
+        onRemove: () => onRemoveAt(i),
+      ));
+    }
+
+    items.add(_AddTile(
+      key: const Key('img_tile_add'),
+      size: tileSize,
+      spacing: spacing,
+      placeholderAsset: placeholderAsset,
+      onPicked: onImagePicked,
+    ));
+
+    return Wrap(
+      spacing: spacing,
+      runSpacing: spacing,
+      children: items,
+    );
+  }
+}
+
+class _ThumbTile extends StatelessWidget {
+  const _ThumbTile({
+    super.key,
+    required this.image,
+    required this.size,
+    required this.onRemove,
+    this.placeholderAsset,
+  });
+
+  final ImageRef image;
+  final double size;
+  final VoidCallback onRemove;
+  final String? placeholderAsset;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      clipBehavior: Clip.none,
       children: [
-        Text(title, style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(height: 8.0),
-        currentImages.isEmpty
-            ? const Center(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 16.0),
-                  child: Text('No images yet. Add one!'),
-                ),
-              )
-            : SizedBox(
-                height: 120.0,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: currentImages.length,
-                  itemBuilder: (context, index) {
-                    final imageId = currentImages[index];
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8.0),
-                      child: Stack(
-                        alignment: Alignment.topLeft,
-                        children: [
-                          Container(
-                            width: 100.0,
-                            height: 100.0,
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey.shade400),
-                              borderRadius: BorderRadius.circular(8.0),
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(7.0),
-                              child: imageThumbnailBuilder(
-                                imageId,
-                                width: 100.0,
-                                height: 100.0,
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                          ),
-                          // Remove Button
-                          Padding(
-                            padding: const EdgeInsets.all(2.0),
-                            child: Material(
-                              color:
-                                  Colors.black54, // Semi-transparent background
-                              shape: const CircleBorder(),
-                              child: InkWell(
-                                onTap: isLoading
-                                    ? null
-                                    : () => onRemoveImage(index),
-                                customBorder: const CircleBorder(),
-                                child: const Padding(
-                                  padding: EdgeInsets.all(2.0),
-                                  child: Icon(
-                                    Icons.close,
-                                    color: Colors.white,
-                                    size: 18,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
+        ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: SizedBox(
+            width: size,
+            height: size,
+            child: ImageThumb(
+              image: image,
+              width: size,
+              height: size,
+              borderRadius: BorderRadius.circular(8),
+              loadingWidget: SizedBox(
+                width: size,
+                height: size,
+                child: const Center(
+                  child: CircularProgressIndicator(strokeWidth: 2),
                 ),
               ),
-        const SizedBox(height: 12.0),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.camera_alt_outlined),
-              tooltip: 'Add Image from Camera',
-              onPressed: isLoading ? null : onAddImageFromCamera,
-              iconSize: 28,
+              errorWidget: (placeholderAsset == null)
+                  ? const Center(child: Icon(Icons.broken_image_outlined))
+                  : Image(
+                      image: AssetImage(placeholderAsset!),
+                      width: size,
+                      height: size,
+                      fit: BoxFit.cover,
+                    ),
             ),
-            const SizedBox(width: 16),
-            IconButton(
-              icon: const Icon(Icons.photo_library_outlined),
-              tooltip: 'Add Image from Gallery',
-              onPressed: isLoading ? null : onAddImageFromGallery,
-              iconSize: 28,
+          ),
+        ),
+        Positioned(
+          top: -8,
+          right: -8,
+          child: IconButton.filledTonal(
+            tooltip: 'Remove',
+            icon: const Icon(Icons.close),
+            style: IconButton.styleFrom(
+              padding: EdgeInsets.zero,
+              fixedSize: const Size(28, 28),
             ),
-            if (isLoading) // Optional: Show a small loading indicator next to buttons
-              const Padding(
-                padding: EdgeInsets.only(left: 16.0),
-                child: SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2.0),
-                ),
-              ),
-          ],
+            onPressed: onRemove,
+          ),
         ),
       ],
     );
   }
 }
+
+class _AddTile extends StatelessWidget {
+  const _AddTile({
+    super.key,
+    required this.size,
+    required this.spacing,
+    required this.onPicked,
+    this.placeholderAsset,
+  });
+
+  final double size;
+  final double spacing;
+  final void Function(ImageIdentifier id, ImageRef ref) onPicked;
+  final String? placeholderAsset;
+
+  @override
+  Widget build(BuildContext context) {
+    // Grab dependencies *before* we await anything (avoids context-after-await lints)
+    final picker = context.read<IImagePickerService>();
+    final temp = context.read<ITemporaryFileService>();
+    final store = context.read<IImageDataService?>();
+
+    // Local controller for this tile (keeps widget self-contained)
+    final controller = ImagePickerController(picker: picker, store: store, temp: temp);
+
+    Future<void> handleAction(_AddAction action) async {
+      PickResult r;
+      if (action == _AddAction.camera) {
+        r = await controller.pickFromCamera();
+      } else {
+        r = await controller.pickFromGallery();
+      }
+
+      if (r is PickCancelled) return;
+
+      if (r is PickFailed) {
+        // Silent fail (or show a SnackBar if you prefer)
+        return;
+      }
+
+      if (r is PickedTemp) {
+        final id = TempFileIdentifier(r.file);
+        final ref = ImageRef.file(r.file.path);
+        onPicked(id, ref);
+        return;
+      }
+
+      if (r is SavedGuid) {
+        // Resolve to ImageRef via store, otherwise fall back to a placeholder
+        ImageRef? ref;
+        if (store != null) {
+          ref = await store.getImage(r.guid, verifyExists: true);
+        }
+        ref ??= (placeholderAsset == null)
+            ? const ImageRef.asset('assets/images/location_placeholder.jpg')
+            : ImageRef.asset(placeholderAsset!);
+
+        onPicked(GuidIdentifier(r.guid), ref);
+        return;
+      }
+    }
+
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Material(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(8),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: () async {
+            final action = await showMenu<_AddAction>(
+              context: context,
+              position: const RelativeRect.fromLTRB(200, 200, 0, 0),
+              items: const [
+                PopupMenuItem(value: _AddAction.gallery, child: Text('Pick from Gallery')),
+                PopupMenuItem(value: _AddAction.camera, child: Text('Take Photo')),
+              ],
+            );
+            if (action != null) {
+              await handleAction(action);
+            }
+          },
+          child: const Center(child: Icon(Icons.add_a_photo_outlined)),
+        ),
+      ),
+    );
+  }
+}
+
+enum _AddAction { gallery, camera }

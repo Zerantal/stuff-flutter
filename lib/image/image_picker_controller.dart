@@ -13,6 +13,9 @@ typedef ImageProcessor = Future<File> Function(File input);
 /// Identity processor (no-op).
 Future<File> _identityProcessor(File f) async => f;
 
+final Logger _log = Logger('ImagePickerController');
+
+
 /// A small, test-friendly façade that owns the “pick / process / persist” flow.
 /// - No UI or VM state here.
 /// - No mixins; everything is explicit and injectable.
@@ -22,16 +25,13 @@ class ImagePickerController {
   final IImageDataService? store;
   final ITemporaryFileService? temp;
   final ImageProcessor process;
-  final Logger log;
 
   ImagePickerController({
     required this.picker,
-    required Logger logger,
     this.store,
     this.temp,
     ImageProcessor? processor,
-  }) : log = logger,
-       process = processor ?? _identityProcessor;
+  }) : process = processor ?? _identityProcessor;
 
   /// Pick from gallery -> (optionally) process -> return temp file.
   Future<PickResult> pickFromGallery() async {
@@ -52,10 +52,10 @@ class ImagePickerController {
     }
     try {
       final guid = await store!.saveImage(tempFile);
-      log.fine('Persisted image; guid=$guid');
+      _log.fine('Persisted image; guid=$guid');
       return SavedGuid(guid);
     } catch (e, s) {
-      log.severe('Failed to persist image', e, s);
+      _log.severe('Failed to persist image', e, s);
       return PickFailed(e, s);
     }
   }
@@ -91,7 +91,7 @@ class ImagePickerController {
 
       return PickedTemp(processed);
     } catch (e, s) {
-      log.severe('Pick failed', e, s);
+      _log.severe('Pick failed', e, s);
       return PickFailed(e, s);
     }
   }
@@ -116,7 +116,7 @@ class ImagePickerController {
       return copied;
     } catch (e, s) {
       // If copying fails, log and fall back to original path.
-      log.warning('Failed to copy to temp; using original', e, s);
+      _log.warning('Failed to copy to temp; using original', e, s);
       return f;
     }
   }

@@ -78,7 +78,7 @@ class _LocationsView extends StatelessWidget {
             if (items.isEmpty) {
               return _EmptyState(
                 onAdd: () {
-                  AppRoutes.locationsAdd.go(context);
+                  AppRoutes.locationsAdd.push(context);
                 },
               );
             }
@@ -90,11 +90,11 @@ class _LocationsView extends StatelessWidget {
                 return _LocationCard(
                   location: item.location,
                   image: item.image, // ImageRef? (null => placeholder)
-                  onView: (loc) => AppRoutes.rooms.go(
+                  onView: (loc) => AppRoutes.rooms.push(
                     context,
                     pathParams: {'locationId': loc.id},
                   ),
-                  onEdit: (loc) => AppRoutes.locationsEdit.go(
+                  onEdit: (loc) => AppRoutes.locationsEdit.push(
                     context,
                     pathParams: {'locationId': loc.id},
                   ),
@@ -107,7 +107,7 @@ class _LocationsView extends StatelessWidget {
       floatingActionButton: FloatingActionButton(
         key: const ValueKey('add_location_fab'),
         heroTag: 'locationsPageFAB',
-        onPressed: () => AppRoutes.locationsAdd.go(context),
+        onPressed: () => AppRoutes.locationsAdd.push(context),
         tooltip: 'Add Location',
         child: const Icon(Icons.add_location_alt_outlined),
       ),
@@ -252,7 +252,7 @@ class _LocationCard extends StatelessWidget {
               height: 80,
               borderRadius: BorderRadius.circular(8),
               placeholderWidget: buildImage(
-                const ImageRef.asset('Assets/images/location_placeholder.jpg'),
+                const ImageRef.asset('assets/images/location_placeholder.jpg'),
                 width: 80,
                 height: 80,
                 fit: BoxFit.cover,

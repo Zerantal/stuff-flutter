@@ -1,10 +1,6 @@
-// lib/services/impl/local_image_data_service.dart
-//
-// A file-backed implementation of IImageDataService that saves images
-// to an app-scoped directory and resolves GUIDs to ImageRef.file.
-
-import 'dart:async';
 import 'dart:io';
+
+import 'package:logging/logging.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
@@ -12,105 +8,166 @@ import 'package:uuid/uuid.dart';
 import '../../core/helpers/image_ref.dart';
 import '../image_data_service_interface.dart';
 
-/// Stores images under `<app support>/images` by default.
-/// - GUID == filename (including extension), so no extra index/mapping needed.
-/// - Derives the file path from the GUID and returns ImageRef.file(path).
-class LocalImageDataService implements IImageDataService {
-  final String subdirName;
-  final Directory? _baseDirOverride; // for testing / customization
-  Directory? _imagesDir; // lazily created & cached
+/// Stores images locally under an app-owned directory and exposes GUID lookups.
+/// - GUID == filename (uuid + original extension)
+/// - getImage() returns ImageRef.file(...)
+/// - saveImage() copies or moves (when deleteSource: true)
+class LocalImageDataService extends IImageDataService {
+  LocalImageDataService({
+    String? subdirectoryName,
+    Directory? rootOverride,
+  })  : _subdir = subdirectoryName ?? 'images',
+        _rootOverride = rootOverride;
 
-  LocalImageDataService({this.subdirName = 'images', Directory? baseDir})
-    : _baseDirOverride = baseDir;
+  final Logger _log = Logger('LocalImageDataService');
+  final String _subdir;
+  final Directory? _rootOverride;
+  final Uuid _uuid = const Uuid();
 
-  Completer<void>? _initCompleter;
+  Directory? _rootDir;
+  bool _initialized = false;
 
   @override
-  bool get isInitialized => _imagesDir != null;
+  bool get isInitialized => _initialized;
 
-  @override
-  Future<void> init() => _initOnce();
-
-  @override
-  Future<ImageRef?> getImage(
-    String imageGuid, {
-    bool verifyExists = true,
-  }) async {
-    await _initOnce();
-    final safe = _sanitizeGuid(imageGuid);
-    final path = p.join(_imagesDir!.path, safe);
-    if (!verifyExists) return ImageRef.file(path);
-    return await File(path).exists() ? ImageRef.file(path) : null;
+  /// Root folder on disk where images are stored.
+  Directory get rootDir {
+    final dir = _rootDir;
+    if (dir == null) {
+      throw StateError(
+        'LocalImageDataService not initialized. Call init() before use.',
+      );
+    }
+    return dir;
   }
 
   @override
-  Future<String> saveImage(File imageFile) async {
-    await _initOnce();
+  Future<void> init() async {
+    if (_initialized) return;
+
+    try {
+      Directory base;
+      if (_rootOverride != null) {
+        base = _rootOverride;
+      } else {
+        // Support dir keeps things out of user-visible "Documents" on desktop.
+        base = await getApplicationSupportDirectory();
+      }
+      final Directory target = Directory(p.join(base.path, _subdir));
+      if (!await target.exists()) {
+        await target.create(recursive: true);
+      }
+      _rootDir = target;
+      _initialized = true;
+      _log.fine('Image store initialized at: ${target.path}');
+    } catch (e, s) {
+      _log.severe('Failed to initialize image store', e, s);
+      rethrow;
+    }
+  }
+
+  // ---- Queries --------------------------------------------------------------
+
+  @override
+  Future<ImageRef?> getImage(String imageGuid, {bool verifyExists = true}) async {
+    if (!_initialized) await init();
+
+    final safeGuid = _sanitizeGuid(imageGuid);
+
+    final absPath = p.join(rootDir.path, safeGuid);
+
+    if (!verifyExists) {
+      return ImageRef.file(absPath);
+    }
+
+    try {
+      final exists = await File(absPath).exists();
+      if (!exists) return null;
+      return ImageRef.file(absPath);
+    } catch (e, s) {
+      _log.warning('getImage("$imageGuid") failed', e, s);
+      return null;
+    }
+  }
+
+  // ---- Mutations ------------------------------------------------------------
+
+  @override
+  Future<String> saveImage(File imageFile, {bool deleteSource = false}) async {
+    if (!_initialized) await init();
+
     if (!await imageFile.exists()) {
       throw ArgumentError.value(
         imageFile.path,
         'imageFile',
-        'File does not exist',
+        'Source file does not exist',
       );
     }
-    final guid = const Uuid().v4();
-    final ext = _safeExtension(imageFile.path);
-    final fileName = '$guid$ext';
-    final target = File(p.join(_imagesDir!.path, fileName));
-    await imageFile.copy(target.path);
-    return fileName;
+
+    final ext = _normalizedExtension(imageFile.path);
+    final guid = '${_uuid.v4()}$ext';
+    final destPath = p.join(rootDir.path, guid);
+    final destFile = File(destPath);
+
+    // If somehow a collision occurs (extremely unlikely), regenerate.
+    if (await destFile.exists()) {
+      final altGuid = '${_uuid.v4()}$ext';
+      final altDest = File(p.join(rootDir.path, altGuid));
+      return _copyOrMove(imageFile, altDest, deleteSource: deleteSource).then((_) => altGuid);
+    }
+
+    await _copyOrMove(imageFile, destFile, deleteSource: deleteSource);
+    return guid;
   }
 
   @override
   Future<void> deleteImage(String imageGuid) async {
-    await _initOnce();
-    final safe = _sanitizeGuid(imageGuid);
-    final f = File(p.join(_imagesDir!.path, safe));
-    if (await f.exists()) {
-      await f.delete();
+    if (!_initialized) await init();
+
+    final safeGuid = _sanitizeGuid(imageGuid);
+
+    final path = p.join(rootDir.path, safeGuid);
+    final f = File(path);
+    try {
+      if (await f.exists()) {
+        await f.delete();
+      }
+    } catch (e, s) {
+      _log.warning('deleteImage("$imageGuid") failed', e, s);
+      // Swallow—delete is best-effort.
     }
   }
 
   @override
   Future<void> deleteAllImages() async {
-    await _initOnce();
-    await for (final e in _imagesDir!.list(followLinks: false)) {
-      try {
-        await e.delete(recursive: true);
-      } catch (_) {
-        /* ignore partial failures */
+    if (!_initialized) await init();
+    try {
+      await for (final ent in rootDir.list(followLinks: false)) {
+        if (ent is File) {
+          try {
+            await ent.delete();
+          } catch (_) {
+            // Best-effort.
+          }
+        }
       }
+    } catch (e, s) {
+      _log.warning('deleteAllImages failed', e, s);
     }
   }
 
-  // ---------- helpers ----------
+  // ---- Helpers --------------------------------------------------------------
 
-  Future<void> _initOnce() async {
-    if (_imagesDir != null) return; // fast path
-    if (_initCompleter != null) return _initCompleter!.future;
-    _initCompleter = Completer<void>();
-    try {
-      final base = _baseDirOverride ?? await getApplicationSupportDirectory();
-      final dir = Directory(p.join(base.path, subdirName));
-      if (!await dir.exists()) {
-        await dir.create(recursive: true);
-      }
-      _imagesDir = dir;
-      _initCompleter!.complete();
-    } catch (e, st) {
-      _initCompleter!.completeError(e, st);
-      rethrow;
-    } finally {
-      // keep _initCompleter so concurrent waiters have a future; _imagesDir marks ready
-    }
+  String _normalizedExtension(String path) {
+    final ext = p.extension(path).toLowerCase();
+    const allowed = {'.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp', '.heic'};
+    return allowed.contains(ext) ? ext : '.jpg';
   }
 
   /// Reject anything that isn't a bare filename (defense-in-depth).
   static String _sanitizeGuid(String guid) {
     final g = guid.trim();
-    if (g.isEmpty) {
-      throw ArgumentError.value(guid, 'imageGuid', 'Empty GUID/filename');
-    }
+    if (g.isEmpty) throw ArgumentError.value(guid, 'imageGuid', 'Empty GUID/filename');
 
     // Normalize separators for checks.
     final n = g.replaceAll('\\', '/');
@@ -149,9 +206,31 @@ class LocalImageDataService implements IImageDataService {
     return base;
   }
 
-  static String _safeExtension(String path) {
-    final ext = p.extension(path).toLowerCase();
-    const allowed = {'.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp', '.heic'};
-    return allowed.contains(ext) ? ext : '.jpg';
+  /// Copies or moves [src] to [dest].
+  /// - When [deleteSource] is true: attempt a fast rename (move). If it fails
+  ///   (e.g., across devices), fall back to copy + delete.
+  /// - When [deleteSource] is false: copy only.
+  Future<void> _copyOrMove(
+      File src,
+      File dest, {
+        required bool deleteSource,
+      }) async {
+    if (deleteSource) {
+      try {
+        // Attempt a fast move first (same-volume rename).
+        await src.rename(dest.path);
+        return;
+      } catch (_) {
+        // Cross-device rename error—fall back to copy + delete
+      }
+      await src.copy(dest.path);
+      try {
+        await src.delete();
+      } catch (_) {
+        // Not fatal if we can't delete the source
+      }
+    } else {
+      await src.copy(dest.path);
+    }
   }
 }

@@ -8,8 +8,6 @@ import 'package:path_provider/path_provider.dart';
 
 import 'services/data_service_interface.dart';
 import 'services/impl/hive_db_data_service.dart';
-import 'models/location_model.dart';
-import 'models/room_model.dart';
 import 'widgets/error_display_app.dart';
 
 /// Expose essential singletons constructed during bootstrap.
@@ -69,17 +67,6 @@ Future<void> _initHiveAndRegisterAdapters() async {
   _log.info('Initializing Hive...');
   final appDocDir = await getApplicationDocumentsDirectory();
   await Hive.initFlutter(appDocDir.path);
-
-  // Register your adapters (add more here as your models grow)
-  Hive.registerAdapter(LocationAdapter());
-  _log.finer(
-    'LocationAdapter registered (typeId: ${LocationAdapter().typeId})',
-  );
-
-  Hive.registerAdapter(RoomAdapter());
-  _log.finer('RoomAdapter registered (typeId: ${RoomAdapter().typeId})');
-
-  _log.info('Hive initialized and adapters registered');
 }
 
 Future<IDataService> _initDataService() async {

@@ -11,7 +11,6 @@ import 'package:stuff/image/pick_result.dart';
 import 'package:stuff/services/image_data_service_interface.dart';
 import 'package:stuff/services/image_picker_service_interface.dart';
 import 'package:stuff/services/temporary_file_service_interface.dart';
-import 'package:logging/logging.dart';
 
 class _MockPicker extends Mock implements IImagePickerService {}
 
@@ -31,7 +30,6 @@ void main() {
   late _MockPicker picker;
   late _MockStore store;
   late _MockTemp temp;
-  late Logger log;
 
   setUpAll(() {
     registerFallbackValue(File('fallback.tmp'));
@@ -41,14 +39,13 @@ void main() {
     picker = _MockPicker();
     store = _MockStore();
     temp = _MockTemp();
-    log = Logger('test');
   });
 
   group('pickFromGallery / pickFromCamera', () {
     test('returns PickCancelled when picker yields null', () async {
       when(() => picker.pickImageFromGallery()).thenAnswer((_) async => null);
 
-      final c = ImagePickerController(picker: picker, logger: log);
+      final c = ImagePickerController(picker: picker);
 
       final r = await c.pickFromGallery();
       expect(r, isA<PickCancelled>());
@@ -74,7 +71,6 @@ void main() {
       final c = ImagePickerController(
         picker: picker,
         temp: temp,
-        logger: log,
         processor: processor,
       );
 
@@ -105,7 +101,6 @@ void main() {
       final c = ImagePickerController(
         picker: picker,
         temp: temp,
-        logger: log,
         processor: processor,
       );
 
@@ -125,7 +120,7 @@ void main() {
       // Even if your real service returns XFile, controller will accept due to .path
       when(() => picker.pickImageFromGallery()).thenAnswer((_) async => fake);
 
-      final c = ImagePickerController(picker: picker, logger: log);
+      final c = ImagePickerController(picker: picker);
 
       final r = await c.pickFromGallery();
       expect(r, isA<PickedTemp>());
@@ -141,7 +136,6 @@ void main() {
       final c = ImagePickerController(
         picker: picker,
         store: store,
-        logger: log,
       );
 
       final r = await c.persistTemp(f);
@@ -158,7 +152,6 @@ void main() {
       final c = ImagePickerController(
         picker: picker,
         store: store,
-        logger: log,
       );
 
       final r = await c.persistTemp(f);
@@ -182,7 +175,6 @@ void main() {
         picker: picker,
         temp: temp,
         store: store,
-        logger: log,
       );
 
       final r = await c.pickFromGalleryAndPersist();
@@ -201,7 +193,6 @@ void main() {
         picker: picker,
         temp: temp,
         store: store,
-        logger: log,
       );
 
       final r = await c.pickFromCameraAndPersist();

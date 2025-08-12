@@ -32,22 +32,22 @@ class EditRoomPage extends StatelessWidget {
     _logger.finer(
       "Pop attempt on EditRoomPage. Unsaved changes: ${viewModel.hasUnsavedChanges}",
     );
-    if (viewModel.hasUnsavedChanges) {
-      final confirm = await showConfirmationDialog(
-        context: context,
-        title: 'Discard Changes?',
-        content:
-            'You have unsaved changes. Are you sure you want to discard them and go back?',
-        confirmText: 'Discard',
-      );
-      if (confirm == true) {
-        _logger.info("User confirmed discarding changes.");
-        // ViewModel's PopScope onPopInvokedWithResult should handle cleanup if didPop is true
-        return true; // Allow pop
-      }
-      _logger.info("User cancelled discarding changes.");
-      return false; // Prevent pop
-    }
+    // if (viewModel.hasUnsavedChanges) {
+    //   final confirm = await showConfirmationDialog(
+    //     context: context,
+    //     title: 'Discard Changes?',
+    //     content:
+    //         'You have unsaved changes. Are you sure you want to discard them and go back?',
+    //     confirmText: 'Discard',
+    //   );
+    //   if (confirm == true) {
+    //     _logger.info("User confirmed discarding changes.");
+    //     // ViewModel's PopScope onPopInvokedWithResult should handle cleanup if didPop is true
+    //     return true; // Allow pop
+    //   }
+    //   _logger.info("User cancelled discarding changes.");
+    //   return false; // Prevent pop
+    // }
     return true; // Allow pop if no unsaved changes
   }
 

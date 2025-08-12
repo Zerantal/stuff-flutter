@@ -43,7 +43,7 @@ void main() {
     await ctrl.close();
   });
 
-  Widget _wrap(Widget child) {
+  Widget wrap(Widget child) {
     return MultiProvider(
       providers: [
         Provider<IDataService>.value(value: data),
@@ -54,7 +54,7 @@ void main() {
   }
 
   testWidgets('shows empty state when no locations', (tester) async {
-    await tester.pumpWidget(_wrap(const LocationsPage()));
+    await tester.pumpWidget(wrap(const LocationsPage()));
     // Emit empty list
     ctrl.add(const <Location>[]);
     await tester.pumpAndSettle();
@@ -64,7 +64,7 @@ void main() {
   });
 
   testWidgets('renders a card per location item', (tester) async {
-    await tester.pumpWidget(_wrap(const LocationsPage()));
+    await tester.pumpWidget(wrap(const LocationsPage()));
 
     final l1 = Location(
       id: 'A',

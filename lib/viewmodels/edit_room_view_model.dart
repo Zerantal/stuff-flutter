@@ -23,7 +23,7 @@ final Logger _logger = Logger('EditRoomVM');
 
 class EditRoomViewModel extends ChangeNotifier with HasImagePicking {
   final IDataService _dataService;
-  final IImagePickerService _imagePickerService;
+  // final IImagePickerService _imagePickerService;
   final IImageDataService? _imageDataService;
   final ITemporaryFileService _tempFileService;
 
@@ -61,7 +61,7 @@ class EditRoomViewModel extends ChangeNotifier with HasImagePicking {
     required Location parentLocation,
     Room? initialRoom,
   }) : _dataService = dataService,
-       _imagePickerService = imagePickerService,
+       // _imagePickerService = imagePickerService,
        _imageDataService = imageDataService,
        _tempFileService = tempFileService,
        _parentLocation = parentLocation,
@@ -75,7 +75,6 @@ class EditRoomViewModel extends ChangeNotifier with HasImagePicking {
       picker: imagePickerService,
       store: imageDataService,
       temp: tempFileService,
-      logger: _logger,
     );
 
     _initialize();

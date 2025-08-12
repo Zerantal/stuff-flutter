@@ -1,310 +1,277 @@
 // lib/pages/edit_location_page.dart
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
 
-import '../core/helpers/image_ref.dart';
-import '../models/location_model.dart';
-import '../viewmodels/edit_location_view_model.dart';
 import '../services/data_service_interface.dart';
 import '../services/image_data_service_interface.dart';
 import '../services/location_service_interface.dart';
-import '../services/image_picker_service_interface.dart';
-import '../services/temporary_file_service_interface.dart';
+import '../viewmodels/edit_location_view_model.dart';
+import '../widgets/confirmation_dialog.dart';
 import '../widgets/image_manager_input.dart';
 
-final Logger _logger = Logger('EditLocationPage');
+// If your project stores the placeholder in a different path/case, adjust here:
+const _kLocationPlaceholderAsset = 'Assets/images/location_placeholder.jpg';
+final _log = Logger('EditLocationPage');
 
+/// Accepts an optional [locationId]. If null => creating a new location.
+/// If not null => editing existing; we’ll show a spinner while data loads.
 class EditLocationPage extends StatelessWidget {
-  final Location? initialLocation;
-  final EditLocationViewModel? viewModelOverride;
-
-  const EditLocationPage({
-    super.key,
-    this.initialLocation,
-    this.viewModelOverride,
-  });
-
-  // --- Private Helper Method for Save Logic ---
-  Future<void> _handleSaveAttempt(
-    BuildContext context,
-    EditLocationViewModel viewModel,
-  ) async {
-    final bool isFormValid =
-        viewModel.formKey.currentState?.validate() ?? false;
-    if (!isFormValid) {
-      _logger.info('Form is invalid. Save attempt aborted.');
-      return;
-    }
-
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
-    final navigator = Navigator.of(context);
-    final bool isNewLoc = viewModel.isNewLocation;
-
-    _logger.info('Attempting to save location. New location: $isNewLoc');
-    bool success = await viewModel.saveLocation();
-    _logger.info('Save attempt completed. Success: $success');
-
-    if (!context.mounted) {
-      _logger.warning(
-        'Context not mounted after save attempt. Aborting UI updates.',
-      );
-      return;
-    }
-
-    if (success) {
-      scaffoldMessenger.showSnackBar(
-        SnackBar(
-          content: Text(isNewLoc ? 'Location added.' : 'Location updated.'),
-        ),
-      );
-      if (navigator.canPop()) {
-        _logger.info("Popping Edit Location Page after successful save.");
-        navigator.pop();
-      }
-    } else {
-      scaffoldMessenger.showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Failed to save location. Check details and try again.',
-          ),
-        ),
-      );
-    }
-  }
-
-  Widget _buildFormFields(
-    BuildContext context,
-    EditLocationViewModel viewModel,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        TextFormField(
-          controller: viewModel.nameController,
-          decoration: const InputDecoration(
-            labelText: 'Location Name*',
-            hintText: 'e.g., Home, Office',
-            border: OutlineInputBorder(),
-          ),
-          validator: (value) {
-            if (value == null || value.trim().isEmpty) {
-              return 'Please enter a location name.';
-            }
-            return null;
-          },
-        ),
-        const SizedBox(height: 16.0),
-        TextFormField(
-          controller: viewModel.descriptionController,
-          decoration: const InputDecoration(
-            labelText: 'Description',
-            border: OutlineInputBorder(),
-          ),
-          maxLines: 3,
-        ),
-        const SizedBox(height: 16.0),
-        TextFormField(
-          controller: viewModel.addressController,
-          decoration: InputDecoration(
-            labelText: 'Address',
-            hintText: 'e.g., 123 Main St, Anytown',
-            border: const OutlineInputBorder(),
-            suffixIcon: viewModel.deviceHasLocationService
-                ? (viewModel.isGettingLocation
-                      ? const Padding(
-                          padding: EdgeInsets.all(12.0),
-                          child: SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2.0),
-                          ),
-                        )
-                      : IconButton(
-                          icon: const Icon(Icons.my_location),
-                          tooltip: 'Get Current Address',
-                          onPressed: viewModel.getCurrentAddress,
-                        ))
-                : null,
-          ),
-          maxLines: 2,
-        ),
-        if (!viewModel.deviceHasLocationService)
-          Padding(
-            padding: const EdgeInsets.only(top: 8.0),
-            child: Text(
-              'Device location service is unavailable or permission denied. Please check settings.',
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
-          ),
-      ],
-    );
-  }
+  const EditLocationPage({super.key, this.locationId});
+  final String? locationId;
 
   @override
   Widget build(BuildContext context) {
-    final EditLocationViewModel effectiveViewModel =
-        viewModelOverride ??
-        () {
-          final dataService = Provider.of<IDataService>(context, listen: false);
-          final imageDataService = Provider.of<IImageDataService?>(
-            context,
-            listen: false,
-          );
-          final locationService = Provider.of<ILocationService>(
-            context,
-            listen: false,
-          );
-          final imagePickerService = Provider.of<IImagePickerService>(
-            context,
-            listen: false,
-          );
-          final tempFileService = Provider.of<ITemporaryFileService>(
-            context,
-            listen: false,
-          );
-          return EditLocationViewModel(
-            dataService: dataService,
-            imageDataService: imageDataService,
-            locationService: locationService,
-            imagePickerService: imagePickerService,
-            tempFileService: tempFileService,
-            initialLocation: initialLocation,
-          );
-        }();
+    // If your DI already provides the VM, remove this provider and just return _EditLocationScaffold.
+    return ChangeNotifierProvider<EditLocationViewModel>(
+      create: (ctx) => EditLocationViewModel(
+        dataService: ctx.read<IDataService>(),
+        imageDataService: ctx.read<IImageDataService>(),
+        locationService: ctx.read<ILocationService>(),
+        locationId: locationId,
+      )..init(),
+      child: const _EditLocationScaffold(),
+    );
+  }
+}
 
-    return ChangeNotifierProvider<EditLocationViewModel>.value(
-      value: effectiveViewModel,
-      child: Consumer<EditLocationViewModel>(
-        builder: (context, viewModel, child) {
-          final appBarTitle = viewModel.isNewLocation
-              ? 'Add New Location'
-              : 'Edit Location';
+/// Wraps app bar, body, and FAB; keeps build simple and declarative.
+class _EditLocationScaffold extends StatelessWidget {
+  const _EditLocationScaffold();
 
-          return Scaffold(
-            appBar: AppBar(
-              title: Text(appBarTitle),
-              leading: IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: () async {
-                  _logger.info(
-                    "AppBar back button tapped. Calling viewModel.handleDiscardOrPop.",
-                  );
-                  await viewModel.handleDiscardOrPop(context);
-                },
+  @override
+  Widget build(BuildContext context) {
+    final vm = context.watch<EditLocationViewModel>();
+    final isBusy = vm.isSaving || vm.isGettingLocation;
+    final isLoading = vm.isInitialising;
+
+    return PopScope(
+      // If there are no unsaved changes, allow the system back to pop immediately.
+      canPop: !vm.hasUnsavedChanges,
+      onPopInvokedWithResult: (bool didPop, Object? result) async {
+        if (didPop) return; // system already popped
+
+        final nav = Navigator.of(context); // capture before awaiting
+        final discard = await ConfirmationDialog.show(
+          context,
+          title: 'Discard changes?',
+          message: 'You have unsaved changes. Discard them and leave?',
+          confirmText: 'Discard',
+          cancelText: 'Cancel',
+        );
+        if (!context.mounted) return;
+
+        if (discard == true && nav.canPop()) {
+          nav.pop();
+        }
+      },
+
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(vm.isNewLocation ? 'Add Location' : 'Edit Location'),
+          actions: [
+            if (!vm.isNewLocation)
+              IconButton(
+                key: const Key('delete_location_btn'),
+                tooltip: 'Delete',
+                icon: const Icon(Icons.delete_outline),
+                onPressed: (isLoading || isBusy)
+                    ? null
+                    : () => _confirmDelete(context, vm),
               ),
-            ),
-            body: PopScope(
-              canPop:
-                  !viewModel.isSaving &&
-                  !viewModel.isPickingImage &&
-                  !viewModel.hasUnsavedChanges,
-              onPopInvokedWithResult: (bool didPop, Object? result) async {
-                _logger.info(
-                  "PopScope.onPopInvoked: didPop: $didPop, "
-                  "isSaving: ${viewModel.isSaving}, "
-                  "isPickingImage: ${viewModel.isPickingImage}, "
-                  "hasUnsaved: ${viewModel.hasUnsavedChanges}",
-                );
-                if (didPop) return;
+          ],
+        ),
+        body: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          child: isLoading
+              ? const Center(
+                  key: ValueKey('edit_loc_spinner'),
+                  child: CircularProgressIndicator(),
+                )
+              : Stack(
+                  children: [
+                    _EditForm(vm: vm),
+                    if (isBusy)
+                      const IgnorePointer(
+                        child: ColoredBox(
+                          color: Color(0x33000000),
+                          child: Center(child: CircularProgressIndicator()),
+                        ),
+                      ),
+                  ],
+                ),
+        ),
+        floatingActionButton: FloatingActionButton.extended(
+          key: const Key('save_location_fab'),
+          onPressed:
+              (!isLoading && !vm.isSaving) ? () => _save(context, vm) : null,
+          icon: const Icon(Icons.save_outlined),
+          label: Text(vm.isNewLocation ? 'Create' : 'Save'),
+        ),
+      ),
+    );
+  }
+}
 
-                await viewModel.handleDiscardOrPop(context);
-              },
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16.0),
-                child: Form(
-                  key: viewModel.formKey,
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: <Widget>[
-                      _buildFormFields(context, viewModel),
-                      const SizedBox(height: 24.0),
-                      // Rebuild only when images or picking flag changes
-                      Selector<EditLocationViewModel, List<ImageRef>>(
-                        selector: (_, vm) => vm.currentImages,
-                        builder: (context, images, _) {
-                          final isPicking = context
-                              .select<EditLocationViewModel, bool>(
-                                (vm) => vm.isPickingImage,
-                              );
-                          return ImageManagerInput(
-                            currentImages: images,
-                            imageThumbnailBuilder:
-                                (
-                                  imageRef, {
-                                  required width,
-                                  required height,
-                                  required fit,
-                                }) {
-                                  // If you switched ImageManagerInput to accept ImageRef directly:
-                                  return Image(
-                                    image: providerFor(imageRef),
-                                    width: width,
-                                    height: height,
-                                    fit: fit,
-                                  );
-                                },
-                            onAddImageFromCamera: context
-                                .read<EditLocationViewModel>()
-                                .pickImageFromCamera,
-                            onAddImageFromGallery: context
-                                .read<EditLocationViewModel>()
-                                .pickImageFromGallery,
-                            onRemoveImage: context
-                                .read<EditLocationViewModel>()
-                                .removeImage,
-                            isLoading: isPicking,
-                            title: 'Location Images',
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 24.0),
-                      // Rebuild when saving flag changes; read isNew via context.select
-                      Selector<EditLocationViewModel, bool>(
-                        selector: (_, vm) => vm.isSaving,
-                        builder: (context, isSaving, _) {
-                          final isNew = context
-                              .select<EditLocationViewModel, bool>(
-                                (vm) => vm.isNewLocation,
-                              );
-                          return ElevatedButton.icon(
-                            key: ValueKey(
-                              isNew
-                                  ? 'addLocationButton'
-                                  : 'saveLocationButton',
-                            ),
-                            icon: isSaving
-                                ? const SizedBox.shrink()
-                                : (isNew
-                                      ? const Icon(Icons.add_circle_outline)
-                                      : const Icon(Icons.save_outlined)),
-                            label: Text(
-                              isNew ? 'Add Location' : 'Save Changes',
-                            ),
-                            onPressed: isSaving
-                                ? null
-                                : () => _handleSaveAttempt(
-                                    context,
-                                    context.read<EditLocationViewModel>(),
-                                  ),
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 16.0,
-                              ),
-                              backgroundColor: isSaving ? Colors.grey : null,
-                            ),
-                          );
-                        },
-                      ),
-                    ],
+/// The main form body: name, description, address row (with GPS), image manager, etc.
+class _EditForm extends StatelessWidget {
+  const _EditForm({required this.vm});
+  final EditLocationViewModel vm;
+
+  @override
+  Widget build(BuildContext context) {
+    final disabled = vm.isInitialising || vm.isSaving;
+
+    return Form(
+      key: vm.formKey,
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          TextFormField(
+            key: const Key('loc_name'),
+            controller: vm.nameController,
+            enabled: !disabled,
+            decoration: const InputDecoration(
+              labelText: 'Name',
+              hintText: 'e.g., Office, Garage, Storage Unit',
+              border: OutlineInputBorder(),
+            ),
+            textInputAction: TextInputAction.next,
+            validator: (v) {
+              final s = (v ?? '').trim();
+              if (s.isEmpty) return 'Name is required';
+              if (s.length > 100) return 'Keep it under 100 characters';
+              return null;
+            },
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            key: const Key('loc_desc'),
+            controller: vm.descriptionController,
+            enabled: !disabled,
+            maxLines: 3,
+            decoration: const InputDecoration(
+              labelText: 'Description',
+              hintText: 'Optional notes…',
+              border: OutlineInputBorder(),
+            ),
+            textInputAction: TextInputAction.newline,
+          ),
+          const SizedBox(height: 12),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: TextFormField(
+                  key: const Key('loc_address'),
+                  controller: vm.addressController,
+                  enabled: !disabled,
+                  decoration: const InputDecoration(
+                    labelText: 'Address',
+                    hintText: 'e.g., 123 Main St, Anytown',
+                    border: OutlineInputBorder(),
                   ),
                 ),
               ),
-            ),
-          );
-        },
+              const SizedBox(width: 8),
+              Tooltip(
+                message: 'Use current location',
+                child: ElevatedButton.icon(
+                  key: const Key('use_current_location_btn'),
+                  onPressed: vm.isGettingLocation
+                      ? null
+                      : () async {
+                          final messenger = ScaffoldMessenger.of(context);
+                          final ok = await vm.getCurrentAddress();
+                          if (!context.mounted) return;
+                          if (!ok) {
+                            messenger.showSnackBar(
+                              const SnackBar(
+                                content:
+                                    Text('Unable to get current location'),
+                              ),
+                            );
+                          }
+                        },
+                  icon: vm.isGettingLocation
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.my_location_outlined),
+                  label: const Text('Use\nGPS', textAlign: TextAlign.center),
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size(72, 56),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          // Reuse your shared widget for the image grid + add actions.
+          ImageManagerInput(
+            key: const Key('image_manager'),
+            images: vm.images,
+            onRemoveAt: vm.removeImage,
+            onImagePicked: vm.onImagePicked,
+            tileSize: 92,
+            spacing: 8,
+            placeholderAsset: _kLocationPlaceholderAsset,
+          ),
+        ],
       ),
     );
+  }
+}
+
+Future<void> _save(BuildContext context, EditLocationViewModel vm) async {
+  final messenger = ScaffoldMessenger.of(context);
+  final nav = Navigator.of(context);
+
+  final ok = await vm.saveLocation();
+  if (!context.mounted) return;
+
+  if (ok) {
+    messenger.showSnackBar(
+      SnackBar(content: Text(vm.isNewLocation ? 'Location created' : 'Location saved')),
+    );
+    if (nav.canPop()) nav.pop();
+  } else {
+    messenger.showSnackBar(
+      const SnackBar(content: Text('Please fix the errors and try again.')),
+    );
+  }
+}
+
+Future<void> _confirmDelete(
+  BuildContext context,
+  EditLocationViewModel vm,
+) async {
+  final nav = Navigator.of(context);
+  final messenger = ScaffoldMessenger.of(context);
+
+  final yes = await ConfirmationDialog.show(
+    context,
+    title: 'Delete location?',
+    message: 'This cannot be undone.',
+    confirmText: 'Delete',
+    cancelText: 'Cancel',
+    danger: true,
+  );
+
+  if (yes == true) {
+    try {
+      // If you add a vm.delete() later, call it here.
+      messenger.showSnackBar(const SnackBar(content: Text('Location deleted')));
+      if (nav.canPop()) nav.pop();
+    } catch (e, s) {
+      _log.severe('Delete failed', e, s);
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Failed to delete location')),
+      );
+    }
   }
 }
