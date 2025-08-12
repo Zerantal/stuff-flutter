@@ -28,12 +28,13 @@ class TestLoggerManager {
 
   List<LogRecord> get logs => List.unmodifiable(_capturedLogs);
 
-  LogRecord? findLogWithMessage(String messagePart, {Level? level}) {
+  LogRecord? findLogWithMessage(String messagePart, {Level? level, Object? error}) {
     try {
       return _capturedLogs.firstWhere(
         (log) =>
             log.message.contains(messagePart) &&
-            (level == null || log.level == level),
+            (level == null || log.level == level) &&
+            (error == null || log.error == error),
       );
     } catch (e) {
       return null;

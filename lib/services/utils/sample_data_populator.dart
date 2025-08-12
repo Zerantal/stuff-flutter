@@ -5,10 +5,10 @@ import 'package:logging/logging.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../models/location_model.dart';
-import '../../models/room_model.dart';
-import '../data_service_interface.dart';
-import '../image_data_service_interface.dart';
+import '../../domain/models/location_model.dart';
+import '../../domain/models/room_model.dart';
+import '../contracts/data_service_interface.dart';
+import '../contracts/image_data_service_interface.dart';
 
 final Logger _logger = Logger('SampleDataPopulator');
 const Uuid _uuid = Uuid(); // For generating unique IDs for temp files if needed
@@ -26,17 +26,12 @@ class SampleDataPopulator {
       final tempFileName = '${_uuid.v4()}-${assetPath.split('/').last}';
       final file = File('${tempDir.path}/$tempFileName');
       await file.writeAsBytes(
-        byteData.buffer.asUint8List(
-          byteData.offsetInBytes,
-          byteData.lengthInBytes,
-        ),
+        byteData.buffer.asUint8List(byteData.offsetInBytes, byteData.lengthInBytes),
       );
       _logger.finer('Asset $assetPath copied to temporary file ${file.path}');
       return file;
     } catch (e) {
-      _logger.warning(
-        'Failed to convert asset $assetPath to temporary file: $e',
-      );
+      _logger.warning('Failed to convert asset $assetPath to temporary file', e);
       return null;
     }
   }
@@ -47,24 +42,18 @@ class SampleDataPopulator {
   ) async {
     List<String> imageGuids = [];
     if (imageDataService == null) {
-      _logger.info(
-        "IImageDataService is null, skipping image processing for $imageFriendlyName.",
-      );
+      _logger.info("IImageDataService is null, skipping image processing for $imageFriendlyName.");
       return imageGuids; // Return empty list if no service
     }
 
     File? tempImageFile = await _assetToTempFile(assetPath);
     if (tempImageFile != null) {
       try {
-        final guid = await imageDataService!.saveUserImage(tempImageFile);
+        final guid = await imageDataService!.saveImage(tempImageFile);
         imageGuids.add(guid);
-        _logger.info(
-          "Sample '$imageFriendlyName' ($assetPath) saved with GUID: $guid",
-        );
+        _logger.info("Sample '$imageFriendlyName' ($assetPath) saved with GUID: $guid");
       } catch (e) {
-        _logger.warning(
-          "Failed to save sample asset '$assetPath' via IImageDataService: $e",
-        );
+        _logger.warning("Failed to save sample asset '$assetPath' via IImageDataService", e);
       } finally {
         try {
           if (await tempImageFile.exists()) {
@@ -80,9 +69,7 @@ class SampleDataPopulator {
         }
       }
     } else {
-      _logger.warning(
-        "Could not create temporary file for asset $assetPath ($imageFriendlyName).",
-      );
+      _logger.warning("Could not create temporary file for asset $assetPath ($imageFriendlyName).");
     }
     return imageGuids;
   }
@@ -96,22 +83,14 @@ class SampleDataPopulator {
     // Clear existing user images IF the service is available
     if (imageDataService != null) {
       try {
-        _logger.info(
-          "Attempting to clear all user images via IImageDataService...",
-        );
-        await imageDataService!.clearAllUserImages();
+        _logger.info("Attempting to clear all user images via IImageDataService...");
+        await imageDataService!.deleteAllImages();
         _logger.info("Successfully cleared all user images.");
       } catch (e, s) {
-        _logger.severe(
-          "Error clearing user images during population: $e",
-          e,
-          s,
-        );
+        _logger.severe("Error clearing user images during population", e, s);
       }
     } else {
-      _logger.info(
-        "IImageDataService is null. Skipping clearing of user images.",
-      );
+      _logger.info("IImageDataService is null. Skipping clearing of user images.");
     }
 
     // --- 1. Prepare Sample Image GUIDs (Locations & Rooms) ---
@@ -123,9 +102,7 @@ class SampleDataPopulator {
     List<String> serverRoomImageGuids = [];
 
     if (imageDataService != null) {
-      _logger.info(
-        "Processing sample images as IImageDataService is available...",
-      );
+      _logger.info("Processing sample images as IImageDataService is available...");
       // Location Images
       homeImageGuids = await _processAndSaveSampleImage(
         'assets/images/sample/locations/home.jpg', // Assuming a subfolder for clarity
@@ -154,9 +131,7 @@ class SampleDataPopulator {
       );
       _logger.info("Sample image processing complete.");
     } else {
-      _logger.info(
-        "IImageDataService is null. Skipping all sample image processing.",
-      );
+      _logger.info("IImageDataService is null. Skipping all sample image processing.");
     }
 
     // --- 2. Create Sample Locations ---
@@ -170,21 +145,21 @@ class SampleDataPopulator {
         name: 'Cozy Home',
         description: 'Primary residence with a small garden.',
         address: '123 Sample St, Testville',
-        imageGuids: homeImageGuids,
+        images: homeImageGuids,
       ),
       Location(
         id: officeLocationId,
         name: 'Downtown Office',
         description: 'Vacuum cleaner business.',
         address: '456 Dev Ave, Coder City',
-        imageGuids: officeImageGuids,
+        images: officeImageGuids,
       ),
       Location(
         id: lakehouseLocationId,
         name: 'Lakehouse Retreat',
         description: 'Vacation property by the lake.',
         address: '789 Shore Ln, Mockington',
-        imageGuids: [], // No specific image for this sample
+        images: [], // No specific image for this sample
       ),
     ];
 
@@ -193,7 +168,7 @@ class SampleDataPopulator {
         await dataService.addLocation(location);
         _logger.finer("Added sample location: ${location.name}");
       } catch (e) {
-        _logger.warning("Failed to add sample location '${location.name}': $e");
+        _logger.warning("Failed to add sample location '${location.name}'", e);
       }
     }
 
@@ -228,8 +203,7 @@ class SampleDataPopulator {
       ),
       Room(
         name: 'Server Room',
-        description:
-            'Houses network equipment and servers. Needs better cooling.',
+        description: 'Houses network equipment and servers. Needs better cooling.',
         locationId: officeLocationId, // Link to Downtown Office
         imageGuids: serverRoomImageGuids,
       ),
@@ -248,7 +222,7 @@ class SampleDataPopulator {
           "Added sample room: ${room.name} to location ID ${room.locationId} (Room ID: ${room.id})",
         );
       } catch (e) {
-        _logger.warning("Failed to add sample room '${room.name}': $e");
+        _logger.warning("Failed to add sample room '${room.name}'", e);
       }
     }
     _logger.info("${roomsToCreate.length} sample rooms processed.");

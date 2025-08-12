@@ -23,7 +23,6 @@ class LocationPermissionDeniedException extends PermissionDeniedException {
   LocationPermissionDeniedException(super.message);
 }
 
-class LocationPermissionDeniedPermanentlyException
-    extends PermissionDeniedPermanentlyException {
+class LocationPermissionDeniedPermanentlyException extends PermissionDeniedPermanentlyException {
   LocationPermissionDeniedPermanentlyException(super.message);
 }

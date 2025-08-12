@@ -4,10 +4,7 @@ import '../geocoding_wrapper.dart';
 
 class GeocodingWrapperImpl implements IGeocodingWrapper {
   @override
-  Future<List<geocoding.Placemark>> placemarkFromCoordinates(
-    double latitude,
-    double longitude,
-  ) {
+  Future<List<geocoding.Placemark>> placemarkFromCoordinates(double latitude, double longitude) {
     return geocoding.placemarkFromCoordinates(latitude, longitude);
   }
 }

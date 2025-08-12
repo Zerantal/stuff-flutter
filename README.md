@@ -67,7 +67,7 @@ We welcome contributions! Please review our [Contributing Guide](CONTRIBUTING.md
 
 * **Formatting**: Enforced by dart format in pre-commit hooks and CI.
 
-* **Testing**: Run flutter test to execute unit and widget tests.
+* **Testing**: Run `flutter test` to execute unit and widget tests.
 
 
 

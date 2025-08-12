@@ -88,9 +88,7 @@ void main() {
       // Set paths for mocks
       // It's important that the path is what's being compared in your TempFileIdentifier's == and hashCode
       mockFile1.setMockPath('/fake/path/to/image1.jpg');
-      mockFile1DuplicatePath.setMockPath(
-        '/fake/path/to/image1.jpg',
-      ); // Same path as mockFile1
+      mockFile1DuplicatePath.setMockPath('/fake/path/to/image1.jpg'); // Same path as mockFile1
       mockFile2.setMockPath('/fake/path/to/image2.png'); // Different path
     });
 
@@ -105,27 +103,19 @@ void main() {
         expect(identifier == identifier, isTrue);
       });
 
-      test(
-        'should be equal to another instance with a file having the same path',
-        () {
-          final identifier1 = TempFileIdentifier(mockFile1);
-          final identifier1PathCopy = TempFileIdentifier(
-            mockFile1DuplicatePath,
-          );
-          // Note: They are equal because their file.path is the same,
-          // even if mockFile1 and mockFile1DuplicatePath are different MockFile instances.
-          expect(identifier1 == identifier1PathCopy, isTrue);
-        },
-      );
+      test('should be equal to another instance with a file having the same path', () {
+        final identifier1 = TempFileIdentifier(mockFile1);
+        final identifier1PathCopy = TempFileIdentifier(mockFile1DuplicatePath);
+        // Note: They are equal because their file.path is the same,
+        // even if mockFile1 and mockFile1DuplicatePath are different MockFile instances.
+        expect(identifier1 == identifier1PathCopy, isTrue);
+      });
 
-      test(
-        'should not be equal to an instance with a file having a different path',
-        () {
-          final identifier1 = TempFileIdentifier(mockFile1);
-          final identifier2 = TempFileIdentifier(mockFile2);
-          expect(identifier1 == identifier2, isFalse);
-        },
-      );
+      test('should not be equal to an instance with a file having a different path', () {
+        final identifier1 = TempFileIdentifier(mockFile1);
+        final identifier2 = TempFileIdentifier(mockFile2);
+        expect(identifier1 == identifier2, isFalse);
+      });
 
       test('should not be equal to an object of a different type', () {
         final identifier = TempFileIdentifier(mockFile1);
@@ -135,16 +125,11 @@ void main() {
     });
 
     group('hashCode', () {
-      test(
-        'should return the same hashCode for objects with files having the same path',
-        () {
-          final identifier1 = TempFileIdentifier(mockFile1);
-          final identifier1PathCopy = TempFileIdentifier(
-            mockFile1DuplicatePath,
-          );
-          expect(identifier1.hashCode, equals(identifier1PathCopy.hashCode));
-        },
-      );
+      test('should return the same hashCode for objects with files having the same path', () {
+        final identifier1 = TempFileIdentifier(mockFile1);
+        final identifier1PathCopy = TempFileIdentifier(mockFile1DuplicatePath);
+        expect(identifier1.hashCode, equals(identifier1PathCopy.hashCode));
+      });
 
       test(
         'should ideally return different hashCodes for objects with files having different paths',

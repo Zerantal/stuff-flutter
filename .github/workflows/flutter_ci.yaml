@@ -46,7 +46,7 @@ jobs:
         run: flutter pub get
 
       - name: Check Dart format
-        run: dart format --set-exit-if-changed .
+        run: dart format --page-width=100 --output=none --set-exit-if-changed  .
 
   test:
     name: Run tests

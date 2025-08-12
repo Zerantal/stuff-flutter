@@ -76,16 +76,8 @@ void main() {
         final before = DateTime.now();
         final model = TestModel();
         final after = DateTime.now();
-        expect(
-          model.createdAt.isAfter(before) ||
-              model.createdAt.isAtSameMomentAs(before),
-          isTrue,
-        );
-        expect(
-          model.createdAt.isBefore(after) ||
-              model.createdAt.isAtSameMomentAs(after),
-          isTrue,
-        );
+        expect(model.createdAt.isAfter(before) || model.createdAt.isAtSameMomentAs(before), isTrue);
+        expect(model.createdAt.isBefore(after) || model.createdAt.isAtSameMomentAs(after), isTrue);
       });
 
       test('should use provided updatedAt if not null', () {
@@ -99,16 +91,8 @@ void main() {
         final before = DateTime.now();
         final model = TestModel();
         final after = DateTime.now();
-        expect(
-          model.updatedAt.isAfter(before) ||
-              model.updatedAt.isAtSameMomentAs(before),
-          isTrue,
-        );
-        expect(
-          model.updatedAt.isBefore(after) ||
-              model.updatedAt.isAtSameMomentAs(after),
-          isTrue,
-        );
+        expect(model.updatedAt.isAfter(before) || model.updatedAt.isAtSameMomentAs(before), isTrue);
+        expect(model.updatedAt.isBefore(after) || model.updatedAt.isAtSameMomentAs(after), isTrue);
       });
     });
 
@@ -129,92 +113,74 @@ void main() {
     });
 
     group('save() method', () {
-      test(
-        'should call touch() (updating updatedAt) and attempt to call super.save()',
-        () async {
-          final initialUpdateTime = DateTime.now().subtract(
-            const Duration(minutes: 5),
-          );
-          bool superSaveAttempted = false;
+      test('should call touch() (updating updatedAt) and attempt to call super.save()', () async {
+        final initialUpdateTime = DateTime.now().subtract(const Duration(minutes: 5));
+        bool superSaveAttempted = false;
 
-          final model = TestModel(
-            updatedAt: initialUpdateTime,
-            superSaveOverride: () async {
-              superSaveAttempted = true;
-              // For this test, we don't care about the HiveError,
-              // or we can simulate success if needed.
-              // If we want to test behavior when super.save() throws,
-              // we'd throw here. For now, just indicate it was called.
-              return Future.value();
-            },
-          );
+        final model = TestModel(
+          updatedAt: initialUpdateTime,
+          superSaveOverride: () async {
+            superSaveAttempted = true;
+            // For this test, we don't care about the HiveError,
+            // or we can simulate success if needed.
+            // If we want to test behavior when super.save() throws,
+            // we'd throw here. For now, just indicate it was called.
+            return Future.value();
+          },
+        );
 
-          expect(model.updatedAt, initialUpdateTime);
+        expect(model.updatedAt, initialUpdateTime);
 
-          // Ensure some time passes for a different DateTime.now() in touch()
-          await Future.delayed(const Duration(milliseconds: 10));
+        // Ensure some time passes for a different DateTime.now() in touch()
+        await Future.delayed(const Duration(milliseconds: 10));
 
-          await model.save(); // This will use the _superSaveOverride
+        await model.save(); // This will use the _superSaveOverride
 
-          expect(model.updatedAt, isNot(initialUpdateTime));
-          expect(
-            model.updatedAt.isAfter(initialUpdateTime),
-            isTrue,
-            reason: "updatedAt should be updated by touch()",
-          );
-          expect(
-            superSaveAttempted,
-            isTrue,
-            reason: "super.save() override should have been called",
-          );
-        },
-      );
+        expect(model.updatedAt, isNot(initialUpdateTime));
+        expect(
+          model.updatedAt.isAfter(initialUpdateTime),
+          isTrue,
+          reason: "updatedAt should be updated by touch()",
+        );
+        expect(superSaveAttempted, isTrue, reason: "super.save() override should have been called");
+      });
 
       test('save() method signature returns a Future<void>', () {
         // This test focuses purely on the method signature's return type.
         // We provide a non-throwing override for super.save to avoid HiveError.
         final model = TestModel(
-          superSaveOverride: () =>
-              Future.value(), // Simple non-throwing override
+          superSaveOverride: () => Future.value(), // Simple non-throwing override
         );
         expect(model.save(), isA<Future<void>>());
       });
 
-      test(
-        'save() should still update touch() even if super.save() throws (simulated)',
-        () async {
-          final initialUpdateTime = DateTime.now().subtract(
-            const Duration(minutes: 5),
-          );
-          bool superSaveAttemptedAndThrew = false;
+      test('save() should still update touch() even if super.save() throws (simulated)', () async {
+        final initialUpdateTime = DateTime.now().subtract(const Duration(minutes: 5));
+        bool superSaveAttemptedAndThrew = false;
 
-          final model = TestModel(
-            updatedAt: initialUpdateTime,
-            superSaveOverride: () async {
-              superSaveAttemptedAndThrew = true;
-              throw HiveError("Simulated Hive Error from super.save()");
-            },
-          );
+        final model = TestModel(
+          updatedAt: initialUpdateTime,
+          superSaveOverride: () async {
+            superSaveAttemptedAndThrew = true;
+            throw HiveError("Simulated Hive Error from super.save()");
+          },
+        );
 
-          await Future.delayed(const Duration(milliseconds: 10));
+        await Future.delayed(const Duration(milliseconds: 10));
 
-          try {
-            await model.save();
-            fail("Should have thrown HiveError");
-          } catch (e) {
-            expect(e, isA<HiveError>());
-            expect(
-              (e as HiveError).message,
-              "Simulated Hive Error from super.save()",
-            );
-          }
+        try {
+          await model.save();
+          fail("Should have thrown HiveError");
+        } catch (e) {
+          expect(e, isA<HiveError>());
+          expect((e as HiveError).message, "Simulated Hive Error from super.save()");
+        }
 
-          expect(superSaveAttemptedAndThrew, isTrue);
-          // Crucially, touch() should have run BEFORE super.save(;) was called (and threw)
-          expect(model.updatedAt, isNot(initialUpdateTime));
-          expect(model.updatedAt.isAfter(initialUpdateTime), isTrue);
-        },
-      );
+        expect(superSaveAttemptedAndThrew, isTrue);
+        // Crucially, touch() should have run BEFORE super.save(;) was called (and threw)
+        expect(model.updatedAt, isNot(initialUpdateTime));
+        expect(model.updatedAt.isAfter(initialUpdateTime), isTrue);
+      });
     });
   });
 }

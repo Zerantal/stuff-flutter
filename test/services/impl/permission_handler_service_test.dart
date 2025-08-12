@@ -8,8 +8,7 @@ import 'package:stuff/services/impl/permission_handler_service.dart';
 
 import '../../utils/test_logger_manager.dart';
 
-class MockPermissionHandlerPlatform extends PermissionHandlerPlatform
-    with Mock {
+class MockPermissionHandlerPlatform extends PermissionHandlerPlatform with Mock {
   MockPermissionHandlerPlatform();
 
   @override
@@ -25,14 +24,10 @@ class MockPermissionHandlerPlatform extends PermissionHandlerPlatform
   }
 
   @override
-  Future<Map<Permission, PermissionStatus>> requestPermissions(
-    List<Permission> permissions,
-  ) {
+  Future<Map<Permission, PermissionStatus>> requestPermissions(List<Permission> permissions) {
     return super.noSuchMethod(
           Invocation.method(#requestPermissions, [permissions]),
-          returnValue: Future.value({
-            for (var p in permissions) p: PermissionStatus.denied,
-          }),
+          returnValue: Future.value({for (var p in permissions) p: PermissionStatus.denied}),
           returnValueForMissingStub: Future.value({
             for (var p in permissions) p: PermissionStatus.denied,
           }),
@@ -99,54 +94,38 @@ void main() {
   });
 
   group('requestCameraPermission', () {
-    test(
-      'should return true if camera permission is already granted',
-      () async {
-        // ARRANGE
-        when(
-          mockPermissionPlatform.checkPermissionStatus(Permission.camera),
-        ).thenAnswer((_) async => PermissionStatus.granted);
+    test('should return true if camera permission is already granted', () async {
+      // ARRANGE
+      when(
+        mockPermissionPlatform.checkPermissionStatus(Permission.camera),
+      ).thenAnswer((_) async => PermissionStatus.granted);
 
-        // ACT
-        final result = await service.requestCameraPermission();
+      // ACT
+      final result = await service.requestCameraPermission();
 
-        // ASSERT
-        expect(result, isTrue);
-        verify(
-          mockPermissionPlatform.checkPermissionStatus(Permission.camera),
-        ).called(1);
-        verifyNever(
-          mockPermissionPlatform.requestPermissions([Permission.camera]),
-        );
-      },
-    );
+      // ASSERT
+      expect(result, isTrue);
+      verify(mockPermissionPlatform.checkPermissionStatus(Permission.camera)).called(1);
+      verifyNever(mockPermissionPlatform.requestPermissions([Permission.camera]));
+    });
 
-    test(
-      'should request and return true if permission initially denied then granted',
-      () async {
-        // ARRANGE
-        when(
-          mockPermissionPlatform.checkPermissionStatus(Permission.camera),
-        ).thenAnswer((_) async => PermissionStatus.denied);
-        when(
-          mockPermissionPlatform.requestPermissions([Permission.camera]),
-        ).thenAnswer(
-          (_) async => {Permission.camera: PermissionStatus.granted},
-        );
+    test('should request and return true if permission initially denied then granted', () async {
+      // ARRANGE
+      when(
+        mockPermissionPlatform.checkPermissionStatus(Permission.camera),
+      ).thenAnswer((_) async => PermissionStatus.denied);
+      when(
+        mockPermissionPlatform.requestPermissions([Permission.camera]),
+      ).thenAnswer((_) async => {Permission.camera: PermissionStatus.granted});
 
-        // ACT
-        final result = await service.requestCameraPermission();
+      // ACT
+      final result = await service.requestCameraPermission();
 
-        // ASSERT
-        expect(result, isTrue);
-        verify(
-          mockPermissionPlatform.checkPermissionStatus(Permission.camera),
-        ).called(1);
-        verify(
-          mockPermissionPlatform.requestPermissions([Permission.camera]),
-        ).called(1);
-      },
-    );
+      // ASSERT
+      expect(result, isTrue);
+      verify(mockPermissionPlatform.checkPermissionStatus(Permission.camera)).called(1);
+      verify(mockPermissionPlatform.requestPermissions([Permission.camera])).called(1);
+    });
 
     test(
       'should request and return false if permission initially denied and request also denied',
@@ -164,12 +143,8 @@ void main() {
 
         // ASSERT
         expect(result, isFalse);
-        verify(
-          mockPermissionPlatform.checkPermissionStatus(Permission.camera),
-        ).called(1);
-        verify(
-          mockPermissionPlatform.requestPermissions([Permission.camera]),
-        ).called(1);
+        verify(mockPermissionPlatform.checkPermissionStatus(Permission.camera)).called(1);
+        verify(mockPermissionPlatform.requestPermissions([Permission.camera])).called(1);
       },
     );
 
@@ -185,59 +160,44 @@ void main() {
         // The returned status from request() in such a case is usually still permanentlyDenied.
         when(
           mockPermissionPlatform.requestPermissions([Permission.camera]),
-        ).thenAnswer(
-          (_) async => {Permission.camera: PermissionStatus.permanentlyDenied},
-        );
+        ).thenAnswer((_) async => {Permission.camera: PermissionStatus.permanentlyDenied});
 
         // ACT
         final result = await service.requestCameraPermission();
 
         // ASSERT
         expect(result, isFalse); // isGranted will be false
-        verify(
-          mockPermissionPlatform.checkPermissionStatus(Permission.camera),
-        ).called(1);
-        verify(
-          mockPermissionPlatform.requestPermissions([Permission.camera]),
-        ).called(1);
+        verify(mockPermissionPlatform.checkPermissionStatus(Permission.camera)).called(1);
+        verify(mockPermissionPlatform.requestPermissions([Permission.camera])).called(1);
       },
     );
   });
 
   group('requestGalleryPermission', () {
-    test(
-      'should return true and log if gallery permission is already granted',
-      () async {
-        // ARRANGE
-        when(
-          mockPermissionPlatform.checkPermissionStatus(Permission.photos),
-        ).thenAnswer((_) async => PermissionStatus.granted);
+    test('should return true and log if gallery permission is already granted', () async {
+      // ARRANGE
+      when(
+        mockPermissionPlatform.checkPermissionStatus(Permission.photos),
+      ).thenAnswer((_) async => PermissionStatus.granted);
 
-        // ACT
-        final result = await service.requestGalleryPermission();
+      // ACT
+      final result = await service.requestGalleryPermission();
 
-        // ASSERT
-        expect(result, isTrue);
-        verify(
-          mockPermissionPlatform.checkPermissionStatus(Permission.photos),
-        ).called(1);
-        verifyNever(
-          mockPermissionPlatform.requestPermissions([Permission.photos]),
-        );
-        expect(
-          loggerManager.findLogWithMessage(
-            "Initial gallery/photos status: PermissionStatus.granted",
-          ),
-          isNotNull,
-        );
-        expect(
-          loggerManager.findLogWithMessage(
-            "Gallery/photos permission is sufficient (granted or limited). Proceeding.",
-          ),
-          isNotNull,
-        );
-      },
-    );
+      // ASSERT
+      expect(result, isTrue);
+      verify(mockPermissionPlatform.checkPermissionStatus(Permission.photos)).called(1);
+      verifyNever(mockPermissionPlatform.requestPermissions([Permission.photos]));
+      expect(
+        loggerManager.findLogWithMessage("Initial gallery/photos status: PermissionStatus.granted"),
+        isNotNull,
+      );
+      expect(
+        loggerManager.findLogWithMessage(
+          "Gallery/photos permission is sufficient (granted or limited). Proceeding.",
+        ),
+        isNotNull,
+      );
+    });
 
     test('should return true and log if gallery permission is limited', () async {
       // ARRANGE
@@ -250,16 +210,10 @@ void main() {
 
       // ASSERT
       expect(result, isTrue);
-      verify(
-        mockPermissionPlatform.checkPermissionStatus(Permission.photos),
-      ).called(1);
-      verifyNever(
-        mockPermissionPlatform.requestPermissions([Permission.photos]),
-      );
+      verify(mockPermissionPlatform.checkPermissionStatus(Permission.photos)).called(1);
+      verifyNever(mockPermissionPlatform.requestPermissions([Permission.photos]));
       expect(
-        loggerManager.findLogWithMessage(
-          "Initial gallery/photos status: PermissionStatus.limited",
-        ),
+        loggerManager.findLogWithMessage("Initial gallery/photos status: PermissionStatus.limited"),
         isNotNull,
       );
       expect(
@@ -270,95 +224,73 @@ void main() {
       );
     });
 
-    test(
-      'should request, return true, and log if initially denied then granted',
-      () async {
-        // ARRANGE
-        when(
-          mockPermissionPlatform.checkPermissionStatus(Permission.photos),
-        ).thenAnswer((_) async => PermissionStatus.denied);
-        when(
-          mockPermissionPlatform.requestPermissions([Permission.photos]),
-        ).thenAnswer(
-          (_) async => {Permission.photos: PermissionStatus.granted},
-        );
+    test('should request, return true, and log if initially denied then granted', () async {
+      // ARRANGE
+      when(
+        mockPermissionPlatform.checkPermissionStatus(Permission.photos),
+      ).thenAnswer((_) async => PermissionStatus.denied);
+      when(
+        mockPermissionPlatform.requestPermissions([Permission.photos]),
+      ).thenAnswer((_) async => {Permission.photos: PermissionStatus.granted});
 
-        // ACT
-        final result = await service.requestGalleryPermission();
+      // ACT
+      final result = await service.requestGalleryPermission();
 
-        // ASSERT
-        expect(result, isTrue);
-        verify(
-          mockPermissionPlatform.checkPermissionStatus(Permission.photos),
-        ).called(1);
-        verify(
-          mockPermissionPlatform.requestPermissions([Permission.photos]),
-        ).called(1);
-        expect(
-          loggerManager.findLogWithMessage(
-            "Initial gallery/photos status: PermissionStatus.denied",
-          ),
-          isNotNull,
-        );
-        expect(
-          loggerManager.findLogWithMessage(
-            "Gallery/photos permission is not sufficient (PermissionStatus.denied). Requesting...",
-          ),
-          isNotNull,
-        );
-        expect(
-          loggerManager.findLogWithMessage(
-            "Status after gallery/photos request: PermissionStatus.granted",
-          ),
-          isNotNull,
-        );
-      },
-    );
+      // ASSERT
+      expect(result, isTrue);
+      verify(mockPermissionPlatform.checkPermissionStatus(Permission.photos)).called(1);
+      verify(mockPermissionPlatform.requestPermissions([Permission.photos])).called(1);
+      expect(
+        loggerManager.findLogWithMessage("Initial gallery/photos status: PermissionStatus.denied"),
+        isNotNull,
+      );
+      expect(
+        loggerManager.findLogWithMessage(
+          "Gallery/photos permission is not sufficient (PermissionStatus.denied). Requesting...",
+        ),
+        isNotNull,
+      );
+      expect(
+        loggerManager.findLogWithMessage(
+          "Status after gallery/photos request: PermissionStatus.granted",
+        ),
+        isNotNull,
+      );
+    });
 
-    test(
-      'should request, return true, and log if initially denied then limited',
-      () async {
-        // ARRANGE
-        when(
-          mockPermissionPlatform.checkPermissionStatus(Permission.photos),
-        ).thenAnswer((_) async => PermissionStatus.denied);
-        when(
-          mockPermissionPlatform.requestPermissions([Permission.photos]),
-        ).thenAnswer(
-          (_) async => {Permission.photos: PermissionStatus.limited},
-        );
+    test('should request, return true, and log if initially denied then limited', () async {
+      // ARRANGE
+      when(
+        mockPermissionPlatform.checkPermissionStatus(Permission.photos),
+      ).thenAnswer((_) async => PermissionStatus.denied);
+      when(
+        mockPermissionPlatform.requestPermissions([Permission.photos]),
+      ).thenAnswer((_) async => {Permission.photos: PermissionStatus.limited});
 
-        // ACT
-        final result = await service.requestGalleryPermission();
+      // ACT
+      final result = await service.requestGalleryPermission();
 
-        // ASSERT
-        expect(result, isTrue);
-        verify(
-          mockPermissionPlatform.checkPermissionStatus(Permission.photos),
-        ).called(1);
-        verify(
-          mockPermissionPlatform.requestPermissions([Permission.photos]),
-        ).called(1);
-        expect(
-          loggerManager.findLogWithMessage(
-            "Initial gallery/photos status: PermissionStatus.denied",
-          ),
-          isNotNull,
-        );
-        expect(
-          loggerManager.findLogWithMessage(
-            "Gallery/photos permission is not sufficient (PermissionStatus.denied). Requesting...",
-          ),
-          isNotNull,
-        );
-        expect(
-          loggerManager.findLogWithMessage(
-            "Status after gallery/photos request: PermissionStatus.limited",
-          ),
-          isNotNull,
-        );
-      },
-    );
+      // ASSERT
+      expect(result, isTrue);
+      verify(mockPermissionPlatform.checkPermissionStatus(Permission.photos)).called(1);
+      verify(mockPermissionPlatform.requestPermissions([Permission.photos])).called(1);
+      expect(
+        loggerManager.findLogWithMessage("Initial gallery/photos status: PermissionStatus.denied"),
+        isNotNull,
+      );
+      expect(
+        loggerManager.findLogWithMessage(
+          "Gallery/photos permission is not sufficient (PermissionStatus.denied). Requesting...",
+        ),
+        isNotNull,
+      );
+      expect(
+        loggerManager.findLogWithMessage(
+          "Status after gallery/photos request: PermissionStatus.limited",
+        ),
+        isNotNull,
+      );
+    });
 
     test(
       'should request, return false, and log if initially denied and request also denied',
@@ -376,12 +308,8 @@ void main() {
 
         // ASSERT
         expect(result, isFalse);
-        verify(
-          mockPermissionPlatform.checkPermissionStatus(Permission.photos),
-        ).called(1);
-        verify(
-          mockPermissionPlatform.requestPermissions([Permission.photos]),
-        ).called(1);
+        verify(mockPermissionPlatform.checkPermissionStatus(Permission.photos)).called(1);
+        verify(mockPermissionPlatform.requestPermissions([Permission.photos])).called(1);
         expect(
           loggerManager.findLogWithMessage(
             "Initial gallery/photos status: PermissionStatus.denied",
@@ -403,114 +331,93 @@ void main() {
       },
     );
 
-    test(
-      'should request, return false, and log if status is permanentlyDenied',
-      () async {
-        // ARRANGE
-        when(
-          mockPermissionPlatform.checkPermissionStatus(Permission.photos),
-        ).thenAnswer((_) async => PermissionStatus.permanentlyDenied);
-        when(
-          mockPermissionPlatform.requestPermissions([Permission.photos]),
-        ).thenAnswer(
-          (_) async => {Permission.photos: PermissionStatus.permanentlyDenied},
-        ); // Or .denied
+    test('should request, return false, and log if status is permanentlyDenied', () async {
+      // ARRANGE
+      when(
+        mockPermissionPlatform.checkPermissionStatus(Permission.photos),
+      ).thenAnswer((_) async => PermissionStatus.permanentlyDenied);
+      when(mockPermissionPlatform.requestPermissions([Permission.photos])).thenAnswer(
+        (_) async => {Permission.photos: PermissionStatus.permanentlyDenied},
+      ); // Or .denied
 
-        // ACT
-        final result = await service.requestGalleryPermission();
+      // ACT
+      final result = await service.requestGalleryPermission();
 
-        // ASSERT
-        expect(result, isFalse);
-        verify(
-          mockPermissionPlatform.checkPermissionStatus(Permission.photos),
-        ).called(1);
-        verify(
-          mockPermissionPlatform.requestPermissions([Permission.photos]),
-        ).called(1);
-        expect(
-          loggerManager.findLogWithMessage(
-            "Initial gallery/photos status: PermissionStatus.permanentlyDenied",
-          ),
-          isNotNull,
-        );
-        expect(
-          loggerManager.findLogWithMessage(
-            "Gallery/photos permission is not sufficient (PermissionStatus.permanentlyDenied). Requesting...",
-          ),
-          isNotNull,
-        );
-        expect(
-          loggerManager.findLogWithMessage(
-            "Status after gallery/photos request: PermissionStatus.permanentlyDenied",
-          ),
-          isNotNull,
-        );
-      },
-    );
+      // ASSERT
+      expect(result, isFalse);
+      verify(mockPermissionPlatform.checkPermissionStatus(Permission.photos)).called(1);
+      verify(mockPermissionPlatform.requestPermissions([Permission.photos])).called(1);
+      expect(
+        loggerManager.findLogWithMessage(
+          "Initial gallery/photos status: PermissionStatus.permanentlyDenied",
+        ),
+        isNotNull,
+      );
+      expect(
+        loggerManager.findLogWithMessage(
+          "Gallery/photos permission is not sufficient (PermissionStatus.permanentlyDenied). Requesting...",
+        ),
+        isNotNull,
+      );
+      expect(
+        loggerManager.findLogWithMessage(
+          "Status after gallery/photos request: PermissionStatus.permanentlyDenied",
+        ),
+        isNotNull,
+      );
+    });
 
-    test(
-      'should request, return false, and log if status is restricted',
-      () async {
-        // ARRANGE
-        when(
-          mockPermissionPlatform.checkPermissionStatus(Permission.photos),
-        ).thenAnswer((_) async => PermissionStatus.restricted);
-        when(
-          mockPermissionPlatform.requestPermissions([Permission.photos]),
-        ).thenAnswer(
-          (_) async => {Permission.photos: PermissionStatus.restricted},
-        ); // Or .denied
+    test('should request, return false, and log if status is restricted', () async {
+      // ARRANGE
+      when(
+        mockPermissionPlatform.checkPermissionStatus(Permission.photos),
+      ).thenAnswer((_) async => PermissionStatus.restricted);
+      when(
+        mockPermissionPlatform.requestPermissions([Permission.photos]),
+      ).thenAnswer((_) async => {Permission.photos: PermissionStatus.restricted}); // Or .denied
 
-        // ACT
-        final result = await service.requestGalleryPermission();
+      // ACT
+      final result = await service.requestGalleryPermission();
 
-        // ASSERT
-        expect(result, isFalse);
-        verify(
-          mockPermissionPlatform.checkPermissionStatus(Permission.photos),
-        ).called(1);
-        verify(
-          mockPermissionPlatform.requestPermissions([Permission.photos]),
-        ).called(1);
-        expect(
-          loggerManager.findLogWithMessage(
-            "Initial gallery/photos status: PermissionStatus.restricted",
-          ),
-          isNotNull,
-        );
-        expect(
-          loggerManager.findLogWithMessage(
-            "Gallery/photos permission is not sufficient (PermissionStatus.restricted). Requesting...",
-          ),
-          isNotNull,
-        );
-        expect(
-          loggerManager.findLogWithMessage(
-            "Status after gallery/photos request: PermissionStatus.restricted",
-          ),
-          isNotNull,
-        );
-      },
-    );
+      // ASSERT
+      expect(result, isFalse);
+      verify(mockPermissionPlatform.checkPermissionStatus(Permission.photos)).called(1);
+      verify(mockPermissionPlatform.requestPermissions([Permission.photos])).called(1);
+      expect(
+        loggerManager.findLogWithMessage(
+          "Initial gallery/photos status: PermissionStatus.restricted",
+        ),
+        isNotNull,
+      );
+      expect(
+        loggerManager.findLogWithMessage(
+          "Gallery/photos permission is not sufficient (PermissionStatus.restricted). Requesting...",
+        ),
+        isNotNull,
+      );
+      expect(
+        loggerManager.findLogWithMessage(
+          "Status after gallery/photos request: PermissionStatus.restricted",
+        ),
+        isNotNull,
+      );
+    });
   });
 
   group('checkLocationPermission', () {
-    test(
-      'should return the result from GeolocatorPlatform.checkPermission',
-      () async {
-        // ARRANGE
-        when(
-          mockGeolocatorPlatform.checkPermission(),
-        ).thenAnswer((_) async => LocationPermission.whileInUse);
+    test('should return the result from GeolocatorPlatform.checkPermission', () async {
+      // ARRANGE
+      when(
+        mockGeolocatorPlatform.checkPermission(),
+      ).thenAnswer((_) async => LocationPermission.whileInUse);
 
-        // ACT
-        final result = await service.checkLocationPermission();
+      // ACT
+      final result = await service.checkLocationPermission();
 
-        // ASSERT
-        expect(result, LocationPermission.whileInUse);
-        verify(mockGeolocatorPlatform.checkPermission()).called(1);
-      },
-    );
+      // ASSERT
+      expect(result, LocationPermission.whileInUse);
+      verify(mockGeolocatorPlatform.checkPermission()).called(1);
+    });
 
     test('should correctly return LocationPermission.denied', () async {
       // ARRANGE
@@ -525,35 +432,29 @@ void main() {
   });
 
   group('requestLocationPermission', () {
-    test(
-      'should return the result from GeolocatorPlatform.requestPermission',
-      () async {
-        // ARRANGE
-        when(
-          mockGeolocatorPlatform.requestPermission(),
-        ).thenAnswer((_) async => LocationPermission.always);
+    test('should return the result from GeolocatorPlatform.requestPermission', () async {
+      // ARRANGE
+      when(
+        mockGeolocatorPlatform.requestPermission(),
+      ).thenAnswer((_) async => LocationPermission.always);
 
-        // ACT
-        final result = await service.requestLocationPermission();
+      // ACT
+      final result = await service.requestLocationPermission();
 
-        // ASSERT
-        expect(result, LocationPermission.always);
-        verify(mockGeolocatorPlatform.requestPermission()).called(1);
-      },
-    );
+      // ASSERT
+      expect(result, LocationPermission.always);
+      verify(mockGeolocatorPlatform.requestPermission()).called(1);
+    });
 
-    test(
-      'should correctly return LocationPermission.deniedForever from request',
-      () async {
-        // ARRANGE
-        when(
-          mockGeolocatorPlatform.requestPermission(),
-        ).thenAnswer((_) async => LocationPermission.deniedForever);
-        // ACT
-        final result = await service.requestLocationPermission();
-        // ASSERT
-        expect(result, LocationPermission.deniedForever);
-      },
-    );
+    test('should correctly return LocationPermission.deniedForever from request', () async {
+      // ARRANGE
+      when(
+        mockGeolocatorPlatform.requestPermission(),
+      ).thenAnswer((_) async => LocationPermission.deniedForever);
+      // ACT
+      final result = await service.requestLocationPermission();
+      // ASSERT
+      expect(result, LocationPermission.deniedForever);
+    });
   });
 }
