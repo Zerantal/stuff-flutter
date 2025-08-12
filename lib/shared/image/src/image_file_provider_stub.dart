@@ -1,4 +1,4 @@
-// lib/core/helpers/src/image_file_provider_stub.dart
+// lib/shared/image/src/image_file_provider_stub.dart
 // Web-safe stub (used when dart:io is unavailable)
 
 import 'package:flutter/foundation.dart';

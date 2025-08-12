@@ -4,9 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 
 import '../core/image_identifier.dart';
-import '../core/helpers/image_ref.dart';
-import '../core/helpers/image_identifier_to_ref.dart' as id2ref;
-import '../core/helpers/image_identifier_persistence.dart' as persist;
+import '../shared/image/image_ref.dart';
+import '../shared/image/image_identifier_to_ref.dart' as id2ref;
+import '../shared/image/image_identifier_persistence.dart' as persist;
 import '../models/location_model.dart';
 import '../services/data_service_interface.dart';
 import '../services/location_service_interface.dart';
@@ -56,10 +56,7 @@ class EditLocationViewModel extends ChangeNotifier {
   final addressController = TextEditingController();
 
   // State
-  EditLocationState _state = const EditLocationState(
-    name: '',
-    isNewLocation: true,
-  );
+  EditLocationState _state = const EditLocationState(name: '', isNewLocation: true);
   EditLocationState get state => _state;
 
   // Expose bits the page expects
@@ -150,10 +147,7 @@ class EditLocationViewModel extends ChangeNotifier {
   void onImagePicked(ImageIdentifier id, ImageRef ref) {
     // maintain list lockstep
     _imageIds.add(id);
-    _state = _state.copyWith(
-      images: [..._state.images, ref],
-      hasUnsavedChanges: true,
-    );
+    _state = _state.copyWith(images: [..._state.images, ref], hasUnsavedChanges: true);
     notifyListeners();
   }
 
@@ -232,8 +226,7 @@ class EditLocationViewModel extends ChangeNotifier {
 
     try {
       // A) Remember what was previously persisted for this location
-      final previousGuids = (_loadedLocation?.images ?? const <String>[])
-          .toSet();
+      final previousGuids = (_loadedLocation?.images ?? const <String>[]).toSet();
 
       // B) Persist any temp files → GUIDs (order preserved)
       final guids = await persist.ensureGuids(
@@ -255,9 +248,7 @@ class EditLocationViewModel extends ChangeNotifier {
         description: descriptionController.text.trim().isEmpty
             ? null
             : descriptionController.text.trim(),
-        address: addressController.text.trim().isEmpty
-            ? null
-            : addressController.text.trim(),
+        address: addressController.text.trim().isEmpty ? null : addressController.text.trim(),
         images: guids,
       );
 

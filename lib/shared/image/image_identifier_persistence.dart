@@ -1,6 +1,6 @@
-// lib/core/helpers/image_identifier_persistence.dart
+// lib/shared/image/image_identifier_persistence.dart
 import 'dart:io';
-import '../image_identifier.dart';
+import '../../core/image_identifier.dart';
 import '../../services/image_data_service_interface.dart';
 
 /// Converts a mixed list of identifiers to GUIDs, persisting temp files via [store].
@@ -27,10 +27,7 @@ Future<List<String>> ensureGuids(
   }
 
   if (tempFiles.isNotEmpty) {
-    final saved = await store.saveImages(
-      tempFiles,
-      deleteSource: deleteTempOnSuccess,
-    );
+    final saved = await store.saveImages(tempFiles, deleteSource: deleteTempOnSuccess);
     for (var j = 0; j < saved.length; j++) {
       guids[tempIndexes[j]] = saved[j];
     }

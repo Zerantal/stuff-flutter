@@ -48,20 +48,14 @@ class HiveDbDataService implements IDataService {
       "Locations box '$_locationsBoxName' opened. Entries: ${_locationsBox?.length ?? 'N/A'}",
     );
     _roomsBox = await Hive.openBox<Room>(_roomsBoxName);
-    _logger.fine(
-      "Rooms box '$_roomsBoxName' opened. Entries: ${_roomsBox?.length ?? 'N/A'}",
-    );
+    _logger.fine("Rooms box '$_roomsBoxName' opened. Entries: ${_roomsBox?.length ?? 'N/A'}");
     // TODO: Open boxes for Container and Item when they are created
   }
 
   // --- Generic Box Getter ---
-  Box<T> _getOpenBoxSafe<T extends HiveObject>(
-    Box<T>? box,
-    String boxNameForError,
-  ) {
+  Box<T> _getOpenBoxSafe<T extends HiveObject>(Box<T>? box, String boxNameForError) {
     if (box == null || !box.isOpen) {
-      final errorMsg =
-          '$boxNameForError box is not open. Ensure init() was called and succeeded.';
+      final errorMsg = '$boxNameForError box is not open. Ensure init() was called and succeeded.';
       _logger.severe(errorMsg);
       throw StateError(errorMsg);
     }
@@ -69,8 +63,7 @@ class HiveDbDataService implements IDataService {
   }
 
   // --- Specific Box Accessors ---
-  Box<Location> get _locBoxSafe =>
-      _getOpenBoxSafe<Location>(_locationsBox, 'Locations');
+  Box<Location> get _locBoxSafe => _getOpenBoxSafe<Location>(_locationsBox, 'Locations');
   Box<Room> get _roomBoxSafe => _getOpenBoxSafe<Room>(_roomsBox, 'Rooms');
   // Box<Container> get _containerBoxSafe => _getOpenBoxSafe<Container>(_containersBox, 'Containers');
   // Box<Item> get _itemBoxSafe => _getOpenBoxSafe<Item>(_itemsBox, 'Items');
@@ -79,9 +72,7 @@ class HiveDbDataService implements IDataService {
 
   @override
   Stream<List<Location>> getLocationsStream() async* {
-    _logger.fine(
-      "getLocationsStream: Yielding initial values and then watching box.",
-    );
+    _logger.fine("getLocationsStream: Yielding initial values and then watching box.");
     yield _locBoxSafe.values.toList(); // Initial data
     yield* _locBoxSafe.watch().map((event) {
       _logger.finer(
@@ -126,9 +117,7 @@ class HiveDbDataService implements IDataService {
       _logger.warning(
         'Attempted to update non-existent location with id: ${location.id}. Location not updated.',
       );
-      throw StateError(
-        'Attempted to update non-existent location with id: ${location.id}',
-      );
+      throw StateError('Attempted to update non-existent location with id: ${location.id}');
     }
   }
 
@@ -136,9 +125,7 @@ class HiveDbDataService implements IDataService {
   Future<void> deleteLocation(String id) async {
     final locationToDelete = _locBoxSafe.get(id);
     if (locationToDelete != null) {
-      _logger.info(
-        "Starting deletion process for location: '${locationToDelete.name}' (ID: $id).",
-      );
+      _logger.info("Starting deletion process for location: '${locationToDelete.name}' (ID: $id).");
 
       // 1. Find all rooms associated with this location
       final roomsToDelete = _roomBoxSafe.values
@@ -151,9 +138,7 @@ class HiveDbDataService implements IDataService {
           "Found ${roomsToDelete.length} room(s) associated with location '${locationToDelete.name}' (ID: $id) to delete.",
         );
         for (final roomIdToDelete in roomsToDelete) {
-          _logger.finer(
-            "Cascading delete for room ID: $roomIdToDelete from location $id.",
-          );
+          _logger.finer("Cascading delete for room ID: $roomIdToDelete from location $id.");
           await deleteRoom(roomIdToDelete);
         }
       } else {
@@ -180,9 +165,7 @@ class HiveDbDataService implements IDataService {
       "getRoomsStream for locationId '$locationId': Yielding initial values and then watching box.",
     );
     // Initial data: filter rooms by locationId
-    yield _roomBoxSafe.values
-        .where((room) => room.locationId == locationId)
-        .toList();
+    yield _roomBoxSafe.values.where((room) => room.locationId == locationId).toList();
 
     // Watch for changes in the entire rooms box
     yield* _roomBoxSafe.watch().map((event) {
@@ -190,18 +173,14 @@ class HiveDbDataService implements IDataService {
         'Rooms box changed (key: ${event.key}, value: ${event.value}, deleted: ${event.deleted}), emitting new filtered list for locationId "$locationId".',
       );
       // Re-filter by locationId on every change
-      return _roomBoxSafe.values
-          .where((room) => room.locationId == locationId)
-          .toList();
+      return _roomBoxSafe.values.where((room) => room.locationId == locationId).toList();
     });
   }
 
   @override
   Future<List<Room>> getRoomsForLocation(String locationId) async {
     _logger.fine("getRoomsForLocation called for locationId '$locationId'.");
-    return _roomBoxSafe.values
-        .where((room) => room.locationId == locationId)
-        .toList();
+    return _roomBoxSafe.values.where((room) => room.locationId == locationId).toList();
   }
 
   @override
@@ -225,17 +204,13 @@ class HiveDbDataService implements IDataService {
 
     if (_roomBoxSafe.containsKey(room.id)) {
       await _roomBoxSafe.put(room.id, room);
-      _logger.info(
-        'Updated room: "${room.name}" (ID: ${room.id}). UpdatedAt: ${room.updatedAt}.',
-      );
+      _logger.info('Updated room: "${room.name}" (ID: ${room.id}). UpdatedAt: ${room.updatedAt}.');
       return room;
     } else {
       _logger.warning(
         'Attempted to update non-existent room with id: ${room.id}. Room not updated.',
       );
-      throw StateError(
-        'Attempted to update non-existent room with id: ${room.id}',
-      );
+      throw StateError('Attempted to update non-existent room with id: ${room.id}');
     }
   }
 
@@ -248,9 +223,7 @@ class HiveDbDataService implements IDataService {
         "Deleting room '${roomToDelete.name}' (ID: $roomId). (Associated containers/items NOT YET handled).",
       );
       await _roomBoxSafe.delete(roomId);
-      _logger.info(
-        'Successfully deleted room: "${roomToDelete.name}" (ID: $roomId)',
-      );
+      _logger.info('Successfully deleted room: "${roomToDelete.name}" (ID: $roomId)');
     } else {
       _logger.warning('Attempted to delete non-existent room with id: $roomId');
     }

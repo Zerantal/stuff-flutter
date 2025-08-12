@@ -11,7 +11,7 @@ import 'package:stuff/pages/locations_page.dart';
 import 'package:stuff/services/data_service_interface.dart';
 import 'package:stuff/services/image_data_service_interface.dart';
 import 'package:stuff/models/location_model.dart';
-import 'package:stuff/core/helpers/image_ref.dart';
+import 'package:stuff/shared/image/image_ref.dart';
 
 class MockDataService extends Mock implements IDataService {}
 
@@ -73,13 +73,7 @@ void main() {
       address: 'addr',
       images: const ['g1'],
     );
-    final l2 = Location(
-      id: 'B',
-      name: 'Beta',
-      description: null,
-      address: null,
-      images: const [],
-    );
+    final l2 = Location(id: 'B', name: 'Beta', description: null, address: null, images: const []);
 
     ctrl.add(<Location>[l1, l2]);
     await tester.pumpAndSettle();

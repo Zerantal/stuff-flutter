@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:stuff/routing/app_routes.dart';
-import 'package:stuff/routing/app_route_ext.dart';
+import 'package:stuff/app/routing/app_routes.dart';
+import 'package:stuff/app/routing/app_route_ext.dart';
 
 void main() {
   group('AppRoute.format', () {
@@ -9,16 +9,11 @@ void main() {
     });
 
     test('throws when required path param is missing', () {
-      expect(
-        () => AppRoutes.locationsEdit.format(),
-        throwsA(isA<ArgumentError>()),
-      );
+      expect(() => AppRoutes.locationsEdit.format(), throwsA(isA<ArgumentError>()));
     });
 
     test('substitutes required path param', () {
-      final url = AppRoutes.locationsEdit.format(
-        pathParams: {'locationId': '123'},
-      );
+      final url = AppRoutes.locationsEdit.format(pathParams: {'locationId': '123'});
       expect(url, '/locations/123/edit');
     });
 
@@ -29,9 +24,7 @@ void main() {
     });
 
     test('appends query parameters', () {
-      final url = AppRoutes.locations.format(
-        queryParams: {'filter': 'new', 'page': '2'},
-      );
+      final url = AppRoutes.locations.format(queryParams: {'filter': 'new', 'page': '2'});
       // order may vary—assert by contains
       expect(url, startsWith('/locations?'));
       expect(url.contains('filter=new'), isTrue);

@@ -26,18 +26,12 @@ class SampleDataPopulator {
       final tempFileName = '${_uuid.v4()}-${assetPath.split('/').last}';
       final file = File('${tempDir.path}/$tempFileName');
       await file.writeAsBytes(
-        byteData.buffer.asUint8List(
-          byteData.offsetInBytes,
-          byteData.lengthInBytes,
-        ),
+        byteData.buffer.asUint8List(byteData.offsetInBytes, byteData.lengthInBytes),
       );
       _logger.finer('Asset $assetPath copied to temporary file ${file.path}');
       return file;
     } catch (e) {
-      _logger.warning(
-        'Failed to convert asset $assetPath to temporary file',
-        e,
-      );
+      _logger.warning('Failed to convert asset $assetPath to temporary file', e);
       return null;
     }
   }
@@ -48,9 +42,7 @@ class SampleDataPopulator {
   ) async {
     List<String> imageGuids = [];
     if (imageDataService == null) {
-      _logger.info(
-        "IImageDataService is null, skipping image processing for $imageFriendlyName.",
-      );
+      _logger.info("IImageDataService is null, skipping image processing for $imageFriendlyName.");
       return imageGuids; // Return empty list if no service
     }
 
@@ -59,14 +51,9 @@ class SampleDataPopulator {
       try {
         final guid = await imageDataService!.saveImage(tempImageFile);
         imageGuids.add(guid);
-        _logger.info(
-          "Sample '$imageFriendlyName' ($assetPath) saved with GUID: $guid",
-        );
+        _logger.info("Sample '$imageFriendlyName' ($assetPath) saved with GUID: $guid");
       } catch (e) {
-        _logger.warning(
-          "Failed to save sample asset '$assetPath' via IImageDataService",
-          e,
-        );
+        _logger.warning("Failed to save sample asset '$assetPath' via IImageDataService", e);
       } finally {
         try {
           if (await tempImageFile.exists()) {
@@ -82,9 +69,7 @@ class SampleDataPopulator {
         }
       }
     } else {
-      _logger.warning(
-        "Could not create temporary file for asset $assetPath ($imageFriendlyName).",
-      );
+      _logger.warning("Could not create temporary file for asset $assetPath ($imageFriendlyName).");
     }
     return imageGuids;
   }
@@ -98,18 +83,14 @@ class SampleDataPopulator {
     // Clear existing user images IF the service is available
     if (imageDataService != null) {
       try {
-        _logger.info(
-          "Attempting to clear all user images via IImageDataService...",
-        );
+        _logger.info("Attempting to clear all user images via IImageDataService...");
         await imageDataService!.deleteAllImages();
         _logger.info("Successfully cleared all user images.");
       } catch (e, s) {
         _logger.severe("Error clearing user images during population", e, s);
       }
     } else {
-      _logger.info(
-        "IImageDataService is null. Skipping clearing of user images.",
-      );
+      _logger.info("IImageDataService is null. Skipping clearing of user images.");
     }
 
     // --- 1. Prepare Sample Image GUIDs (Locations & Rooms) ---
@@ -121,9 +102,7 @@ class SampleDataPopulator {
     List<String> serverRoomImageGuids = [];
 
     if (imageDataService != null) {
-      _logger.info(
-        "Processing sample images as IImageDataService is available...",
-      );
+      _logger.info("Processing sample images as IImageDataService is available...");
       // Location Images
       homeImageGuids = await _processAndSaveSampleImage(
         'assets/images/sample/locations/home.jpg', // Assuming a subfolder for clarity
@@ -152,9 +131,7 @@ class SampleDataPopulator {
       );
       _logger.info("Sample image processing complete.");
     } else {
-      _logger.info(
-        "IImageDataService is null. Skipping all sample image processing.",
-      );
+      _logger.info("IImageDataService is null. Skipping all sample image processing.");
     }
 
     // --- 2. Create Sample Locations ---
@@ -226,8 +203,7 @@ class SampleDataPopulator {
       ),
       Room(
         name: 'Server Room',
-        description:
-            'Houses network equipment and servers. Needs better cooling.',
+        description: 'Houses network equipment and servers. Needs better cooling.',
         locationId: officeLocationId, // Link to Downtown Office
         imageGuids: serverRoomImageGuids,
       ),

@@ -7,9 +7,7 @@ extension AppRouteNav on AppRoutes {
   void _check(Map<String, String> pathParams) {
     final missing = requiredPathParams.difference(pathParams.keys.toSet());
     if (missing.isNotEmpty) {
-      throw ArgumentError(
-        'Missing path params for $name: ${missing.join(", ")}',
-      );
+      throw ArgumentError('Missing path params for $name: ${missing.join(", ")}');
     }
   }
 
@@ -20,9 +18,7 @@ extension AppRouteNav on AppRoutes {
   }) {
     _check(pathParams);
     var p = path;
-    pathParams.forEach(
-      (k, v) => p = p.replaceAll(':$k', Uri.encodeComponent(v)),
-    );
+    pathParams.forEach((k, v) => p = p.replaceAll(':$k', Uri.encodeComponent(v)));
     if (queryParams.isNotEmpty) {
       p += '?${Uri(queryParameters: queryParams).query}';
     }
@@ -37,12 +33,7 @@ extension AppRouteNav on AppRoutes {
     Object? extra,
   }) {
     _check(pathParams);
-    context.goNamed(
-      name,
-      pathParameters: pathParams,
-      queryParameters: queryParams,
-      extra: extra,
-    );
+    context.goNamed(name, pathParameters: pathParams, queryParameters: queryParams, extra: extra);
   }
 
   void push(
@@ -52,12 +43,7 @@ extension AppRouteNav on AppRoutes {
     Object? extra,
   }) {
     _check(pathParams);
-    context.pushNamed(
-      name,
-      pathParameters: pathParams,
-      queryParameters: queryParams,
-      extra: extra,
-    );
+    context.pushNamed(name, pathParameters: pathParams, queryParameters: queryParams, extra: extra);
   }
 
   // Build a location via router (validates & respects redirections)
@@ -67,10 +53,8 @@ extension AppRouteNav on AppRoutes {
     Map<String, String> queryParams = const {},
   }) {
     _check(pathParams);
-    return GoRouter.of(context).namedLocation(
-      name,
-      pathParameters: pathParams,
-      queryParameters: queryParams,
-    );
+    return GoRouter.of(
+      context,
+    ).namedLocation(name, pathParameters: pathParams, queryParameters: queryParams);
   }
 }

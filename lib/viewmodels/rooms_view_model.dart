@@ -5,23 +5,20 @@ import 'package:logging/logging.dart';
 import '../models/location_model.dart';
 import '../models/room_model.dart';
 import '../services/data_service_interface.dart';
-import '../routing/app_routes.dart';
-import '../routing/app_route_ext.dart';
+import '../app/routing/app_routes.dart';
+import '../app/routing/app_route_ext.dart';
 
 final Logger _logger = Logger('RoomsViewModel');
 
 class RoomsViewModel extends ChangeNotifier {
   final IDataService _dataService;
-  final Location
-  _currentLocation; // The current location for which to display rooms
+  final Location _currentLocation; // The current location for which to display rooms
   Location get currentLocation => _currentLocation;
 
   // Constructor
-  RoomsViewModel({
-    required IDataService dataService,
-    required Location location,
-  }) : _dataService = dataService,
-       _currentLocation = location {
+  RoomsViewModel({required IDataService dataService, required Location location})
+    : _dataService = dataService,
+      _currentLocation = location {
     _logger.info(
       "RoomsViewModel created for location: ${_currentLocation.name} (ID: ${_currentLocation.id})",
     );
@@ -31,14 +28,9 @@ class RoomsViewModel extends ChangeNotifier {
 
   // Action: Navigate to add a new room
   void navigateToAddRoom(BuildContext context) {
-    _logger.info(
-      "Navigating to add new room for location: ${_currentLocation.name}",
-    );
+    _logger.info("Navigating to add new room for location: ${_currentLocation.name}");
 
-    AppRoutes.roomsAdd.go(
-      context,
-      pathParams: {'locationId': _currentLocation.id},
-    );
+    AppRoutes.roomsAdd.go(context, pathParams: {'locationId': _currentLocation.id});
   }
 
   // Action: Navigate to edit an existing room
@@ -60,9 +52,7 @@ class RoomsViewModel extends ChangeNotifier {
     _logger.info("ViewModel attempting to delete room: $roomId - $roomName");
     try {
       await _dataService.deleteRoom(roomId);
-      _logger.info(
-        "Room $roomId ($roomName) deleted successfully via DataService.",
-      );
+      _logger.info("Room $roomId ($roomName) deleted successfully via DataService.");
     } catch (e, s) {
       _logger.severe("ViewModel: Error deleting room $roomId", e, s);
       rethrow;

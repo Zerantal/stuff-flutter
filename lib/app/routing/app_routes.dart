@@ -3,10 +3,7 @@
 enum AppRoutes {
   locations('/locations'),
   locationsAdd('/locations/add'),
-  locationsEdit(
-    '/locations/:locationId/edit',
-    requiredPathParams: {'locationId'},
-  ),
+  locationsEdit('/locations/:locationId/edit', requiredPathParams: {'locationId'}),
 
   rooms('/rooms/:locationId', requiredPathParams: {'locationId'}),
   roomsAdd('/rooms/:locationId/add', requiredPathParams: {'locationId'}),
@@ -14,20 +11,11 @@ enum AppRoutes {
 
   containers('/containers/:roomId', requiredPathParams: {'roomId'}),
   containersAdd('/containers/:roomId/add', requiredPathParams: {'roomId'}),
-  containersEdit(
-    '/containers/:containerId/edit',
-    requiredPathParams: {'containerId'},
-  ),
+  containersEdit('/containers/:containerId/edit', requiredPathParams: {'containerId'}),
 
   // param 't' = 'room' or 'container'
-  items(
-    '/items/:t/:roomOrContainerId',
-    requiredPathParams: {':t', 'roomOrContainerId'},
-  ),
-  itemsAdd(
-    '/items/:t/:roomOrContainerId/add',
-    requiredPathParams: {':t', 'roomOrContainerId'},
-  ),
+  items('/items/:t/:roomOrContainerId', requiredPathParams: {':t', 'roomOrContainerId'}),
+  itemsAdd('/items/:t/:roomOrContainerId/add', requiredPathParams: {':t', 'roomOrContainerId'}),
   itemsEdit('/items/:itemId/edit', requiredPathParams: {'itemId'});
 
   /// The actual path string for the route.

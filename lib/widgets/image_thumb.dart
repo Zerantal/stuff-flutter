@@ -5,7 +5,7 @@
 
 import 'package:flutter/material.dart';
 
-import '../core/helpers/image_ref.dart';
+import '../shared/image/image_ref.dart';
 
 /// Small image thumbnail for grid/list usage.
 /// - No storage knowledge: accepts an [ImageRef] only.
@@ -95,11 +95,7 @@ class ImageThumb extends StatelessWidget {
 
     // Rounded corners if requested.
     if (borderRadius != null) {
-      content = ClipRRect(
-        borderRadius: borderRadius!,
-        clipBehavior: clipBehavior,
-        child: content,
-      );
+      content = ClipRRect(borderRadius: borderRadius!, clipBehavior: clipBehavior, child: content);
     }
 
     // Optional background/padding/margin.
@@ -119,11 +115,7 @@ class ImageThumb extends StatelessWidget {
 
     // Optional tap handling.
     if (onTap != null) {
-      content = InkWell(
-        onTap: onTap,
-        borderRadius: borderRadius,
-        child: content,
-      );
+      content = InkWell(onTap: onTap, borderRadius: borderRadius, child: content);
     }
 
     return content;

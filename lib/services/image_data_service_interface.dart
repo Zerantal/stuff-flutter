@@ -1,7 +1,7 @@
 // lib/services/image_data_service_interface.dart
 import 'dart:io';
 
-import '../core/helpers/image_ref.dart';
+import '../shared/image/image_ref.dart';
 
 abstract class IImageDataService {
   /// Idempotent initialization (e.g., create directories, open caches).
@@ -19,13 +19,8 @@ abstract class IImageDataService {
   Future<String> saveImage(File imageFile, {bool deleteSource = false});
 
   /// Convenience batch: persists all files in parallel. Throws if any save fails.
-  Future<List<String>> saveImages(
-    Iterable<File> files, {
-    bool deleteSource = false,
-  }) async {
-    return Future.wait(
-      files.map((f) => saveImage(f, deleteSource: deleteSource)),
-    );
+  Future<List<String>> saveImages(Iterable<File> files, {bool deleteSource = false}) async {
+    return Future.wait(files.map((f) => saveImage(f, deleteSource: deleteSource)));
   }
 
   Future<void> deleteImage(String imageGuid);

@@ -56,68 +56,53 @@ void main() {
   });
 
   group('isServiceEnabledAndPermitted', () {
-    test(
-      'should return false and log if location services are disabled',
-      () async {
-        // ARRANGE
-        when(
-          mockGeolocatorWrapper.isLocationServiceEnabled(),
-        ).thenAnswer((_) async => false);
+    test('should return false and log if location services are disabled', () async {
+      // ARRANGE
+      when(mockGeolocatorWrapper.isLocationServiceEnabled()).thenAnswer((_) async => false);
 
-        // ACT
-        final result = await service.isServiceEnabledAndPermitted();
+      // ACT
+      final result = await service.isServiceEnabledAndPermitted();
 
-        // ASSERT
-        expect(result, isFalse);
-        verify(mockGeolocatorWrapper.isLocationServiceEnabled()).called(1);
-        verifyNever(
-          mockPermissionService.checkLocationPermission(),
-        ); // Should not check permission if service disabled
-        await Future.delayed(Duration.zero); // Allow logs to process
-        expect(
-          loggerManager.findLogWithMessage(
-            "Location services are disabled.",
-            level: Level.INFO,
-          ),
-          isNotNull,
-        );
-      },
-    );
+      // ASSERT
+      expect(result, isFalse);
+      verify(mockGeolocatorWrapper.isLocationServiceEnabled()).called(1);
+      verifyNever(
+        mockPermissionService.checkLocationPermission(),
+      ); // Should not check permission if service disabled
+      await Future.delayed(Duration.zero); // Allow logs to process
+      expect(
+        loggerManager.findLogWithMessage("Location services are disabled.", level: Level.INFO),
+        isNotNull,
+      );
+    });
 
-    test(
-      'should return false and log if permission is deniedForever',
-      () async {
-        // ARRANGE
-        when(
-          mockGeolocatorWrapper.isLocationServiceEnabled(),
-        ).thenAnswer((_) async => true);
-        when(
-          mockPermissionService.checkLocationPermission(),
-        ).thenAnswer((_) async => LocationPermission.deniedForever);
+    test('should return false and log if permission is deniedForever', () async {
+      // ARRANGE
+      when(mockGeolocatorWrapper.isLocationServiceEnabled()).thenAnswer((_) async => true);
+      when(
+        mockPermissionService.checkLocationPermission(),
+      ).thenAnswer((_) async => LocationPermission.deniedForever);
 
-        // ACT
-        final result = await service.isServiceEnabledAndPermitted();
+      // ACT
+      final result = await service.isServiceEnabledAndPermitted();
 
-        // ASSERT
-        expect(result, isFalse);
-        verify(mockGeolocatorWrapper.isLocationServiceEnabled()).called(1);
-        verify(mockPermissionService.checkLocationPermission()).called(1);
-        await Future.delayed(Duration.zero);
-        expect(
-          loggerManager.findLogWithMessage(
-            "Location permission permanently denied.",
-            level: Level.INFO,
-          ),
-          isNotNull,
-        );
-      },
-    );
+      // ASSERT
+      expect(result, isFalse);
+      verify(mockGeolocatorWrapper.isLocationServiceEnabled()).called(1);
+      verify(mockPermissionService.checkLocationPermission()).called(1);
+      await Future.delayed(Duration.zero);
+      expect(
+        loggerManager.findLogWithMessage(
+          "Location permission permanently denied.",
+          level: Level.INFO,
+        ),
+        isNotNull,
+      );
+    });
 
     test('should return false and log if permission is denied', () async {
       // ARRANGE
-      when(
-        mockGeolocatorWrapper.isLocationServiceEnabled(),
-      ).thenAnswer((_) async => true);
+      when(mockGeolocatorWrapper.isLocationServiceEnabled()).thenAnswer((_) async => true);
       when(
         mockPermissionService.checkLocationPermission(),
       ).thenAnswer((_) async => LocationPermission.denied);
@@ -141,9 +126,7 @@ void main() {
       'should return true and log if service enabled and permission granted (whileInUse)',
       () async {
         // ARRANGE
-        when(
-          mockGeolocatorWrapper.isLocationServiceEnabled(),
-        ).thenAnswer((_) async => true);
+        when(mockGeolocatorWrapper.isLocationServiceEnabled()).thenAnswer((_) async => true);
         when(
           mockPermissionService.checkLocationPermission(),
         ).thenAnswer((_) async => LocationPermission.whileInUse);
@@ -164,162 +147,124 @@ void main() {
       },
     );
 
-    test(
-      'should return true and log if service enabled and permission granted (always)',
-      () async {
-        // ARRANGE
-        when(
-          mockGeolocatorWrapper.isLocationServiceEnabled(),
-        ).thenAnswer((_) async => true);
-        when(
-          mockPermissionService.checkLocationPermission(),
-        ).thenAnswer((_) async => LocationPermission.always);
+    test('should return true and log if service enabled and permission granted (always)', () async {
+      // ARRANGE
+      when(mockGeolocatorWrapper.isLocationServiceEnabled()).thenAnswer((_) async => true);
+      when(
+        mockPermissionService.checkLocationPermission(),
+      ).thenAnswer((_) async => LocationPermission.always);
 
-        // ACT
-        final result = await service.isServiceEnabledAndPermitted();
+      // ACT
+      final result = await service.isServiceEnabledAndPermitted();
 
-        // ASSERT
-        expect(result, isTrue);
-        await Future.delayed(Duration.zero);
-        expect(
-          loggerManager.findLogWithMessage(
-            "Location services enabled and permission granted.",
-            level: Level.INFO,
-          ),
-          isNotNull,
-        );
-      },
-    );
+      // ASSERT
+      expect(result, isTrue);
+      await Future.delayed(Duration.zero);
+      expect(
+        loggerManager.findLogWithMessage(
+          "Location services enabled and permission granted.",
+          level: Level.INFO,
+        ),
+        isNotNull,
+      );
+    });
   });
 
   group('getCurrentPosition', () {
-    test(
-      'should throw OSServiceDisabledException if location services are disabled',
-      () async {
-        // ARRANGE
-        when(
-          mockGeolocatorWrapper.isLocationServiceEnabled(),
-        ).thenAnswer((_) async => false);
+    test('should throw OSServiceDisabledException if location services are disabled', () async {
+      // ARRANGE
+      when(mockGeolocatorWrapper.isLocationServiceEnabled()).thenAnswer((_) async => false);
 
-        // ACT & ASSERT
-        expect(
-          () => service.getCurrentPosition(),
-          throwsA(
-            isA<OSServiceDisabledException>().having(
-              (e) => e.serviceName,
-              'serviceName',
-              'Location',
-            ),
-          ),
-        ); // Check serviceName
-        verify(mockGeolocatorWrapper.isLocationServiceEnabled()).called(1);
-        verifyNever(mockPermissionService.checkLocationPermission());
-        verifyNever(
-          mockGeolocatorWrapper.getCurrentPosition(
-            locationSettings: anyNamed('locationSettings'),
-          ),
-        );
-        await Future.delayed(Duration.zero);
-        expect(
-          loggerManager.findLogWithMessage(
-            'Location services are disabled on the device.',
-            level: Level.WARNING,
-          ),
-          isNotNull,
-        );
-      },
-    );
+      // ACT & ASSERT
+      expect(
+        () => service.getCurrentPosition(),
+        throwsA(
+          isA<OSServiceDisabledException>().having((e) => e.serviceName, 'serviceName', 'Location'),
+        ),
+      ); // Check serviceName
+      verify(mockGeolocatorWrapper.isLocationServiceEnabled()).called(1);
+      verifyNever(mockPermissionService.checkLocationPermission());
+      verifyNever(
+        mockGeolocatorWrapper.getCurrentPosition(locationSettings: anyNamed('locationSettings')),
+      );
+      await Future.delayed(Duration.zero);
+      expect(
+        loggerManager.findLogWithMessage(
+          'Location services are disabled on the device.',
+          level: Level.WARNING,
+        ),
+        isNotNull,
+      );
+    });
 
-    test(
-      'should return position if service enabled and permission granted (whileInUse)',
-      () async {
-        // ARRANGE
-        when(
-          mockGeolocatorWrapper.isLocationServiceEnabled(),
-        ).thenAnswer((_) async => true);
-        when(
-          mockPermissionService.checkLocationPermission(),
-        ).thenAnswer((_) async => LocationPermission.whileInUse);
-        when(
-          mockGeolocatorWrapper.getCurrentPosition(
-            locationSettings: anyNamed('locationSettings'),
-          ),
-        ).thenAnswer((_) async => mockPosition);
+    test('should return position if service enabled and permission granted (whileInUse)', () async {
+      // ARRANGE
+      when(mockGeolocatorWrapper.isLocationServiceEnabled()).thenAnswer((_) async => true);
+      when(
+        mockPermissionService.checkLocationPermission(),
+      ).thenAnswer((_) async => LocationPermission.whileInUse);
+      when(
+        mockGeolocatorWrapper.getCurrentPosition(locationSettings: anyNamed('locationSettings')),
+      ).thenAnswer((_) async => mockPosition);
 
-        // ACT
-        final result = await service.getCurrentPosition();
+      // ACT
+      final result = await service.getCurrentPosition();
 
-        // ASSERT
-        expect(result, mockPosition);
-        verify(mockGeolocatorWrapper.isLocationServiceEnabled()).called(1);
-        verify(mockPermissionService.checkLocationPermission()).called(1);
-        verifyNever(mockPermissionService.requestLocationPermission());
-        verify(
-          mockGeolocatorWrapper.getCurrentPosition(
-            locationSettings: anyNamed('locationSettings'),
-          ),
-        ).called(1);
-        await Future.delayed(Duration.zero);
-        expect(
-          loggerManager.findLogWithMessage(
-            'Attempting to get current position with accuracy',
-            level: Level.INFO,
-          ),
-          isNotNull,
-        );
-      },
-    );
+      // ASSERT
+      expect(result, mockPosition);
+      verify(mockGeolocatorWrapper.isLocationServiceEnabled()).called(1);
+      verify(mockPermissionService.checkLocationPermission()).called(1);
+      verifyNever(mockPermissionService.requestLocationPermission());
+      verify(
+        mockGeolocatorWrapper.getCurrentPosition(locationSettings: anyNamed('locationSettings')),
+      ).called(1);
+      await Future.delayed(Duration.zero);
+      expect(
+        loggerManager.findLogWithMessage(
+          'Attempting to get current position with accuracy',
+          level: Level.INFO,
+        ),
+        isNotNull,
+      );
+    });
 
-    test(
-      'should return position if service enabled and permission granted (always)',
-      () async {
-        // ARRANGE
-        when(
-          mockGeolocatorWrapper.isLocationServiceEnabled(),
-        ).thenAnswer((_) async => true);
-        when(
-          mockPermissionService.checkLocationPermission(),
-        ).thenAnswer((_) async => LocationPermission.always);
-        when(
-          mockGeolocatorWrapper.getCurrentPosition(
-            locationSettings: anyNamed('locationSettings'),
-          ),
-        ).thenAnswer((_) async => mockPosition);
+    test('should return position if service enabled and permission granted (always)', () async {
+      // ARRANGE
+      when(mockGeolocatorWrapper.isLocationServiceEnabled()).thenAnswer((_) async => true);
+      when(
+        mockPermissionService.checkLocationPermission(),
+      ).thenAnswer((_) async => LocationPermission.always);
+      when(
+        mockGeolocatorWrapper.getCurrentPosition(locationSettings: anyNamed('locationSettings')),
+      ).thenAnswer((_) async => mockPosition);
 
-        // ACT
-        final result = await service.getCurrentPosition();
+      // ACT
+      final result = await service.getCurrentPosition();
 
-        // ASSERT
-        expect(result, mockPosition);
-        // Verifications are similar to whileInUse
-        verify(mockGeolocatorWrapper.isLocationServiceEnabled()).called(1);
-        verify(mockPermissionService.checkLocationPermission()).called(1);
-        verifyNever(mockPermissionService.requestLocationPermission());
-        verify(
-          mockGeolocatorWrapper.getCurrentPosition(
-            locationSettings: anyNamed('locationSettings'),
-          ),
-        ).called(1);
-      },
-    );
+      // ASSERT
+      expect(result, mockPosition);
+      // Verifications are similar to whileInUse
+      verify(mockGeolocatorWrapper.isLocationServiceEnabled()).called(1);
+      verify(mockPermissionService.checkLocationPermission()).called(1);
+      verifyNever(mockPermissionService.requestLocationPermission());
+      verify(
+        mockGeolocatorWrapper.getCurrentPosition(locationSettings: anyNamed('locationSettings')),
+      ).called(1);
+    });
 
     test(
       'should request permission and return position if initially denied but then granted whileInUse',
       () async {
         // ARRANGE
+        when(mockGeolocatorWrapper.isLocationServiceEnabled()).thenAnswer((_) async => true);
         when(
-          mockGeolocatorWrapper.isLocationServiceEnabled(),
-        ).thenAnswer((_) async => true);
-        when(mockPermissionService.checkLocationPermission()).thenAnswer(
-          (_) async => LocationPermission.denied,
-        ); // Initially denied
-        when(mockPermissionService.requestLocationPermission()).thenAnswer(
-          (_) async => LocationPermission.whileInUse,
-        ); // Granted after request
+          mockPermissionService.checkLocationPermission(),
+        ).thenAnswer((_) async => LocationPermission.denied); // Initially denied
         when(
-          mockGeolocatorWrapper.getCurrentPosition(
-            locationSettings: anyNamed('locationSettings'),
-          ),
+          mockPermissionService.requestLocationPermission(),
+        ).thenAnswer((_) async => LocationPermission.whileInUse); // Granted after request
+        when(
+          mockGeolocatorWrapper.getCurrentPosition(locationSettings: anyNamed('locationSettings')),
         ).thenAnswer((_) async => mockPosition);
 
         // ACT
@@ -331,9 +276,7 @@ void main() {
         verify(mockPermissionService.checkLocationPermission()).called(1);
         verify(mockPermissionService.requestLocationPermission()).called(1);
         verify(
-          mockGeolocatorWrapper.getCurrentPosition(
-            locationSettings: anyNamed('locationSettings'),
-          ),
+          mockGeolocatorWrapper.getCurrentPosition(locationSettings: anyNamed('locationSettings')),
         ).called(1);
         await Future.delayed(Duration.zero);
         expect(
@@ -357,9 +300,7 @@ void main() {
       'should throw LocationPermissionDeniedException if permission denied after request',
       () async {
         // ARRANGE
-        when(
-          mockGeolocatorWrapper.isLocationServiceEnabled(),
-        ).thenAnswer((_) async => true);
+        when(mockGeolocatorWrapper.isLocationServiceEnabled()).thenAnswer((_) async => true);
         when(
           mockPermissionService.checkLocationPermission(),
         ).thenAnswer((_) async => LocationPermission.denied);
@@ -378,9 +319,7 @@ void main() {
 
         verify(mockPermissionService.requestLocationPermission()).called(1);
         verifyNever(
-          mockGeolocatorWrapper.getCurrentPosition(
-            locationSettings: anyNamed('locationSettings'),
-          ),
+          mockGeolocatorWrapper.getCurrentPosition(locationSettings: anyNamed('locationSettings')),
         );
         expect(
           loggerManager.findLogWithMessage(
@@ -397,9 +336,7 @@ void main() {
       'should throw LocationPermissionDeniedPermanentlyException if permission is deniedForever initially',
       () async {
         // ARRANGE
-        when(
-          mockGeolocatorWrapper.isLocationServiceEnabled(),
-        ).thenAnswer((_) async => true);
+        when(mockGeolocatorWrapper.isLocationServiceEnabled()).thenAnswer((_) async => true);
         when(
           mockPermissionService.checkLocationPermission(),
         ).thenAnswer((_) async => LocationPermission.deniedForever);
@@ -415,9 +352,7 @@ void main() {
         verify(mockPermissionService.checkLocationPermission()).called(1);
         verifyNever(mockPermissionService.requestLocationPermission());
         verifyNever(
-          mockGeolocatorWrapper.getCurrentPosition(
-            locationSettings: anyNamed('locationSettings'),
-          ),
+          mockGeolocatorWrapper.getCurrentPosition(locationSettings: anyNamed('locationSettings')),
         );
 
         expect(
@@ -434,17 +369,13 @@ void main() {
       'should rethrow exception from geolocatorWrapper.getCurrentPosition and log severe',
       () async {
         // ARRANGE
-        when(
-          mockGeolocatorWrapper.isLocationServiceEnabled(),
-        ).thenAnswer((_) async => true);
+        when(mockGeolocatorWrapper.isLocationServiceEnabled()).thenAnswer((_) async => true);
         when(
           mockPermissionService.checkLocationPermission(),
         ).thenAnswer((_) async => LocationPermission.always);
         final geolocatorException = Exception('Geolocator Platform Error');
         when(
-          mockGeolocatorWrapper.getCurrentPosition(
-            locationSettings: anyNamed('locationSettings'),
-          ),
+          mockGeolocatorWrapper.getCurrentPosition(locationSettings: anyNamed('locationSettings')),
         ).thenThrow(geolocatorException);
 
         // ACT & ASSERT
@@ -474,15 +405,13 @@ void main() {
       'should throw LocationPermissionDeniedPermanentlyException if permission deniedForever after request',
       () async {
         // ARRANGE
-        when(
-          mockGeolocatorWrapper.isLocationServiceEnabled(),
-        ).thenAnswer((_) async => true);
+        when(mockGeolocatorWrapper.isLocationServiceEnabled()).thenAnswer((_) async => true);
         when(
           mockPermissionService.checkLocationPermission(),
         ).thenAnswer((_) async => LocationPermission.denied);
-        when(mockPermissionService.requestLocationPermission()).thenAnswer(
-          (_) async => LocationPermission.deniedForever,
-        ); // Denied forever after request
+        when(
+          mockPermissionService.requestLocationPermission(),
+        ).thenAnswer((_) async => LocationPermission.deniedForever); // Denied forever after request
 
         // ACT & ASSERT
         expect(
@@ -492,9 +421,7 @@ void main() {
         await pumpEventQueue();
         verify(mockPermissionService.requestLocationPermission()).called(1);
         verifyNever(
-          mockGeolocatorWrapper.getCurrentPosition(
-            locationSettings: anyNamed('locationSettings'),
-          ),
+          mockGeolocatorWrapper.getCurrentPosition(locationSettings: anyNamed('locationSettings')),
         );
 
         expect(
@@ -512,9 +439,7 @@ void main() {
       () {
         fakeAsync((FakeAsync fa) {
           // ARRANGE
-          when(
-            mockGeolocatorWrapper.isLocationServiceEnabled(),
-          ).thenAnswer((_) async => true);
+          when(mockGeolocatorWrapper.isLocationServiceEnabled()).thenAnswer((_) async => true);
           when(
             mockPermissionService.checkLocationPermission(),
           ).thenAnswer((_) async => LocationPermission.whileInUse);
@@ -551,10 +476,7 @@ void main() {
             isTrue,
             reason: "TimeoutException was not caught by the future's onError.",
           );
-          expect(
-            timeoutExceptionMessage,
-            contains('Getting location timed out.'),
-          );
+          expect(timeoutExceptionMessage, contains('Getting location timed out.'));
 
           expect(
             loggerManager.findLogWithMessage(
@@ -576,51 +498,42 @@ void main() {
       },
     );
 
-    test(
-      'should rethrow generic Exception from geolocatorWrapper.getCurrentPosition',
-      () async {
-        // ARRANGE
-        when(
-          mockGeolocatorWrapper.isLocationServiceEnabled(),
-        ).thenAnswer((_) async => true);
-        when(
-          mockPermissionService.checkLocationPermission(),
-        ).thenAnswer((_) async => LocationPermission.always);
-        final exception = Exception('Geolocator Platform Error');
-        when(
-          mockGeolocatorWrapper.getCurrentPosition(
-            locationSettings: anyNamed('locationSettings'),
-          ),
-        ).thenThrow(exception);
+    test('should rethrow generic Exception from geolocatorWrapper.getCurrentPosition', () async {
+      // ARRANGE
+      when(mockGeolocatorWrapper.isLocationServiceEnabled()).thenAnswer((_) async => true);
+      when(
+        mockPermissionService.checkLocationPermission(),
+      ).thenAnswer((_) async => LocationPermission.always);
+      final exception = Exception('Geolocator Platform Error');
+      when(
+        mockGeolocatorWrapper.getCurrentPosition(locationSettings: anyNamed('locationSettings')),
+      ).thenThrow(exception);
 
-        // ACT & ASSERT
-        expect(
-          () => service.getCurrentPosition(),
-          throwsA(
-            isA<Exception>().having(
-              (e) => e.toString(),
-              'toString',
-              contains('An unexpected error occurred while fetching location'),
-            ),
+      // ACT & ASSERT
+      expect(
+        () => service.getCurrentPosition(),
+        throwsA(
+          isA<Exception>().having(
+            (e) => e.toString(),
+            'toString',
+            contains('An unexpected error occurred while fetching location'),
           ),
-        );
-        await Future.delayed(Duration.zero);
-        expect(
-          loggerManager.findLogWithMessage(
-            'An unexpected error occurred in _geolocator.getCurrentPosition',
-            error: exception,
-            level: Level.SEVERE,
-          ),
-          isNotNull,
-        );
-      },
-    );
+        ),
+      );
+      await Future.delayed(Duration.zero);
+      expect(
+        loggerManager.findLogWithMessage(
+          'An unexpected error occurred in _geolocator.getCurrentPosition',
+          error: exception,
+          level: Level.SEVERE,
+        ),
+        isNotNull,
+      );
+    });
 
     test('should throw Exception for unexpected permission state', () async {
       // ARRANGE
-      when(
-        mockGeolocatorWrapper.isLocationServiceEnabled(),
-      ).thenAnswer((_) async => true);
+      when(mockGeolocatorWrapper.isLocationServiceEnabled()).thenAnswer((_) async => true);
 
       when(mockPermissionService.checkLocationPermission()).thenAnswer(
         (_) async => LocationPermission.unableToDetermine,
@@ -633,9 +546,7 @@ void main() {
           isA<Exception>().having(
             (e) => e.toString(),
             'toString',
-            contains(
-              "Unexpected permission state: LocationPermission.unableToDetermine",
-            ),
+            contains("Unexpected permission state: LocationPermission.unableToDetermine"),
           ),
         ),
       );
@@ -670,74 +581,58 @@ void main() {
       when(mockPosition.headingAccuracy).thenReturn(0.0);
 
       // Default success for getCurrentPosition within this group, override in specific tests if needed
-      when(
-        mockGeolocatorWrapper.isLocationServiceEnabled(),
-      ).thenAnswer((_) async => true);
+      when(mockGeolocatorWrapper.isLocationServiceEnabled()).thenAnswer((_) async => true);
       when(
         mockPermissionService.checkLocationPermission(),
       ).thenAnswer((_) async => LocationPermission.whileInUse);
       when(
-        mockGeolocatorWrapper.getCurrentPosition(
-          locationSettings: anyNamed('locationSettings'),
-        ),
+        mockGeolocatorWrapper.getCurrentPosition(locationSettings: anyNamed('locationSettings')),
       ).thenAnswer((_) async => mockPosition);
     });
 
-    test(
-      'should rethrow OSServiceDisabledException from getCurrentPosition',
-      () async {
-        // ARRANGE
-        // Override default setup for getCurrentPosition to make it throw
-        when(mockGeolocatorWrapper.isLocationServiceEnabled()).thenAnswer(
-          (_) async => false,
-        ); // This will make getCurrentPosition throw
+    test('should rethrow OSServiceDisabledException from getCurrentPosition', () async {
+      // ARRANGE
+      // Override default setup for getCurrentPosition to make it throw
+      when(
+        mockGeolocatorWrapper.isLocationServiceEnabled(),
+      ).thenAnswer((_) async => false); // This will make getCurrentPosition throw
 
-        // ACT & ASSERT
-        expect(
-          () => service.getCurrentAddress(),
-          throwsA(isA<OSServiceDisabledException>()),
-        );
-        await Future.delayed(Duration.zero);
-        // Log from getCurrentPosition
-        expect(
-          loggerManager.findLogWithMessage(
-            'Location services are disabled on the device.',
-            level: Level.WARNING,
-          ),
-          isNotNull,
-        );
-        // Log from getCurrentAddress (rethrown)
-        // The current getCurrentAddress rethrows without adding its own log message for these specific types
-        // so we only expect the original log from getCurrentPosition.
-      },
-    );
+      // ACT & ASSERT
+      expect(() => service.getCurrentAddress(), throwsA(isA<OSServiceDisabledException>()));
+      await Future.delayed(Duration.zero);
+      // Log from getCurrentPosition
+      expect(
+        loggerManager.findLogWithMessage(
+          'Location services are disabled on the device.',
+          level: Level.WARNING,
+        ),
+        isNotNull,
+      );
+      // Log from getCurrentAddress (rethrown)
+      // The current getCurrentAddress rethrows without adding its own log message for these specific types
+      // so we only expect the original log from getCurrentPosition.
+    });
 
-    test(
-      'should rethrow LocationPermissionDeniedException from getCurrentPosition',
-      () async {
-        // ARRANGE
-        when(
-          mockPermissionService.checkLocationPermission(),
-        ).thenAnswer((_) async => LocationPermission.denied);
-        when(
-          mockPermissionService.requestLocationPermission(),
-        ).thenAnswer((_) async => LocationPermission.denied);
+    test('should rethrow LocationPermissionDeniedException from getCurrentPosition', () async {
+      // ARRANGE
+      when(
+        mockPermissionService.checkLocationPermission(),
+      ).thenAnswer((_) async => LocationPermission.denied);
+      when(
+        mockPermissionService.requestLocationPermission(),
+      ).thenAnswer((_) async => LocationPermission.denied);
 
-        // ACT & ASSERT
-        expect(
-          () => service.getCurrentAddress(),
-          throwsA(isA<LocationPermissionDeniedException>()),
-        );
-        await Future.delayed(Duration.zero);
-        expect(
-          loggerManager.findLogWithMessage(
-            'Location permission was denied by the user after request.',
-            level: Level.WARNING,
-          ),
-          isNotNull,
-        );
-      },
-    );
+      // ACT & ASSERT
+      expect(() => service.getCurrentAddress(), throwsA(isA<LocationPermissionDeniedException>()));
+      await Future.delayed(Duration.zero);
+      expect(
+        loggerManager.findLogWithMessage(
+          'Location permission was denied by the user after request.',
+          level: Level.WARNING,
+        ),
+        isNotNull,
+      );
+    });
 
     test(
       'should rethrow LocationPermissionDeniedPermanentlyException from getCurrentPosition',
@@ -767,16 +662,11 @@ void main() {
       fakeAsync((FakeAsync fa) {
         // ARRANGE
         when(
-          mockGeolocatorWrapper.getCurrentPosition(
-            locationSettings: anyNamed('locationSettings'),
-          ),
+          mockGeolocatorWrapper.getCurrentPosition(locationSettings: anyNamed('locationSettings')),
         ).thenAnswer((_) => Completer<Position>().future); // Will cause timeout
 
         // ACT & ASSERT
-        expect(
-          () => service.getCurrentAddress(),
-          throwsA(isA<TimeoutException>()),
-        );
+        expect(() => service.getCurrentAddress(), throwsA(isA<TimeoutException>()));
 
         fa.elapse(const Duration(seconds: 21)); // Trigger timeout
         fa.flushMicrotasks();
@@ -791,82 +681,62 @@ void main() {
       });
     });
 
-    test(
-      'should return formatted address if geocoding returns placemarks',
-      () async {
-        // ARRANGE
-        // getCurrentPosition succeeds (from group setUp)
-        when(mockPlacemark.street).thenReturn('123 Main St');
-        when(mockPlacemark.subLocality).thenReturn('Downtown');
-        when(mockPlacemark.locality).thenReturn('Anytown');
-        when(mockPlacemark.postalCode).thenReturn('90210');
-        when(mockPlacemark.country).thenReturn('USA');
-        // Stub other fields that might be accessed by the formatting logic to avoid null errors
-        when(mockPlacemark.name).thenReturn('');
-        when(mockPlacemark.isoCountryCode).thenReturn('');
-        when(mockPlacemark.subAdministrativeArea).thenReturn('');
-        when(mockPlacemark.administrativeArea).thenReturn('');
-        when(mockPlacemark.thoroughfare).thenReturn('');
-        when(mockPlacemark.subThoroughfare).thenReturn('');
+    test('should return formatted address if geocoding returns placemarks', () async {
+      // ARRANGE
+      // getCurrentPosition succeeds (from group setUp)
+      when(mockPlacemark.street).thenReturn('123 Main St');
+      when(mockPlacemark.subLocality).thenReturn('Downtown');
+      when(mockPlacemark.locality).thenReturn('Anytown');
+      when(mockPlacemark.postalCode).thenReturn('90210');
+      when(mockPlacemark.country).thenReturn('USA');
+      // Stub other fields that might be accessed by the formatting logic to avoid null errors
+      when(mockPlacemark.name).thenReturn('');
+      when(mockPlacemark.isoCountryCode).thenReturn('');
+      when(mockPlacemark.subAdministrativeArea).thenReturn('');
+      when(mockPlacemark.administrativeArea).thenReturn('');
+      when(mockPlacemark.thoroughfare).thenReturn('');
+      when(mockPlacemark.subThoroughfare).thenReturn('');
 
-        when(
-          mockGeocodingWrapper.placemarkFromCoordinates(
-            testLatitude,
-            testLongitude,
-          ),
-        ).thenAnswer((_) async => [mockPlacemark]);
+      when(
+        mockGeocodingWrapper.placemarkFromCoordinates(testLatitude, testLongitude),
+      ).thenAnswer((_) async => [mockPlacemark]);
 
-        // ACT
-        final result = await service.getCurrentAddress();
+      // ACT
+      final result = await service.getCurrentAddress();
 
-        // ASSERT
-        expect(result, '123 Main St, Downtown, Anytown, 90210, USA');
-        verify(
-          mockGeocodingWrapper.placemarkFromCoordinates(
-            testLatitude,
-            testLongitude,
-          ),
-        ).called(1);
-        await Future.delayed(Duration.zero);
-        expect(
-          loggerManager.findLogWithMessage(
-            "Formatted address: $result",
-            level: Level.INFO,
-          ),
-          isNotNull,
-        );
-      },
-    );
+      // ASSERT
+      expect(result, '123 Main St, Downtown, Anytown, 90210, USA');
+      verify(mockGeocodingWrapper.placemarkFromCoordinates(testLatitude, testLongitude)).called(1);
+      await Future.delayed(Duration.zero);
+      expect(
+        loggerManager.findLogWithMessage("Formatted address: $result", level: Level.INFO),
+        isNotNull,
+      );
+    });
 
-    test(
-      'should return null and log for geocoding non-permission errors',
-      () async {
-        // ARRANGE
-        // getCurrentPosition succeeds (from group setUp)
-        final geocodingException = Exception('Geocoding Service Not Available');
-        when(
-          mockGeocodingWrapper.placemarkFromCoordinates(
-            testLatitude,
-            testLongitude,
-          ),
-        ).thenThrow(geocodingException);
+    test('should return null and log for geocoding non-permission errors', () async {
+      // ARRANGE
+      // getCurrentPosition succeeds (from group setUp)
+      final geocodingException = Exception('Geocoding Service Not Available');
+      when(
+        mockGeocodingWrapper.placemarkFromCoordinates(testLatitude, testLongitude),
+      ).thenThrow(geocodingException);
 
-        // ACT
-        final result = await service.getCurrentAddress();
+      // ACT
+      final result = await service.getCurrentAddress();
 
-        // ASSERT
-        expect(result, isNull);
-        await Future.delayed(Duration.zero);
-        expect(
-          loggerManager.findLogWithMessage(
-            // CHANGED: Match the new log message format in getCurrentAddress for this case
-            'Error during geocoding or other issue in getCurrentAddress',
-            error: geocodingException,
-            level: Level.SEVERE,
-          ),
-          isNotNull,
-        );
-      },
-    );
+      // ASSERT
+      expect(result, isNull);
+      await Future.delayed(Duration.zero);
+      expect(
+        loggerManager.findLogWithMessage(
+          // CHANGED: Match the new log message format in getCurrentAddress for this case
+          'Error during geocoding or other issue in getCurrentAddress',
+          error: geocodingException,
+          level: Level.SEVERE,
+        ),
+        isNotNull,
+      );
+    });
   });
 }

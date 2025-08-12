@@ -1,12 +1,12 @@
 // lib/pages/edit_location_page.dart
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
-
+import 'package:uuid/uuid.dart';
 import '../services/data_service_interface.dart';
 import '../services/image_data_service_interface.dart';
 import '../services/location_service_interface.dart';
+import '../services/temporary_file_service_interface.dart';
 import '../viewmodels/edit_location_view_model.dart';
 import '../widgets/confirmation_dialog.dart';
 import '../widgets/image_manager_input.dart';
@@ -17,9 +17,45 @@ final _log = Logger('EditLocationPage');
 
 /// Accepts an optional [locationId]. If null => creating a new location.
 /// If not null => editing existing; we’ll show a spinner while data loads.
-class EditLocationPage extends StatelessWidget {
+class EditLocationPage extends StatefulWidget {
   const EditLocationPage({super.key, this.locationId});
+
   final String? locationId;
+
+  @override
+  State<EditLocationPage> createState() => _EditLocationPageState();
+}
+
+class _EditLocationPageState extends State<EditLocationPage> {
+  String? get locationId => widget.locationId;
+  TempSession? _session;
+
+  final _uuid = const Uuid();
+
+  @override
+  initState() {
+    super.initState();
+    _createTempSession();
+  }
+
+  Future<void> _createTempSession() async {
+    final temp = context.read<ITemporaryFileService>();
+    final String shortId = (locationId != null) ? locationId!.substring(0, 10) : '';
+
+    final sessionLabel =
+        'edit_location_$shortId'
+        '_${_uuid.v4().substring(0, 10)}';
+    final s = await temp.startSession(label: sessionLabel);
+    if (!mounted) return;
+    setState(() => _session = s);
+  }
+
+  @override
+  void dispose() {
+    // Always safe to cleanup (after Save the session should be empty).
+    _session?.dispose(deleteContents: true);
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,14 +67,16 @@ class EditLocationPage extends StatelessWidget {
         locationService: ctx.read<ILocationService>(),
         locationId: locationId,
       )..init(),
-      child: const _EditLocationScaffold(),
+      child: _EditLocationScaffold(session: _session),
     );
   }
 }
 
 /// Wraps app bar, body, and FAB; keeps build simple and declarative.
 class _EditLocationScaffold extends StatelessWidget {
-  const _EditLocationScaffold();
+  const _EditLocationScaffold({required TempSession? session}) : _session = session;
+
+  final TempSession? _session;
 
   @override
   Widget build(BuildContext context) {
@@ -76,22 +114,17 @@ class _EditLocationScaffold extends StatelessWidget {
                 key: const Key('delete_location_btn'),
                 tooltip: 'Delete',
                 icon: const Icon(Icons.delete_outline),
-                onPressed: (isLoading || isBusy)
-                    ? null
-                    : () => _confirmDelete(context, vm),
+                onPressed: (isLoading || isBusy) ? null : () => _confirmDelete(context, vm),
               ),
           ],
         ),
         body: AnimatedSwitcher(
           duration: const Duration(milliseconds: 200),
           child: isLoading
-              ? const Center(
-                  key: ValueKey('edit_loc_spinner'),
-                  child: CircularProgressIndicator(),
-                )
+              ? const Center(key: ValueKey('edit_loc_spinner'), child: CircularProgressIndicator())
               : Stack(
                   children: [
-                    _EditForm(vm: vm),
+                    _EditForm(vm: vm, session: _session),
                     if (isBusy)
                       const IgnorePointer(
                         child: ColoredBox(
@@ -104,9 +137,7 @@ class _EditLocationScaffold extends StatelessWidget {
         ),
         floatingActionButton: FloatingActionButton.extended(
           key: const Key('save_location_fab'),
-          onPressed: (!isLoading && !vm.isSaving)
-              ? () => _save(context, vm)
-              : null,
+          onPressed: (!isLoading && !vm.isSaving) ? () => _save(context, vm) : null,
           icon: const Icon(Icons.save_outlined),
           label: Text(vm.isNewLocation ? 'Create' : 'Save'),
         ),
@@ -117,8 +148,9 @@ class _EditLocationScaffold extends StatelessWidget {
 
 /// The main form body: name, description, address row (with GPS), image manager, etc.
 class _EditForm extends StatelessWidget {
-  const _EditForm({required this.vm});
+  const _EditForm({required this.vm, required TempSession? session}) : _session = session;
   final EditLocationViewModel vm;
+  final TempSession? _session;
 
   @override
   Widget build(BuildContext context) {
@@ -188,9 +220,7 @@ class _EditForm extends StatelessWidget {
                           if (!context.mounted) return;
                           if (!ok) {
                             messenger.showSnackBar(
-                              const SnackBar(
-                                content: Text('Unable to get current location'),
-                              ),
+                              const SnackBar(content: Text('Unable to get current location')),
                             );
                           }
                         },
@@ -202,9 +232,7 @@ class _EditForm extends StatelessWidget {
                         )
                       : const Icon(Icons.my_location_outlined),
                   label: const Text('Use\nGPS', textAlign: TextAlign.center),
-                  style: ElevatedButton.styleFrom(
-                    minimumSize: const Size(72, 56),
-                  ),
+                  style: ElevatedButton.styleFrom(minimumSize: const Size(72, 56)),
                 ),
               ),
             ],
@@ -212,15 +240,22 @@ class _EditForm extends StatelessWidget {
           const SizedBox(height: 20),
 
           // Reuse your shared widget for the image grid + add actions.
-          ImageManagerInput(
-            key: const Key('image_manager'),
-            images: vm.images,
-            onRemoveAt: vm.removeImage,
-            onImagePicked: vm.onImagePicked,
-            tileSize: 92,
-            spacing: 8,
-            placeholderAsset: _kLocationPlaceholderAsset,
-          ),
+          if (_session == null)
+            const SizedBox(
+              height: 96,
+              child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+            )
+          else
+            ImageManagerInput(
+              key: const Key('image_manager'),
+              session: _session!,
+              images: vm.images,
+              onRemoveAt: vm.removeImage,
+              onImagePicked: vm.onImagePicked,
+              tileSize: 92,
+              spacing: 8,
+              placeholderAsset: _kLocationPlaceholderAsset,
+            ),
         ],
       ),
     );
@@ -236,22 +271,15 @@ Future<void> _save(BuildContext context, EditLocationViewModel vm) async {
 
   if (ok) {
     messenger.showSnackBar(
-      SnackBar(
-        content: Text(vm.isNewLocation ? 'Location created' : 'Location saved'),
-      ),
+      SnackBar(content: Text(vm.isNewLocation ? 'Location created' : 'Location saved')),
     );
     if (nav.canPop()) nav.pop();
   } else {
-    messenger.showSnackBar(
-      const SnackBar(content: Text('Please fix the errors and try again.')),
-    );
+    messenger.showSnackBar(const SnackBar(content: Text('Please fix the errors and try again.')));
   }
 }
 
-Future<void> _confirmDelete(
-  BuildContext context,
-  EditLocationViewModel vm,
-) async {
+Future<void> _confirmDelete(BuildContext context, EditLocationViewModel vm) async {
   final nav = Navigator.of(context);
   final messenger = ScaffoldMessenger.of(context);
 
@@ -271,9 +299,7 @@ Future<void> _confirmDelete(
       if (nav.canPop()) nav.pop();
     } catch (e, s) {
       _log.severe('Delete failed', e, s);
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Failed to delete location')),
-      );
+      messenger.showSnackBar(const SnackBar(content: Text('Failed to delete location')));
     }
   }
 }

@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:logging/logging.dart';
 
-import '../core/helpers/image_ref.dart';
+import '../shared/image/image_ref.dart';
 import '../models/location_model.dart';
 import '../services/data_service_interface.dart';
 import '../services/image_data_service_interface.dart';
@@ -69,9 +69,7 @@ class LocationsViewModel with ChangeNotifier {
   /// - If there is no image GUID, we return null (view shows placeholder).
   /// - If there is a GUID, we ask the image service for a ref *without* verifying existence.
   ///   Any errors from the service turn into null so the view can show its error/placeholder.
-  Future<List<LocationListItem>> _attachLeadImages(
-    List<Location> locations,
-  ) async {
+  Future<List<LocationListItem>> _attachLeadImages(List<Location> locations) async {
     return Future.wait(
       locations.map((l) async {
         final guid = l.images.isNotEmpty ? l.images.first : null;
@@ -79,10 +77,7 @@ class LocationsViewModel with ChangeNotifier {
 
         try {
           // IMPORTANT: no existence verification; just return a handle.
-          final img = await _imageDataService.getImage(
-            guid,
-            verifyExists: false,
-          );
+          final img = await _imageDataService.getImage(guid, verifyExists: false);
           return LocationListItem(location: l, image: img);
         } catch (e, s) {
           _log.warning('Image ref build failed for guid=$guid', e, s);

@@ -13,9 +13,7 @@ class GuidIdentifier implements ImageIdentifier {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is GuidIdentifier &&
-          runtimeType == other.runtimeType &&
-          guid == other.guid;
+      other is GuidIdentifier && runtimeType == other.runtimeType && guid == other.guid;
 
   @override
   int get hashCode => guid.hashCode;

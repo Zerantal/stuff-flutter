@@ -28,11 +28,7 @@ class TestLoggerManager {
 
   List<LogRecord> get logs => List.unmodifiable(_capturedLogs);
 
-  LogRecord? findLogWithMessage(
-    String messagePart, {
-    Level? level,
-    Object? error,
-  }) {
+  LogRecord? findLogWithMessage(String messagePart, {Level? level, Object? error}) {
     try {
       return _capturedLogs.firstWhere(
         (log) =>

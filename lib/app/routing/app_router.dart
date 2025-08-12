@@ -2,15 +2,15 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../models/location_model.dart';
-import '../models/room_model.dart';
-import '../models/item_page_arguments.dart';
-import '../pages/locations_page.dart';
-import '../pages/edit_location_page.dart';
-import '../pages/rooms_page.dart';
-import '../pages/edit_room_page.dart';
-import '../pages/containers_page.dart';
-import '../pages/items_page.dart';
+import '../../models/location_model.dart';
+import '../../models/room_model.dart';
+import '../../models/item_page_arguments.dart';
+import '../../pages/locations_page.dart';
+import '../../pages/edit_location_page.dart';
+import '../../pages/rooms_page.dart';
+import '../../pages/edit_room_page.dart';
+import '../../pages/containers_page.dart';
+import '../../pages/items_page.dart';
 
 import 'app_routes.dart';
 
@@ -34,8 +34,7 @@ class AppRouter {
         path: AppRoutes.locationsEdit.path,
         builder: (context, state) {
           final locationId = state.pathParameters['locationId'];
-          if (locationId == null)
-            return _errorPage('Missing Location for edit');
+          if (locationId == null) return _errorPage('Missing Location for edit');
           return EditLocationPage(locationId: locationId);
         },
       ),
@@ -67,14 +66,9 @@ class AppRouter {
           final room = args?['room'] as Room?;
           final parentLocation = args?['parentLocation'] as Location?;
           if (room == null || parentLocation == null) {
-            return _errorPage(
-              "Missing 'room' or 'parentLocation' for editRoom",
-            );
+            return _errorPage("Missing 'room' or 'parentLocation' for editRoom");
           }
-          return EditRoomPage(
-            initialRoom: room,
-            parentLocation: parentLocation,
-          );
+          return EditRoomPage(initialRoom: room, parentLocation: parentLocation);
         },
       ),
       GoRoute(

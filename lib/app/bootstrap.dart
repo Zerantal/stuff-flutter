@@ -1,4 +1,4 @@
-// lib/bootstrap.dart
+// lib/app/bootstrap.dart
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -6,9 +6,9 @@ import 'package:logging/logging.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 
-import 'services/data_service_interface.dart';
-import 'services/impl/hive_db_data_service.dart';
-import 'widgets/error_display_app.dart';
+import '../services/data_service_interface.dart';
+import '../services/impl/hive_db_data_service.dart';
+import '../widgets/error_display_app.dart';
 
 /// Expose essential singletons constructed during bootstrap.
 late final EssentialServices essentialServices;
@@ -29,11 +29,7 @@ Future<void> bootstrap(Widget Function() appBuilder) async {
 
         essentialServices = EssentialServices(dataService: ds);
       } catch (error, stackTrace) {
-        _log.severe(
-          'Fatal during core initialization. App cannot start.',
-          error,
-          stackTrace,
-        );
+        _log.severe('Fatal during core initialization. App cannot start.', error, stackTrace);
         runApp(ErrorDisplayApp(error: error, stackTrace: stackTrace));
         return;
       }

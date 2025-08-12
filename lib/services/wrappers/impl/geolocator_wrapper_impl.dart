@@ -10,9 +10,7 @@ class GeolocatorWrapperImpl implements IGeolocatorWrapper {
 
   @override
   Future<Position> getCurrentPosition({LocationSettings? locationSettings}) {
-    final settings =
-        locationSettings ??
-        const LocationSettings(accuracy: LocationAccuracy.high);
+    final settings = locationSettings ?? const LocationSettings(accuracy: LocationAccuracy.high);
     return Geolocator.getCurrentPosition(locationSettings: settings);
   }
 }

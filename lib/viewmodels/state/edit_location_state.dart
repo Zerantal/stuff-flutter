@@ -2,7 +2,7 @@
 //
 // Immutable state for the Edit Location screen.
 
-import '../../core/helpers/image_ref.dart';
+import '../../shared/image/image_ref.dart';
 
 class EditLocationState {
   final String name;
@@ -53,8 +53,7 @@ class EditLocationState {
       isSaving: isSaving ?? this.isSaving,
       isPickingImage: isPickingImage ?? this.isPickingImage,
       isGettingLocation: isGettingLocation ?? this.isGettingLocation,
-      deviceHasLocationService:
-          deviceHasLocationService ?? this.deviceHasLocationService,
+      deviceHasLocationService: deviceHasLocationService ?? this.deviceHasLocationService,
       hasUnsavedChanges: hasUnsavedChanges ?? this.hasUnsavedChanges,
     );
   }

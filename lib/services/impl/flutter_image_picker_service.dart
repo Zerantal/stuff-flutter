@@ -18,11 +18,9 @@ class FlutterImagePickerService implements IImagePickerService {
 
   final IPermissionService _perm;
 
-  FlutterImagePickerService({
-    ImagePicker? imagePicker,
-    IPermissionService? permissionService,
-  }) : _picker = imagePicker ?? ImagePicker(),
-       _perm = permissionService ?? PermissionHandlerService();
+  FlutterImagePickerService({ImagePicker? imagePicker, IPermissionService? permissionService})
+    : _picker = imagePicker ?? ImagePicker(),
+      _perm = permissionService ?? PermissionHandlerService();
 
   @override
   Future<File?> pickImageFromCamera({

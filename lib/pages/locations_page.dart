@@ -4,10 +4,10 @@ import 'package:flutter/material.dart';
 // import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
 
-import '../core/helpers/image_ref.dart';
+import '../shared/image/image_ref.dart';
 import '../models/location_model.dart';
-import '../routing/app_routes.dart';
-import '../routing/app_route_ext.dart';
+import '../app/routing/app_routes.dart';
+import '../app/routing/app_route_ext.dart';
 import '../services/data_service_interface.dart';
 import '../services/image_data_service_interface.dart';
 import '../viewmodels/locations_view_model.dart';
@@ -56,22 +56,16 @@ class _LocationsView extends StatelessWidget {
         child: StreamBuilder<List<LocationListItem>>(
           stream: vm.locations,
           builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting &&
-                !snapshot.hasData) {
+            if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
               return const Center(
                 child: Padding(
                   padding: EdgeInsets.all(24),
-                  child: CircularProgressIndicator(
-                    key: Key('locations_waiting_spinner'),
-                  ),
+                  child: CircularProgressIndicator(key: Key('locations_waiting_spinner')),
                 ),
               );
             }
             if (snapshot.hasError) {
-              return _ErrorState(
-                message: 'Error loading locations',
-                onRetry: vm.refresh,
-              );
+              return _ErrorState(message: 'Error loading locations', onRetry: vm.refresh);
             }
 
             final items = snapshot.data ?? const <LocationListItem>[];
@@ -90,14 +84,10 @@ class _LocationsView extends StatelessWidget {
                 return _LocationCard(
                   location: item.location,
                   image: item.image, // ImageRef? (null => placeholder)
-                  onView: (loc) => AppRoutes.rooms.push(
-                    context,
-                    pathParams: {'locationId': loc.id},
-                  ),
-                  onEdit: (loc) => AppRoutes.locationsEdit.push(
-                    context,
-                    pathParams: {'locationId': loc.id},
-                  ),
+                  onView: (loc) =>
+                      AppRoutes.rooms.push(context, pathParams: {'locationId': loc.id}),
+                  onEdit: (loc) =>
+                      AppRoutes.locationsEdit.push(context, pathParams: {'locationId': loc.id}),
                 );
               },
             );
@@ -126,9 +116,7 @@ class _DeveloperDrawer extends StatelessWidget {
         child: ListView(
           children: [
             DrawerHeader(
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary,
-              ),
+              decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary),
               child: Text(
                 'Developer Options',
                 style: TextStyle(
@@ -147,15 +135,11 @@ class _DeveloperDrawer extends StatelessWidget {
                 final messenger = ScaffoldMessenger.of(context);
 
                 if (nav.canPop()) nav.pop();
-                messenger.showSnackBar(
-                  const SnackBar(content: Text('Resetting database…')),
-                );
+                messenger.showSnackBar(const SnackBar(content: Text('Resetting database…')));
 
                 try {
                   await vm.resetWithSampleData();
-                  messenger.showSnackBar(
-                    const SnackBar(content: Text('Sample data loaded')),
-                  );
+                  messenger.showSnackBar(const SnackBar(content: Text('Sample data loaded')));
                 } catch (_) {
                   messenger.showSnackBar(
                     const SnackBar(content: Text('Failed to load sample data')),
@@ -263,10 +247,7 @@ class _LocationCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    location.name,
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
+                  Text(location.name, style: Theme.of(context).textTheme.titleLarge),
                   if ((location.description ?? '').isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(top: 4),

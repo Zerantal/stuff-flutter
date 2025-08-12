@@ -1,4 +1,4 @@
-// lib/di/providers.dar
+// lib/app/injection.dart
 import 'dart:async';
 
 import 'package:logging/logging.dart';
@@ -18,18 +18,14 @@ import '../services/impl/local_image_data_service.dart';
 
 final Logger _log = Logger('DI');
 
-List<SingleChildWidget> buildGlobalProviders({
-  required IDataService dataService,
-}) {
+List<SingleChildWidget> buildGlobalProviders({required IDataService dataService}) {
   return [
     Provider<IDataService>.value(value: dataService),
 
     // Synchronous services
     Provider<ILocationService>(create: (_) => GeolocatorLocationService()),
     Provider<IImagePickerService>(create: (_) => FlutterImagePickerService()),
-    Provider<ITemporaryFileService>(
-      create: (_) => PathProviderTemporaryFileService(),
-    ),
+    Provider<ITemporaryFileService>(create: (_) => PathProviderTemporaryFileService()),
 
     // Provide image data service synchronously.
     // If it has async setup, start it in the background or make methods lazy-init.
@@ -37,9 +33,7 @@ List<SingleChildWidget> buildGlobalProviders({
       create: (_) {
         _log.info("Creating LocalImageDataService...");
         final s = LocalImageDataService();
-        unawaited(
-          s.init(),
-        ); // safe fire-and-forget; service should lazy ensure paths
+        unawaited(s.init()); // safe fire-and-forget; service should lazy ensure paths
         _log.info("LocalImageDataService created.");
         return s;
       },

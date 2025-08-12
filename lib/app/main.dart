@@ -1,8 +1,8 @@
-// main.dart
+// lib/app/main.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'di/providers.dart';
+import 'injection.dart';
 import 'routing/app_router.dart';
 import 'bootstrap.dart';
 import 'theme.dart';
@@ -20,9 +20,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
-      providers: buildGlobalProviders(
-        dataService: essentialServices.dataService,
-      ),
+      providers: buildGlobalProviders(dataService: essentialServices.dataService),
       child: MaterialApp.router(
         title: 'Stuff',
         debugShowCheckedModeBanner: false,

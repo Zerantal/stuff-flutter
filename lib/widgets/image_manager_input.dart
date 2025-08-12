@@ -2,10 +2,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../core/helpers/image_ref.dart';
+import '../shared/image/image_ref.dart';
 import '../core/image_identifier.dart';
-import '../image/image_picker_controller.dart';
-import '../image/pick_result.dart';
+import '../shared/image/image_picker_controller.dart';
+import '../shared/image/pick_result.dart';
 import '../services/image_data_service_interface.dart';
 import '../services/image_picker_service_interface.dart';
 import '../services/temporary_file_service_interface.dart';
@@ -19,6 +19,7 @@ import 'image_thumb.dart';
 class ImageManagerInput extends StatelessWidget {
   const ImageManagerInput({
     super.key,
+    required this.session,
     required this.images,
     required this.onRemoveAt,
     required this.onImagePicked,
@@ -27,6 +28,7 @@ class ImageManagerInput extends StatelessWidget {
     this.placeholderAsset,
   });
 
+  final TempSession session;
   final List<ImageRef> images;
   final void Function(int index) onRemoveAt;
 
@@ -57,6 +59,7 @@ class ImageManagerInput extends StatelessWidget {
     items.add(
       _AddTile(
         key: const Key('img_tile_add'),
+        session: session,
         size: tileSize,
         spacing: spacing,
         placeholderAsset: placeholderAsset,
@@ -100,9 +103,7 @@ class _ThumbTile extends StatelessWidget {
               loadingWidget: SizedBox(
                 width: size,
                 height: size,
-                child: const Center(
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
+                child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
               ),
               errorWidget: (placeholderAsset == null)
                   ? const Center(child: Icon(Icons.broken_image_outlined))
@@ -121,10 +122,7 @@ class _ThumbTile extends StatelessWidget {
           child: IconButton.filledTonal(
             tooltip: 'Remove',
             icon: const Icon(Icons.close),
-            style: IconButton.styleFrom(
-              padding: EdgeInsets.zero,
-              fixedSize: const Size(28, 28),
-            ),
+            style: IconButton.styleFrom(padding: EdgeInsets.zero, fixedSize: const Size(28, 28)),
             onPressed: onRemove,
           ),
         ),
@@ -136,12 +134,14 @@ class _ThumbTile extends StatelessWidget {
 class _AddTile extends StatelessWidget {
   const _AddTile({
     super.key,
+    required this.session,
     required this.size,
     required this.spacing,
     required this.onPicked,
     this.placeholderAsset,
   });
 
+  final TempSession session;
   final double size;
   final double spacing;
   final void Function(ImageIdentifier id, ImageRef ref) onPicked;
@@ -151,15 +151,10 @@ class _AddTile extends StatelessWidget {
   Widget build(BuildContext context) {
     // Grab dependencies *before* we await anything (avoids context-after-await lints)
     final picker = context.read<IImagePickerService>();
-    final temp = context.read<ITemporaryFileService>();
-    final store = context.read<IImageDataService?>();
+    final store = context.read<IImageDataService>();
 
     // Local controller for this tile (keeps widget self-contained)
-    final controller = ImagePickerController(
-      picker: picker,
-      store: store,
-      temp: temp,
-    );
+    final controller = ImagePickerController(picker: picker, store: store, session: session);
 
     Future<void> handleAction(_AddAction action) async {
       PickResult r;
@@ -186,9 +181,7 @@ class _AddTile extends StatelessWidget {
       if (r is SavedGuid) {
         // Resolve to ImageRef via store, otherwise fall back to a placeholder
         ImageRef? ref;
-        if (store != null) {
-          ref = await store.getImage(r.guid, verifyExists: true);
-        }
+        ref = await store.getImage(r.guid, verifyExists: true);
         ref ??= (placeholderAsset == null)
             ? const ImageRef.asset('assets/images/location_placeholder.jpg')
             : ImageRef.asset(placeholderAsset!);
@@ -211,14 +204,8 @@ class _AddTile extends StatelessWidget {
               context: context,
               position: const RelativeRect.fromLTRB(200, 200, 0, 0),
               items: const [
-                PopupMenuItem(
-                  value: _AddAction.gallery,
-                  child: Text('Pick from Gallery'),
-                ),
-                PopupMenuItem(
-                  value: _AddAction.camera,
-                  child: Text('Take Photo'),
-                ),
+                PopupMenuItem(value: _AddAction.gallery, child: Text('Pick from Gallery')),
+                PopupMenuItem(value: _AddAction.camera, child: Text('Take Photo')),
               ],
             );
             if (action != null) {

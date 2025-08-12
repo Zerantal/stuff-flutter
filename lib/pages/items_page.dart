@@ -38,13 +38,8 @@ class _ItemsPageState extends State<ItemsPage> {
 
   // Placeholder for data fetching logic
   List<String> _fetchItemsForContainerPlaceholder(String containerIdentifier) {
-    _logger.info(
-      'Fetching items for container: $containerIdentifier (placeholder)',
-    );
-    return List.generate(
-      5,
-      (index) => 'Item ${index + 1} in ${widget.args.containerName}',
-    );
+    _logger.info('Fetching items for container: $containerIdentifier (placeholder)');
+    return List.generate(5, (index) => 'Item ${index + 1} in ${widget.args.containerName}');
   }
 
   // Future<List<ItemModel>> _fetchItemsForContainer(String containerId) async {
@@ -80,9 +75,9 @@ class _ItemsPageState extends State<ItemsPage> {
     //     // ... other necessary data ...
     //   },
     // );
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('View/Edit details for $itemName (TODO)')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('View/Edit details for $itemName (TODO)')));
   }
 
   @override
@@ -97,10 +92,9 @@ class _ItemsPageState extends State<ItemsPage> {
             '${widget.args.roomName}, ${widget.args.locationName}',
             style: TextStyle(
               fontSize: 14,
-              color:
-                  (Theme.of(context).appBarTheme.foregroundColor ??
-                          Colors.white)
-                      .withAlpha((0.8 * 255).round()),
+              color: (Theme.of(context).appBarTheme.foregroundColor ?? Colors.white).withAlpha(
+                (0.8 * 255).round(),
+              ),
             ),
           ),
         ),

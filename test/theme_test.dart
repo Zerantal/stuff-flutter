@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:stuff/theme.dart';
+import 'package:stuff/app/theme.dart';
 
 void main() {
   test('buildAppTheme uses Material 3 and seed color scheme', () {

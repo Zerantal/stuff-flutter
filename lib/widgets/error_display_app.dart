@@ -45,10 +45,7 @@ class ErrorDisplayApp extends StatelessWidget {
                   const SizedBox(height: 5),
                   Expanded(
                     child: SingleChildScrollView(
-                      child: Text(
-                        stackTrace.toString(),
-                        style: const TextStyle(fontSize: 14),
-                      ),
+                      child: Text(stackTrace.toString(), style: const TextStyle(fontSize: 14)),
                     ),
                   ),
                 ],

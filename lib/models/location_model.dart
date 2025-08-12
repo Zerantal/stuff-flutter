@@ -35,12 +35,7 @@ class Location extends BaseModel {
   ///
   /// - `name`, `description`, `address` override those fields if non-null.
   /// - `images` replaces the entire list if non-null; pass `[]` to clear.
-  Location copyWith({
-    String? name,
-    String? description,
-    String? address,
-    List<String>? images,
-  }) {
+  Location copyWith({String? name, String? description, String? address, List<String>? images}) {
     // Prepare new list: clone provided or existing
     final newImages = images != null
         ? UnmodifiableListView(List<String>.from(images))

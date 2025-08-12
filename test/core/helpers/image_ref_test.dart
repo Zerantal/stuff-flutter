@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart'; // For mocking AssetBundle
 
-import 'package:stuff/core/helpers/image_ref.dart';
+import 'package:stuff/shared/image/image_ref.dart';
 
 // Helper class for mocking (if needed, not strictly for AssetBundle in this case yet)
 class MockAssetBundle extends Mock implements AssetBundle {}
@@ -48,11 +48,7 @@ void main() {
 
     test('AssetImageRef with bundle and package -> AssetImage', () {
       final mockBundle = MockAssetBundle();
-      final ref = ImageRef.asset(
-        'assets/img.png',
-        bundle: mockBundle,
-        package: 'my_pkg',
-      );
+      final ref = ImageRef.asset('assets/img.png', bundle: mockBundle, package: 'my_pkg');
       final provider = providerFor(ref);
       expect(provider, isA<AssetImage>());
       final assetImage = provider as AssetImage;
@@ -79,17 +75,14 @@ void main() {
       expect(resize.height, 150);
     });
 
-    test(
-      'wraps with ResizeImage when both cache width and height provided',
-      () {
-        const ref = ImageRef.network('https://example.com/c.png');
-        final provider = providerFor(ref, cacheWidth: 200, cacheHeight: 250);
-        expect(provider, isA<ResizeImage>());
-        final resize = provider as ResizeImage;
-        expect(resize.width, 200);
-        expect(resize.height, 250);
-      },
-    );
+    test('wraps with ResizeImage when both cache width and height provided', () {
+      const ref = ImageRef.network('https://example.com/c.png');
+      final provider = providerFor(ref, cacheWidth: 200, cacheHeight: 250);
+      expect(provider, isA<ResizeImage>());
+      final resize = provider as ResizeImage;
+      expect(resize.width, 200);
+      expect(resize.height, 250);
+    });
 
     test('does not wrap with ResizeImage if no cache size provided', () {
       const ref = ImageRef.network('https://example.com/d.png');
@@ -100,8 +93,7 @@ void main() {
 
     test('passes scale to underlying provider', () {
       const networkRef = ImageRef.network('https://example.com/a.png');
-      final networkProvider =
-          providerFor(networkRef, scale: 2.0) as NetworkImage;
+      final networkProvider = providerFor(networkRef, scale: 2.0) as NetworkImage;
       expect(networkProvider.scale, 2.0);
 
       final memoryRef = ImageRef.memory(Uint8List.fromList(const [1]));
@@ -111,19 +103,13 @@ void main() {
 
     test('passes scale to ResizeImage if cache size also provided', () {
       const networkRef = ImageRef.network('https://example.com/e.png');
-      final resizeProvider = providerFor(
-        networkRef,
-        cacheWidth: 50,
-        scale: 2.5,
-      );
+      final resizeProvider = providerFor(networkRef, cacheWidth: 50, scale: 2.5);
       expect(resizeProvider, isA<ResizeImage>());
     });
   });
 
   group('buildImage Widget', () {
-    testWidgets('renders Image with basic properties', (
-      WidgetTester tester,
-    ) async {
+    testWidgets('renders Image with basic properties', (WidgetTester tester) async {
       final ref = ImageRef.memory(
         Uint8List.fromList(const [1, 2, 3, 4]),
       ); // Use memory for simplicity
@@ -152,9 +138,7 @@ void main() {
       expect(imageWidget.image, isA<MemoryImage>());
     });
 
-    testWidgets('uses provided placeholder during loading', (
-      WidgetTester tester,
-    ) async {
+    testWidgets('uses provided placeholder during loading', (WidgetTester tester) async {
       final placeholderKey = GlobalKey();
       final placeholderWidget = SizedBox(
         key: placeholderKey,
@@ -180,9 +164,7 @@ void main() {
 
       // Simulate the loading state by calling the builder
       await tester.pumpWidget(MaterialApp(home: Scaffold(body: Container())));
-      final BuildContext contextForBuilder = tester.element(
-        find.byType(Container).first,
-      );
+      final BuildContext contextForBuilder = tester.element(find.byType(Container).first);
 
       final Widget builtLoadingWidget = imageWidget.loadingBuilder!(
         contextForBuilder,
@@ -193,54 +175,42 @@ void main() {
         ), // Simulate progress
       );
 
-      await tester.pumpWidget(
-        MaterialApp(home: Scaffold(body: builtLoadingWidget)),
-      );
+      await tester.pumpWidget(MaterialApp(home: Scaffold(body: builtLoadingWidget)));
       expect(find.byKey(placeholderKey), findsOneWidget);
       expect(find.text('Custom Loading...'), findsOneWidget);
     });
 
-    testWidgets(
-      'uses default CircularProgressIndicator when no placeholder and loading',
-      (WidgetTester tester) async {
-        // Directly test the loadingBuilder logic
-        final Image imageWidget = Image(
-          image: const NetworkImage('http://example.com/fake.png'),
-          loadingBuilder: (context, child, progress) {
-            if (progress == null) return child;
-            // This is the default from buildImage
-            return const SizedBox(
-              width: 20,
-              height: 20,
-              child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-            );
-          },
-        );
-
-        await tester.pumpWidget(MaterialApp(home: Scaffold(body: Container())));
-        final BuildContext contextForBuilder = tester.element(
-          find.byType(Container).first,
-        );
-
-        final Widget builtLoadingWidget = imageWidget.loadingBuilder!(
-          contextForBuilder,
-          const Text('Child image'),
-          const ImageChunkEvent(
-            cumulativeBytesLoaded: 50,
-            expectedTotalBytes: 100,
-          ),
-        );
-
-        await tester.pumpWidget(
-          MaterialApp(home: Scaffold(body: builtLoadingWidget)),
-        );
-        expect(find.byType(CircularProgressIndicator), findsOneWidget);
-      },
-    );
-
-    testWidgets('shows child when loading complete', (
+    testWidgets('uses default CircularProgressIndicator when no placeholder and loading', (
       WidgetTester tester,
     ) async {
+      // Directly test the loadingBuilder logic
+      final Image imageWidget = Image(
+        image: const NetworkImage('http://example.com/fake.png'),
+        loadingBuilder: (context, child, progress) {
+          if (progress == null) return child;
+          // This is the default from buildImage
+          return const SizedBox(
+            width: 20,
+            height: 20,
+            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+          );
+        },
+      );
+
+      await tester.pumpWidget(MaterialApp(home: Scaffold(body: Container())));
+      final BuildContext contextForBuilder = tester.element(find.byType(Container).first);
+
+      final Widget builtLoadingWidget = imageWidget.loadingBuilder!(
+        contextForBuilder,
+        const Text('Child image'),
+        const ImageChunkEvent(cumulativeBytesLoaded: 50, expectedTotalBytes: 100),
+      );
+
+      await tester.pumpWidget(MaterialApp(home: Scaffold(body: builtLoadingWidget)));
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    });
+
+    testWidgets('shows child when loading complete', (WidgetTester tester) async {
       final Image imageWidget = Image(
         image: const NetworkImage('http://example.com/fake.png'),
         loadingBuilder: (context, child, progress) {
@@ -251,18 +221,14 @@ void main() {
       );
 
       await tester.pumpWidget(MaterialApp(home: Scaffold(body: Container())));
-      final BuildContext contextForBuilder = tester.element(
-        find.byType(Container).first,
-      );
+      final BuildContext contextForBuilder = tester.element(find.byType(Container).first);
 
       final Widget builtChildWidget = imageWidget.loadingBuilder!(
         contextForBuilder,
         const Text('Actual Image Content'), // The actual child
         null, // Simulate progress is null (loading complete)
       );
-      await tester.pumpWidget(
-        MaterialApp(home: Scaffold(body: builtChildWidget)),
-      );
+      await tester.pumpWidget(MaterialApp(home: Scaffold(body: builtChildWidget)));
       expect(find.text('Actual Image Content'), findsOneWidget);
       expect(find.byType(CircularProgressIndicator), findsNothing);
     });
@@ -276,10 +242,7 @@ void main() {
         home: Scaffold(
           body: buildImage(
             ref,
-            errorWidget: SizedBox(
-              key: errorKey,
-              child: const Text('Custom Asset Error'),
-            ),
+            errorWidget: SizedBox(key: errorKey, child: const Text('Custom Asset Error')),
           ),
         ),
       );
@@ -290,75 +253,58 @@ void main() {
       expect(find.text('Custom Asset Error'), findsOneWidget);
     });
 
-    testWidgets(
-      'uses default error text when no errorWidget and failure (missing asset)',
-      (tester) async {
-        const ref = ImageRef.asset('assets/another_missing_asset.png');
+    testWidgets('uses default error text when no errorWidget and failure (missing asset)', (
+      tester,
+    ) async {
+      const ref = ImageRef.asset('assets/another_missing_asset.png');
 
-        final widget = MaterialApp(
-          home: Scaffold(
-            body: buildImage(ref), // No custom errorWidget
-          ),
-        );
+      final widget = MaterialApp(
+        home: Scaffold(
+          body: buildImage(ref), // No custom errorWidget
+        ),
+      );
 
-        await tester.pumpWidget(widget);
-        await tester.pumpAndSettle();
-        expect(find.text('Image failed to load'), findsOneWidget);
-      },
-    );
+      await tester.pumpWidget(widget);
+      await tester.pumpAndSettle();
+      expect(find.text('Image failed to load'), findsOneWidget);
+    });
 
     // To properly test NetworkImage failure, you'd typically mock HttpOverrides
     // This is a simplified version that relies on a clearly invalid URL.
-    testWidgets(
-      'uses errorBuilder on failure (bad network URL)',
-      (tester) async {
-        const ref = ImageRef.network(
-          'http://invalid-url-that-will-fail-for-sure-hopefully/img.png',
-        );
-        final errorKey = GlobalKey();
+    testWidgets('uses errorBuilder on failure (bad network URL)', (tester) async {
+      const ref = ImageRef.network('http://invalid-url-that-will-fail-for-sure-hopefully/img.png');
+      final errorKey = GlobalKey();
 
-        final widget = MaterialApp(
-          home: Scaffold(
-            body: buildImage(
-              ref,
-              errorWidget: SizedBox(
-                key: errorKey,
-                child: const Text('Network Error'),
-              ),
-            ),
+      final widget = MaterialApp(
+        home: Scaffold(
+          body: buildImage(
+            ref,
+            errorWidget: SizedBox(key: errorKey, child: const Text('Network Error')),
           ),
-        );
+        ),
+      );
 
-        await tester.pumpWidget(widget);
-        await tester.pumpAndSettle(
-          const Duration(seconds: 5),
-        ); // Give network time to fail & settle
-        expect(find.byKey(errorKey), findsOneWidget);
-        expect(find.text('Network Error'), findsOneWidget);
-      },
-      timeout: const Timeout(Duration(seconds: 10)),
-    ); // Increased timeout for this test
+      await tester.pumpWidget(widget);
+      await tester.pumpAndSettle(const Duration(seconds: 5)); // Give network time to fail & settle
+      expect(find.byKey(errorKey), findsOneWidget);
+      expect(find.text('Network Error'), findsOneWidget);
+    }, timeout: const Timeout(Duration(seconds: 10))); // Increased timeout for this test
 
-    testWidgets(
-      'applies cacheWidth and cacheHeight via providerFor to Image widget',
-      (WidgetTester tester) async {
-        final ref = ImageRef.memory(Uint8List.fromList(const [1, 2, 3, 4]));
+    testWidgets('applies cacheWidth and cacheHeight via providerFor to Image widget', (
+      WidgetTester tester,
+    ) async {
+      final ref = ImageRef.memory(Uint8List.fromList(const [1, 2, 3, 4]));
 
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: buildImage(ref, cacheWidth: 50, cacheHeight: 75),
-            ),
-          ),
-        );
+      await tester.pumpWidget(
+        MaterialApp(home: Scaffold(body: buildImage(ref, cacheWidth: 50, cacheHeight: 75))),
+      );
 
-        final imageWidget = tester.widget<Image>(find.byType(Image));
-        expect(imageWidget.image, isA<ResizeImage>());
-        final resizeImage = imageWidget.image as ResizeImage;
-        expect(resizeImage.width, 50);
-        expect(resizeImage.height, 75);
-        expect(resizeImage.imageProvider, isA<MemoryImage>());
-      },
-    );
+      final imageWidget = tester.widget<Image>(find.byType(Image));
+      expect(imageWidget.image, isA<ResizeImage>());
+      final resizeImage = imageWidget.image as ResizeImage;
+      expect(resizeImage.width, 50);
+      expect(resizeImage.height, 75);
+      expect(resizeImage.imageProvider, isA<MemoryImage>());
+    });
   });
 }

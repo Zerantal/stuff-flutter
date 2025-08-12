@@ -8,7 +8,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 
-import 'package:stuff/core/helpers/image_ref.dart';
+import 'package:stuff/shared/image/image_ref.dart';
 import 'package:stuff/services/impl/local_image_data_service.dart';
 
 void main() {
@@ -29,10 +29,7 @@ void main() {
     await imagesBaseDir.create(recursive: true);
 
     // Point the service at our temp base dir (no path_provider).
-    svc = LocalImageDataService(
-      subdirectoryName: 'images',
-      rootOverride: imagesBaseDir,
-    );
+    svc = LocalImageDataService(subdirectoryName: 'images', rootOverride: imagesBaseDir);
   });
 
   tearDown(() async {
@@ -53,11 +50,7 @@ void main() {
     });
 
     test('concurrent init calls complete successfully (no race)', () async {
-      final results = await Future.wait<void>([
-        svc.init(),
-        svc.init(),
-        svc.init(),
-      ]);
+      final results = await Future.wait<void>([svc.init(), svc.init(), svc.init()]);
       expect(results.length, 3);
       expect(svc.isInitialized, isTrue);
 
@@ -67,27 +60,24 @@ void main() {
   });
 
   group('save/get/delete image', () {
-    test(
-      'saveImage writes file and returns GUID with original extension (allowed ext)',
-      () async {
-        await svc.init();
-        final src = await writeTempImage('sample.png', [0, 1, 2, 3]);
-        final guid = await svc.saveImage(src);
+    test('saveImage writes file and returns GUID with original extension (allowed ext)', () async {
+      await svc.init();
+      final src = await writeTempImage('sample.png', [0, 1, 2, 3]);
+      final guid = await svc.saveImage(src);
 
-        // Expect GUID + .png
-        expect(guid, endsWith('.png'));
+      // Expect GUID + .png
+      expect(guid, endsWith('.png'));
 
-        // File must exist in service dir.
-        final savedPath = p.join(imagesBaseDir.path, 'images', guid);
-        expect(await File(savedPath).exists(), isTrue);
+      // File must exist in service dir.
+      final savedPath = p.join(imagesBaseDir.path, 'images', guid);
+      expect(await File(savedPath).exists(), isTrue);
 
-        // getImage (verifyExists=true) should return a FileImageRef.
-        final ref = await svc.getImage(guid, verifyExists: true);
-        expect(ref, isA<FileImageRef>());
-        final fileRef = ref as FileImageRef;
-        expect(fileRef.path, savedPath);
-      },
-    );
+      // getImage (verifyExists=true) should return a FileImageRef.
+      final ref = await svc.getImage(guid, verifyExists: true);
+      expect(ref, isA<FileImageRef>());
+      final fileRef = ref as FileImageRef;
+      expect(fileRef.path, savedPath);
+    });
 
     test('saveImage falls back to .jpg for unknown extensions', () async {
       await svc.init();
@@ -99,25 +89,19 @@ void main() {
       expect(await File(savedPath).exists(), isTrue);
     });
 
-    test(
-      'getImage returns null when verifyExists=true and file missing',
-      () async {
-        await svc.init();
-        final ref = await svc.getImage('not_there.png', verifyExists: true);
-        expect(ref, isNull);
-      },
-    );
+    test('getImage returns null when verifyExists=true and file missing', () async {
+      await svc.init();
+      final ref = await svc.getImage('not_there.png', verifyExists: true);
+      expect(ref, isNull);
+    });
 
-    test(
-      'getImage returns FileImageRef when verifyExists=false even if file missing',
-      () async {
-        await svc.init();
-        final ref = await svc.getImage('maybe_later.png', verifyExists: false);
-        expect(ref, isA<FileImageRef>());
-        final path = (ref as FileImageRef).path;
-        expect(path, p.join(imagesBaseDir.path, 'images', 'maybe_later.png'));
-      },
-    );
+    test('getImage returns FileImageRef when verifyExists=false even if file missing', () async {
+      await svc.init();
+      final ref = await svc.getImage('maybe_later.png', verifyExists: false);
+      expect(ref, isA<FileImageRef>());
+      final path = (ref as FileImageRef).path;
+      expect(path, p.join(imagesBaseDir.path, 'images', 'maybe_later.png'));
+    });
 
     test('deleteImage removes just the target file', () async {
       await svc.init();
@@ -139,38 +123,32 @@ void main() {
       expect(await pb.exists(), isTrue);
     });
 
-    test(
-      'deleteAllImages clears directory contents but leaves directory',
-      () async {
-        await svc.init();
+    test('deleteAllImages clears directory contents but leaves directory', () async {
+      await svc.init();
 
-        // Save a couple of files
-        final f1 = await writeTempImage('x.png', [9, 9]);
-        final f2 = await writeTempImage('y.jpg', [8, 8]);
+      // Save a couple of files
+      final f1 = await writeTempImage('x.png', [9, 9]);
+      final f2 = await writeTempImage('y.jpg', [8, 8]);
 
-        await svc.saveImage(f1);
-        await svc.saveImage(f2);
+      await svc.saveImage(f1);
+      await svc.saveImage(f2);
 
-        final dir = Directory(p.join(imagesBaseDir.path, 'images'));
-        expect(await dir.exists(), isTrue);
+      final dir = Directory(p.join(imagesBaseDir.path, 'images'));
+      expect(await dir.exists(), isTrue);
 
-        await svc.deleteAllImages();
+      await svc.deleteAllImages();
 
-        // Directory exists, but empty
-        expect(await dir.exists(), isTrue);
-        final entries = await dir.list().toList();
-        expect(entries, isEmpty);
-      },
-    );
+      // Directory exists, but empty
+      expect(await dir.exists(), isTrue);
+      final entries = await dir.list().toList();
+      expect(entries, isEmpty);
+    });
 
     test('getImage throws on invalid/traversal GUID', () async {
       await svc.init();
       expect(() => svc.getImage('../evil.png'), throwsA(isA<ArgumentError>()));
       expect(() => svc.getImage(r'..\evil.png'), throwsA(isA<ArgumentError>()));
-      expect(
-        () => svc.getImage('nested/evil.png'),
-        throwsA(isA<ArgumentError>()),
-      );
+      expect(() => svc.getImage('nested/evil.png'), throwsA(isA<ArgumentError>()));
     });
 
     test('saveImage throws when source file does not exist', () async {

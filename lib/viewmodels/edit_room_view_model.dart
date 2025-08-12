@@ -7,21 +7,19 @@ import 'package:uuid/uuid.dart';
 
 import '../core/image_identifier.dart';
 import '../core/image_source_type_enum.dart';
-import '../image/image_picker_controller.dart';
 import '../models/room_model.dart';
 import '../models/location_model.dart';
 import '../services/data_service_interface.dart';
 import '../services/image_picker_service_interface.dart';
 import '../services/image_data_service_interface.dart';
 import '../services/temporary_file_service_interface.dart';
-import 'mixins/has_image_picking.dart';
 
 // legacy support
 import '../services/image_data_service_legacy_shim.dart';
 
 final Logger _logger = Logger('EditRoomVM');
 
-class EditRoomViewModel extends ChangeNotifier with HasImagePicking {
+class EditRoomViewModel extends ChangeNotifier /*with HasImagePicking*/ {
   final IDataService _dataService;
   // final IImagePickerService _imagePickerService;
   final IImageDataService? _imageDataService;
@@ -56,7 +54,7 @@ class EditRoomViewModel extends ChangeNotifier with HasImagePicking {
   EditRoomViewModel({
     required IDataService dataService,
     required IImagePickerService imagePickerService,
-    required IImageDataService? imageDataService,
+    required IImageDataService imageDataService,
     required ITemporaryFileService tempFileService,
     required Location parentLocation,
     Room? initialRoom,
@@ -71,11 +69,11 @@ class EditRoomViewModel extends ChangeNotifier with HasImagePicking {
     );
 
     // wire mixin deps
-    imagePicker = ImagePickerController(
-      picker: imagePickerService,
-      store: imageDataService,
-      temp: tempFileService,
-    );
+    // imagePicker = ImagePickerController(
+    //   picker: imagePickerService,
+    //   store: imageDataService,
+    //   temp: tempFileService,
+    // );
 
     _initialize();
   }
@@ -85,9 +83,7 @@ class EditRoomViewModel extends ChangeNotifier with HasImagePicking {
       _nameController.text = _initialRoom.name;
       _descriptionController.text = _initialRoom.description ?? '';
       _initialPersistedGuids = List.from(_initialRoom.imageGuids ?? []);
-      _currentImages = _initialPersistedGuids
-          .map((guid) => GuidIdentifier(guid))
-          .toList();
+      _currentImages = _initialPersistedGuids.map((guid) => GuidIdentifier(guid)).toList();
     } else {
       _initialPersistedGuids = [];
       _currentImages = [];
@@ -103,7 +99,7 @@ class EditRoomViewModel extends ChangeNotifier with HasImagePicking {
 
   Future<void> _initializeSessionTempDir() async {
     try {
-      await _tempFileService.init(sessionPrefix: 'edit_room_session');
+      // await _tempFileService.init(sessionPrefix: 'edit_room_session');
       _logger.info("Session temporary directory initialized");
     } catch (e, s) {
       _logger.severe("Failed to initialize session temporary directory", e, s);
@@ -121,23 +117,17 @@ class EditRoomViewModel extends ChangeNotifier with HasImagePicking {
           _currentImages.isNotEmpty;
     } else if (_initialRoom != null) {
       bool nameChanged = _nameController.text != _initialRoom.name;
-      bool descriptionChanged =
-          _descriptionController.text != (_initialRoom.description ?? '');
+      bool descriptionChanged = _descriptionController.text != (_initialRoom.description ?? '');
 
       List<String> currentGuidsForComparison = _currentImages
           .whereType<GuidIdentifier>()
           .map((gi) => gi.guid)
           .toList();
-      bool hasTempFiles = _currentImages.any(
-        (img) => img is TempFileIdentifier,
-      );
+      bool hasTempFiles = _currentImages.any((img) => img is TempFileIdentifier);
 
       bool imagesChanged =
           hasTempFiles ||
-          !const ListEquality().equals(
-            currentGuidsForComparison,
-            _initialPersistedGuids,
-          );
+          !const ListEquality().equals(currentGuidsForComparison, _initialPersistedGuids);
 
       _hasUnsavedChanges = nameChanged || descriptionChanged || imagesChanged;
     }
@@ -190,11 +180,7 @@ class EditRoomViewModel extends ChangeNotifier with HasImagePicking {
       //   notifyListeners();
       // }
     } catch (e, s) {
-      _logger.severe(
-        "Error reported from ImagePickingHelper to EditRoomViewMode",
-        e,
-        s,
-      );
+      _logger.severe("Error reported from ImagePickingHelper to EditRoomViewMode", e, s);
       // Handle error as needed
     } finally {
       // _isPickingImage = false;
@@ -265,19 +251,15 @@ class EditRoomViewModel extends ChangeNotifier with HasImagePicking {
     }
 
     final imageIdToRemove = _currentImages.removeAt(index);
-    _logger.info(
-      "Attempting to remove image at index $index, Identifier: $imageIdToRemove",
-    );
+    _logger.info("Attempting to remove image at index $index, Identifier: $imageIdToRemove");
 
     _handleFieldChange();
     notifyListeners();
 
     if (imageIdToRemove is TempFileIdentifier) {
       try {
-        await _tempFileService.deleteFile(imageIdToRemove.file);
-        _logger.info(
-          "Temporary image file deleted: ${imageIdToRemove.file.path}",
-        );
+        // await _tempFileService.deleteFile(imageIdToRemove.file);
+        _logger.info("Temporary image file deleted: ${imageIdToRemove.file.path}");
       } catch (e, s) {
         _logger.warning(
           "Failed to delete temporary "
@@ -329,11 +311,7 @@ class EditRoomViewModel extends ChangeNotifier with HasImagePicking {
         height: height,
         fit: fit,
         errorBuilder: (context, e, s) {
-          _logger.severe(
-            "Error loading TEMP image ${identifier.file.path} in ViewModel",
-            e,
-            s,
-          );
+          _logger.severe("Error loading TEMP image ${identifier.file.path} in ViewModel", e, s);
           return Container(
             width: width,
             height: height,
@@ -363,14 +341,10 @@ class EditRoomViewModel extends ChangeNotifier with HasImagePicking {
       for (var identifier in _currentImages) {
         if (identifier is TempFileIdentifier) {
           try {
-            _logger.info(
-              "Processing TempFileIdentifier for save: ${identifier.file.path}",
-            );
-            final String savedGuid = await imageService.saveUserImage(
-              identifier.file,
-            );
+            _logger.info("Processing TempFileIdentifier for save: ${identifier.file.path}");
+            final String savedGuid = await imageService.saveUserImage(identifier.file);
             finalImageGuidsForRoom.add(savedGuid);
-            await _tempFileService.deleteFile(identifier.file);
+            // await _tempFileService.deleteFile(identifier.file);
           } catch (e, s) {
             _logger.severe(
               "Failed to save temp image ${identifier.file.path} during "
@@ -385,27 +359,17 @@ class EditRoomViewModel extends ChangeNotifier with HasImagePicking {
         }
       }
 
-      Set<String> currentPersistedGuidsInFinalList = finalImageGuidsForRoom
-          .toSet();
+      Set<String> currentPersistedGuidsInFinalList = finalImageGuidsForRoom.toSet();
       List<String> guidsToDeletePermanently = _initialPersistedGuids
-          .where(
-            (initialGuid) =>
-                !currentPersistedGuidsInFinalList.contains(initialGuid),
-          )
+          .where((initialGuid) => !currentPersistedGuidsInFinalList.contains(initialGuid))
           .toList();
 
       for (String guidToDelete in guidsToDeletePermanently) {
         try {
-          _logger.info(
-            "Permanently deleting room image GUID: $guidToDelete as it was removed.",
-          );
+          _logger.info("Permanently deleting room image GUID: $guidToDelete as it was removed.");
           await imageService.deleteUserImage(guidToDelete);
         } catch (e, s) {
-          _logger.severe(
-            "Failed to delete room image GUID $guidToDelete",
-            e,
-            s,
-          );
+          _logger.severe("Failed to delete room image GUID $guidToDelete", e, s);
         }
       }
     } else {
@@ -415,12 +379,10 @@ class EditRoomViewModel extends ChangeNotifier with HasImagePicking {
         );
         for (var identifier in _currentImages.whereType<TempFileIdentifier>()) {
           try {
-            await _tempFileService.deleteFile(identifier.file);
+            // await _tempFileService.deleteFile(identifier.file);
           } catch (_) {}
         }
-        throw Exception(
-          "Cannot save new images as the image service is unavailable.",
-        );
+        throw Exception("Cannot save new images as the image service is unavailable.");
       }
       finalImageGuidsForRoom = _currentImages
           .whereType<GuidIdentifier>()
@@ -440,9 +402,7 @@ class EditRoomViewModel extends ChangeNotifier with HasImagePicking {
     }
     _isSaving = true;
     notifyListeners();
-    _logger.info(
-      "Attempting to save room. New room: $isNewRoom. Name: '${_nameController.text}'",
-    );
+    _logger.info("Attempting to save room. New room: $isNewRoom. Name: '${_nameController.text}'");
 
     try {
       final List<String> finalImageGuids = await _processImagesForSave();
@@ -472,9 +432,7 @@ class EditRoomViewModel extends ChangeNotifier with HasImagePicking {
 
       _hasUnsavedChanges = false;
       _initialPersistedGuids = List.from(finalImageGuids);
-      _currentImages = finalImageGuids
-          .map((guid) => GuidIdentifier(guid))
-          .toList();
+      _currentImages = finalImageGuids.map((guid) => GuidIdentifier(guid)).toList();
 
       return true;
     } catch (e, s) {
@@ -487,23 +445,19 @@ class EditRoomViewModel extends ChangeNotifier with HasImagePicking {
   }
 
   Future<void> handleDiscardOrPop() async {
-    _logger.info(
-      "EditRoomViewModel handling discard/pop. Cleaning up session resources.",
-    );
-    await _tempFileService.clearSession();
+    _logger.info("EditRoomViewModel handling discard/pop. Cleaning up session resources.");
+    // await _tempFileService.clearSession();
   }
 
   @override
   void dispose() {
-    _logger.info(
-      "Disposing EditRoomViewModel for room: ${_initialRoom?.name ?? 'New Room'}",
-    );
+    _logger.info("Disposing EditRoomViewModel for room: ${_initialRoom?.name ?? 'New Room'}");
     _nameController.removeListener(_handleFieldChange);
     _descriptionController.removeListener(_handleFieldChange);
     _nameController.dispose();
     _descriptionController.dispose();
 
-    _tempFileService.dispose();
+    // _tempFileService.dispose();
 
     super.dispose();
   }

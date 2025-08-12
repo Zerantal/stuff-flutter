@@ -1,9 +1,9 @@
-// lib/core/helpers/image_identifier_to_ref.dart
+// lib/shared/image/image_identifier_to_ref.dart
 //
 // Tiny mapping helpers: VM returns ImageIdentifier(s), view builds Image widgets.
 
 import 'image_ref.dart';
-import '../image_identifier.dart';
+import '../../core/image_identifier.dart';
 import '../../services/image_data_service_interface.dart';
 
 /// Convert a single ImageIdentifier to an ImageRef via the service.

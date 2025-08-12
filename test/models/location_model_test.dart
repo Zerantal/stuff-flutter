@@ -4,39 +4,36 @@ import 'package:stuff/models/location_model.dart';
 void main() {
   group('Location Model', () {
     group('Constructor and Default Values (including BaseModel behavior)', () {
-      test(
-        'should correctly initialize all specific Location fields when all are provided',
-        () {
-          // Arrange
-          final imageGuids = ['guid1.jpg', 'guid2.jpg'];
-          const testId = 'test_id_provided';
-          final specificCreatedAt = DateTime(2023, 1, 1, 10, 0, 0);
-          final specificUpdatedAt = DateTime(2023, 1, 1, 12, 0, 0);
+      test('should correctly initialize all specific Location fields when all are provided', () {
+        // Arrange
+        final imageGuids = ['guid1.jpg', 'guid2.jpg'];
+        const testId = 'test_id_provided';
+        final specificCreatedAt = DateTime(2023, 1, 1, 10, 0, 0);
+        final specificUpdatedAt = DateTime(2023, 1, 1, 12, 0, 0);
 
-          // Act
-          final location = Location(
-            id: testId, // Explicitly provide ID
-            name: 'Test Location',
-            description: 'A description',
-            address: '123 Test St',
-            images: imageGuids,
-            createdAt: specificCreatedAt, // Explicitly provide createdAt
-            updatedAt: specificUpdatedAt, // Explicitly provide updatedAt
-          );
+        // Act
+        final location = Location(
+          id: testId, // Explicitly provide ID
+          name: 'Test Location',
+          description: 'A description',
+          address: '123 Test St',
+          images: imageGuids,
+          createdAt: specificCreatedAt, // Explicitly provide createdAt
+          updatedAt: specificUpdatedAt, // Explicitly provide updatedAt
+        );
 
-          // Assert
-          // BaseModel fields
-          expect(location.id, testId);
-          expect(location.createdAt, specificCreatedAt);
-          expect(location.updatedAt, specificUpdatedAt);
+        // Assert
+        // BaseModel fields
+        expect(location.id, testId);
+        expect(location.createdAt, specificCreatedAt);
+        expect(location.updatedAt, specificUpdatedAt);
 
-          // Location specific fields
-          expect(location.name, 'Test Location');
-          expect(location.description, 'A description');
-          expect(location.address, '123 Test St');
-          expect(location.images, equals(imageGuids));
-        },
-      );
+        // Location specific fields
+        expect(location.name, 'Test Location');
+        expect(location.description, 'A description');
+        expect(location.address, '123 Test St');
+        expect(location.images, equals(imageGuids));
+      });
 
       test('id should be a non-null UUID string if not provided', () {
         // Act
@@ -84,31 +81,25 @@ void main() {
         },
       );
 
-      test(
-        'imageGuids should default to an empty list if null is passed to constructor',
-        () {
-          // Act
-          final location = Location(name: 'No Images Location', images: null);
+      test('imageGuids should default to an empty list if null is passed to constructor', () {
+        // Act
+        final location = Location(name: 'No Images Location', images: null);
 
-          // Assert
-          expect(location.images, isNotNull);
-          expect(location.images, isEmpty);
-        },
-      );
+        // Assert
+        expect(location.images, isNotNull);
+        expect(location.images, isEmpty);
+      });
 
-      test(
-        'imageGuids should default to an empty list if not provided in constructor',
-        () {
-          // Act
-          final location = Location(
-            name: 'Implicit No Images Location',
-            // imageGuids is not provided
-          );
-          // Assert
-          expect(location.images, isNotNull);
-          expect(location.images, isEmpty);
-        },
-      );
+      test('imageGuids should default to an empty list if not provided in constructor', () {
+        // Act
+        final location = Location(
+          name: 'Implicit No Images Location',
+          // imageGuids is not provided
+        );
+        // Assert
+        expect(location.images, isNotNull);
+        expect(location.images, isEmpty);
+      });
 
       test(
         'all optional fields (description, address, imageGuids) should be settable and retrievable',

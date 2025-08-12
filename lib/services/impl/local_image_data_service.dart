@@ -5,7 +5,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../core/helpers/image_ref.dart';
+import '../../shared/image/image_ref.dart';
 import '../image_data_service_interface.dart';
 
 /// Stores images locally under an app-owned directory and exposes GUID lookups.
@@ -32,9 +32,7 @@ class LocalImageDataService extends IImageDataService {
   Directory get rootDir {
     final dir = _rootDir;
     if (dir == null) {
-      throw StateError(
-        'LocalImageDataService not initialized. Call init() before use.',
-      );
+      throw StateError('LocalImageDataService not initialized. Call init() before use.');
     }
     return dir;
   }
@@ -67,10 +65,7 @@ class LocalImageDataService extends IImageDataService {
   // ---- Queries --------------------------------------------------------------
 
   @override
-  Future<ImageRef?> getImage(
-    String imageGuid, {
-    bool verifyExists = true,
-  }) async {
+  Future<ImageRef?> getImage(String imageGuid, {bool verifyExists = true}) async {
     if (!_initialized) await init();
 
     final safeGuid = _sanitizeGuid(imageGuid);
@@ -98,11 +93,7 @@ class LocalImageDataService extends IImageDataService {
     if (!_initialized) await init();
 
     if (!await imageFile.exists()) {
-      throw ArgumentError.value(
-        imageFile.path,
-        'imageFile',
-        'Source file does not exist',
-      );
+      throw ArgumentError.value(imageFile.path, 'imageFile', 'Source file does not exist');
     }
 
     final ext = _normalizedExtension(imageFile.path);
@@ -114,11 +105,7 @@ class LocalImageDataService extends IImageDataService {
     if (await destFile.exists()) {
       final altGuid = '${_uuid.v4()}$ext';
       final altDest = File(p.join(rootDir.path, altGuid));
-      return _copyOrMove(
-        imageFile,
-        altDest,
-        deleteSource: deleteSource,
-      ).then((_) => altGuid);
+      return _copyOrMove(imageFile, altDest, deleteSource: deleteSource).then((_) => altGuid);
     }
 
     await _copyOrMove(imageFile, destFile, deleteSource: deleteSource);
@@ -172,36 +159,23 @@ class LocalImageDataService extends IImageDataService {
   /// Reject anything that isn't a bare filename (defense-in-depth).
   static String _sanitizeGuid(String guid) {
     final g = guid.trim();
-    if (g.isEmpty)
-      throw ArgumentError.value(guid, 'imageGuid', 'Empty GUID/filename');
+    if (g.isEmpty) throw ArgumentError.value(guid, 'imageGuid', 'Empty GUID/filename');
 
     // Normalize separators for checks.
     final n = g.replaceAll('\\', '/');
 
     // Disallow any path segments or parent refs.
     if (n.contains('/')) {
-      throw ArgumentError.value(
-        guid,
-        'imageGuid',
-        'Path separators are not allowed',
-      );
+      throw ArgumentError.value(guid, 'imageGuid', 'Path separators are not allowed');
     }
     if (n.contains('..')) {
-      throw ArgumentError.value(
-        guid,
-        'imageGuid',
-        'Parent directory reference not allowed',
-      );
+      throw ArgumentError.value(guid, 'imageGuid', 'Parent directory reference not allowed');
     }
 
     // Disallow obvious absolute-path patterns (extra safety).
     final absWin = RegExp(r'^[A-Za-z]:');
     if (n.startsWith('/') || absWin.hasMatch(n) || n.startsWith('\\\\')) {
-      throw ArgumentError.value(
-        guid,
-        'imageGuid',
-        'Absolute paths are not allowed',
-      );
+      throw ArgumentError.value(guid, 'imageGuid', 'Absolute paths are not allowed');
     }
 
     // Final sanity: ensure we’re dealing with just the basename.
@@ -216,11 +190,7 @@ class LocalImageDataService extends IImageDataService {
   /// - When [deleteSource] is true: attempt a fast rename (move). If it fails
   ///   (e.g., across devices), fall back to copy + delete.
   /// - When [deleteSource] is false: copy only.
-  Future<void> _copyOrMove(
-    File src,
-    File dest, {
-    required bool deleteSource,
-  }) async {
+  Future<void> _copyOrMove(File src, File dest, {required bool deleteSource}) async {
     if (deleteSource) {
       try {
         // Attempt a fast move first (same-volume rename).

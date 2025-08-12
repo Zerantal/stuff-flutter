@@ -1,4 +1,4 @@
-// lib/core/helpers/src/image_file_provider_io.dart
+// lib/shared/image/src/image_file_provider_io.dart
 // IO implementation (used on mobile/desktop)
 
 import 'dart:io' show File;

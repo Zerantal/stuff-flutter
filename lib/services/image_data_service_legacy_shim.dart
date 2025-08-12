@@ -6,7 +6,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 
-import '../core/helpers/image_ref.dart';
+import '../shared/image/image_ref.dart';
 import 'image_data_service_interface.dart';
 
 extension LegacyImageDataService on IImageDataService {
@@ -49,8 +49,7 @@ extension LegacyImageDataService on IImageDataService {
         final ref = snapshot.data;
         if (ref == null) {
           // not found / missing → show error widget or a tiny fallback
-          return errorWidget ??
-              const Center(child: Icon(Icons.broken_image_outlined, size: 20));
+          return errorWidget ?? const Center(child: Icon(Icons.broken_image_outlined, size: 20));
         }
 
         // Use your existing helper to build an Image from ImageRef.

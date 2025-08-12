@@ -9,7 +9,6 @@ import '../services/image_data_service_interface.dart';
 import '../services/image_picker_service_interface.dart';
 import '../services/temporary_file_service_interface.dart';
 import '../viewmodels/edit_room_view_model.dart';
-import '../widgets/confirmation_dialog.dart';
 
 final Logger _logger = Logger('EditRoomPage');
 
@@ -25,13 +24,8 @@ class EditRoomPage extends StatelessWidget {
     this.viewModelOverride,
   });
 
-  Future<bool> _onWillPop(
-    BuildContext context,
-    EditRoomViewModel viewModel,
-  ) async {
-    _logger.finer(
-      "Pop attempt on EditRoomPage. Unsaved changes: ${viewModel.hasUnsavedChanges}",
-    );
+  Future<bool> _onWillPop(BuildContext context, EditRoomViewModel viewModel) async {
+    _logger.finer("Pop attempt on EditRoomPage. Unsaved changes: ${viewModel.hasUnsavedChanges}");
     // if (viewModel.hasUnsavedChanges) {
     //   final confirm = await showConfirmationDialog(
     //     context: context,
@@ -51,12 +45,8 @@ class EditRoomPage extends StatelessWidget {
     return true; // Allow pop if no unsaved changes
   }
 
-  Future<void> _handleSaveAttempt(
-    BuildContext context,
-    EditRoomViewModel viewModel,
-  ) async {
-    final bool isFormValid =
-        viewModel.formKey.currentState?.validate() ?? false;
+  Future<void> _handleSaveAttempt(BuildContext context, EditRoomViewModel viewModel) async {
+    final bool isFormValid = viewModel.formKey.currentState?.validate() ?? false;
     if (!isFormValid) {
       _logger.info('Form is invalid. Save attempt aborted.');
       return;
@@ -71,9 +61,7 @@ class EditRoomPage extends StatelessWidget {
     _logger.info('Save attempt completed. Success: $success');
 
     if (!context.mounted) {
-      _logger.warning(
-        'Context not mounted after save attempt. Aborting UI updates.',
-      );
+      _logger.warning('Context not mounted after save attempt. Aborting UI updates.');
       return;
     }
 
@@ -87,9 +75,7 @@ class EditRoomPage extends StatelessWidget {
       }
     } else {
       scaffoldMessenger.showSnackBar(
-        const SnackBar(
-          content: Text('Failed to save room. Check details and try again.'),
-        ),
+        const SnackBar(content: Text('Failed to save room. Check details and try again.')),
       );
     }
   }
@@ -177,8 +163,7 @@ class EditRoomPage extends StatelessWidget {
                             ),
                           ),
                           // Delete button
-                          if (!viewModel
-                              .isSaving) // Don't allow removal during save
+                          if (!viewModel.isSaving) // Don't allow removal during save
                             Material(
                               color: Colors.transparent,
                               shape: const CircleBorder(),
@@ -192,11 +177,7 @@ class EditRoomPage extends StatelessWidget {
                                     color: Colors.black.withAlpha(128),
                                     shape: BoxShape.circle,
                                   ),
-                                  child: const Icon(
-                                    Icons.close,
-                                    color: Colors.white,
-                                    size: 18,
-                                  ),
+                                  child: const Icon(Icons.close, color: Colors.white, size: 18),
                                 ),
                               ),
                             ),
@@ -232,10 +213,7 @@ class EditRoomPage extends StatelessWidget {
   }
   // --- END OF COPIED SECTION ---
 
-  Widget _buildActionButtons(
-    BuildContext context,
-    EditRoomViewModel viewModel,
-  ) {
+  Widget _buildActionButtons(BuildContext context, EditRoomViewModel viewModel) {
     return ElevatedButton.icon(
       key: ValueKey(viewModel.isNewRoom ? 'addRoomButton' : 'saveRoomButton'),
       icon: viewModel.isSaving
@@ -243,10 +221,7 @@ class EditRoomPage extends StatelessWidget {
               width: 24,
               height: 24,
               padding: const EdgeInsets.all(2.0),
-              child: const CircularProgressIndicator(
-                color: Colors.white,
-                strokeWidth: 3,
-              ),
+              child: const CircularProgressIndicator(color: Colors.white, strokeWidth: 3),
             )
           : (viewModel.isNewRoom
                 ? const Icon(Icons.add_circle_outline)
@@ -270,18 +245,9 @@ class EditRoomPage extends StatelessWidget {
         viewModelOverride ??
         () {
           final dataService = Provider.of<IDataService>(context, listen: false);
-          final imagePickerService = Provider.of<IImagePickerService>(
-            context,
-            listen: false,
-          );
-          final imageDataService = Provider.of<IImageDataService?>(
-            context,
-            listen: false,
-          );
-          final tempFileService = Provider.of<ITemporaryFileService>(
-            context,
-            listen: false,
-          );
+          final imagePickerService = Provider.of<IImagePickerService>(context, listen: false);
+          final imageDataService = Provider.of<IImageDataService>(context, listen: false);
+          final tempFileService = Provider.of<ITemporaryFileService>(context, listen: false);
 
           return EditRoomViewModel(
             dataService: dataService,
@@ -329,10 +295,7 @@ class EditRoomPage extends StatelessWidget {
                     children: <Widget>[
                       _buildFormFields(context, viewModel),
                       const SizedBox(height: 24.0),
-                      _buildImageSection(
-                        context,
-                        viewModel,
-                      ), // Integrate the image section
+                      _buildImageSection(context, viewModel), // Integrate the image section
                       const SizedBox(height: 24.0),
                       _buildActionButtons(context, viewModel),
                     ],

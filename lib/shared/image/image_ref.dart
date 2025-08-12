@@ -1,4 +1,4 @@
-// lib/core/helpers/image_ref.dart
+// lib/shared/image/image_ref.dart
 // Tiny helper for representing image sources in a UI-agnostic way.
 
 import 'package:flutter/foundation.dart';
@@ -16,11 +16,8 @@ sealed class ImageRef {
   const factory ImageRef.file(String path) = FileImageRef;
   const factory ImageRef.network(String url) = NetworkImageRef;
   const factory ImageRef.memory(Uint8List bytes) = MemoryImageRef;
-  const factory ImageRef.asset(
-    String assetName, {
-    AssetBundle? bundle,
-    String? package,
-  }) = AssetImageRef;
+  const factory ImageRef.asset(String assetName, {AssetBundle? bundle, String? package}) =
+      AssetImageRef;
 }
 
 class FileImageRef extends ImageRef {
@@ -46,18 +43,16 @@ class AssetImageRef extends ImageRef {
 }
 
 /// Convert an [ImageRef] into an [ImageProvider].
-ImageProvider providerFor(
-  ImageRef ref, {
-  int? cacheWidth,
-  int? cacheHeight,
-  double scale = 1.0,
-}) {
+ImageProvider providerFor(ImageRef ref, {int? cacheWidth, int? cacheHeight, double scale = 1.0}) {
   final ImageProvider base = switch (ref) {
     FileImageRef(:final path) => _fileImage(path, scale: scale),
     NetworkImageRef(:final url) => NetworkImage(url, scale: scale),
     MemoryImageRef(:final bytes) => MemoryImage(bytes, scale: scale),
-    AssetImageRef(:final assetName, :final bundle, :final package) =>
-      AssetImage(assetName, bundle: bundle, package: package),
+    AssetImageRef(:final assetName, :final bundle, :final package) => AssetImage(
+      assetName,
+      bundle: bundle,
+      package: package,
+    ),
   };
 
   // FileImage doesn't have cacheWidth/cacheHeight; wrap when requested.
@@ -83,11 +78,7 @@ Widget buildImage(
   Widget? loadingWidget,
   Widget? errorWidget,
 }) {
-  final provider = providerFor(
-    ref,
-    cacheWidth: cacheWidth,
-    cacheHeight: cacheHeight,
-  );
+  final provider = providerFor(ref, cacheWidth: cacheWidth, cacheHeight: cacheHeight);
 
   return Image(
     image: provider,

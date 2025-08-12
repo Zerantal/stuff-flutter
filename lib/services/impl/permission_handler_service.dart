@@ -32,9 +32,7 @@ class PermissionHandlerService implements IPermissionService {
     // 2. Limited: User has selected specific photos (iOS, or Android 14+ "Selected Photos" equivalent).
     //    In this state, the native picker will correctly show only the allowed photos.
     if (status.isGranted || status.isLimited) {
-      _logger.info(
-        "Gallery/photos permission is sufficient (granted or limited). Proceeding.",
-      );
+      _logger.info("Gallery/photos permission is sufficient (granted or limited). Proceeding.");
       return true; // Sufficient permission to proceed with image_picker
     }
 
@@ -42,9 +40,7 @@ class PermissionHandlerService implements IPermissionService {
     // Requesting again when it's 'limited' on iOS might allow the user to change their selection,
     // which can be a valid UX if you want to offer that explicitly.
     // However, for simply picking an image, 'limited' is enough to proceed.
-    _logger.info(
-      "Gallery/photos permission is not sufficient ($status). Requesting...",
-    );
+    _logger.info("Gallery/photos permission is not sufficient ($status). Requesting...");
     status = await Permission.photos.request();
     _logger.info("Status after gallery/photos request: $status");
 

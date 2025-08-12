@@ -32,20 +32,12 @@ class _RoomsPageState extends State<RoomsPage> {
     super.initState();
     _dataService = Provider.of<IDataService>(context, listen: false);
     _roomsStream = _dataService.getRoomsStream(widget.location.id);
-    _logger.info(
-      "RoomsPage: Subscribed to rooms stream for location ID: ${widget.location.id}",
-    );
+    _logger.info("RoomsPage: Subscribed to rooms stream for location ID: ${widget.location.id}");
 
-    _viewModel = RoomsViewModel(
-      dataService: _dataService,
-      location: widget.location,
-    );
+    _viewModel = RoomsViewModel(dataService: _dataService, location: widget.location);
   }
 
-  Future<bool> _showDeleteConfirmationDialog(
-    BuildContext context,
-    Room room,
-  ) async {
+  Future<bool> _showDeleteConfirmationDialog(BuildContext context, Room room) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (BuildContext dialogContext) {
@@ -74,9 +66,7 @@ class _RoomsPageState extends State<RoomsPage> {
   }
 
   Future<void> _handleRefresh() async {
-    _logger.info(
-      "Handling refresh via RefreshIndicator for rooms in ${widget.location.name}...",
-    );
+    _logger.info("Handling refresh via RefreshIndicator for rooms in ${widget.location.name}...");
     if (mounted) {
       setState(() {
         // Re-assigning the stream can force StreamBuilder to re-listen
@@ -123,24 +113,16 @@ class _RoomsPageState extends State<RoomsPage> {
                       snapshot.error,
                       snapshot.stackTrace,
                     );
-                    return _buildErrorState(
-                      context,
-                      snapshot.error.toString(),
-                      () {
-                        if (mounted) {
-                          setState(() {
-                            // Retry by re-assigning the stream
-                            _roomsStream = _dataService.getRoomsStream(
-                              widget.location.id,
-                            );
-                          });
-                        }
-                      },
-                    );
+                    return _buildErrorState(context, snapshot.error.toString(), () {
+                      if (mounted) {
+                        setState(() {
+                          // Retry by re-assigning the stream
+                          _roomsStream = _dataService.getRoomsStream(widget.location.id);
+                        });
+                      }
+                    });
                   }
-                  if (!snapshot.hasData ||
-                      snapshot.data == null ||
-                      snapshot.data!.isEmpty) {
+                  if (!snapshot.hasData || snapshot.data == null || snapshot.data!.isEmpty) {
                     _logger.info(
                       "StreamBuilder (Rooms): No data or empty list for location ${widget.location.name}.",
                     );
@@ -153,12 +135,7 @@ class _RoomsPageState extends State<RoomsPage> {
                     "StreamBuilder (Rooms): HasData with ${rooms.length} items for ${widget.location.name}.",
                   );
                   // Access viewModel directly
-                  return _buildRoomsList(
-                    context,
-                    _viewModel,
-                    rooms,
-                    imageDataService,
-                  );
+                  return _buildRoomsList(context, _viewModel, rooms, imageDataService);
                 },
               );
             },
@@ -176,16 +153,10 @@ class _RoomsPageState extends State<RoomsPage> {
 
   Widget _buildLoadingIndicator() {
     _logger.finer("RoomsPage: Building Loading Indicator");
-    return const Center(
-      child: CircularProgressIndicator(key: Key("rooms_waiting_spinner")),
-    );
+    return const Center(child: CircularProgressIndicator(key: Key("rooms_waiting_spinner")));
   }
 
-  Widget _buildErrorState(
-    BuildContext context,
-    String errorMessage,
-    VoidCallback onRetry,
-  ) {
+  Widget _buildErrorState(BuildContext context, String errorMessage, VoidCallback onRetry) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -214,9 +185,7 @@ class _RoomsPageState extends State<RoomsPage> {
   }
 
   Widget _buildEmptyState(BuildContext context, RoomsViewModel viewModel) {
-    _logger.info(
-      "RoomsPage: Building Empty State for location ${viewModel.currentLocation.name}",
-    );
+    _logger.info("RoomsPage: Building Empty State for location ${viewModel.currentLocation.name}");
     return LayoutBuilder(
       builder: (lbContext, constraints) {
         return SingleChildScrollView(
@@ -229,11 +198,7 @@ class _RoomsPageState extends State<RoomsPage> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(
-                      Icons.meeting_room_outlined,
-                      size: 60,
-                      color: Colors.grey,
-                    ),
+                    const Icon(Icons.meeting_room_outlined, size: 60, color: Colors.grey),
                     const SizedBox(height: 16),
                     Text(
                       'No rooms found in "${viewModel.currentLocation.name}" yet.',
@@ -261,9 +226,7 @@ class _RoomsPageState extends State<RoomsPage> {
       "Building image for room ${room.id}. ImageDataService is ${imageDataService == null ? 'NULL' : 'AVAILABLE'}. Image GUIDs: ${room.imageGuids}",
     );
 
-    if (imageDataService != null &&
-        room.imageGuids != null &&
-        room.imageGuids!.isNotEmpty) {
+    if (imageDataService != null && room.imageGuids != null && room.imageGuids!.isNotEmpty) {
       final firstImageGuid = room.imageGuids!.firstWhere(
         (guid) => guid.isNotEmpty,
         orElse: () => '',
@@ -309,12 +272,8 @@ class _RoomsPageState extends State<RoomsPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      room.name,
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    if (room.description != null &&
-                        room.description!.isNotEmpty)
+                    Text(room.name, style: Theme.of(context).textTheme.titleMedium),
+                    if (room.description != null && room.description!.isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.only(top: 4.0),
                         child: Text(
@@ -335,14 +294,9 @@ class _RoomsPageState extends State<RoomsPage> {
                     viewModel.navigateToEditRoom(context, room);
                   } else if (value == 'delete') {
                     if (!mounted) return;
-                    final scaffoldMessenger = ScaffoldMessenger.of(
-                      context,
-                    ); // capture
+                    final scaffoldMessenger = ScaffoldMessenger.of(context); // capture
 
-                    final confirmed = await _showDeleteConfirmationDialog(
-                      context,
-                      room,
-                    );
+                    final confirmed = await _showDeleteConfirmationDialog(context, room);
                     if (confirmed && mounted) {
                       bool roomDeletedSuccessfully = false;
                       String? errorMessage;
@@ -351,10 +305,7 @@ class _RoomsPageState extends State<RoomsPage> {
                         await viewModel.deleteRoom(room.id, room.name);
                         roomDeletedSuccessfully = true;
                       } catch (e) {
-                        _logger.severe(
-                          "Error deleting room from card action: ${room.id}",
-                          e,
-                        );
+                        _logger.severe("Error deleting room from card action: ${room.id}", e);
                         errorMessage = e.toString();
                       }
 
@@ -363,47 +314,31 @@ class _RoomsPageState extends State<RoomsPage> {
                         if (roomDeletedSuccessfully) {
                           scaffoldMessenger.showSnackBar(
                             // Use captured scaffoldMessenger
-                            SnackBar(
-                              content: Text('Room "${room.name}" deleted.'),
-                            ),
+                            SnackBar(content: Text('Room "${room.name}" deleted.')),
                           );
                         } else if (errorMessage != null) {
                           scaffoldMessenger.showSnackBar(
                             // Use captured scaffoldMessenger
-                            SnackBar(
-                              content: Text(
-                                'Failed to delete room: $errorMessage',
-                              ),
-                            ),
+                            SnackBar(content: Text('Failed to delete room: $errorMessage')),
                           );
                         }
                       }
                     }
                   }
                 },
-                itemBuilder: (BuildContext popupContext) =>
-                    <PopupMenuEntry<String>>[
-                      const PopupMenuItem<String>(
-                        value: 'edit',
-                        child: ListTile(
-                          leading: Icon(Icons.edit_outlined),
-                          title: Text('Edit Room'),
-                        ),
-                      ),
-                      const PopupMenuItem<String>(
-                        value: 'delete',
-                        child: ListTile(
-                          leading: Icon(
-                            Icons.delete_outline,
-                            color: Colors.red,
-                          ),
-                          title: Text(
-                            'Delete Room',
-                            style: TextStyle(color: Colors.red),
-                          ),
-                        ),
-                      ),
-                    ],
+                itemBuilder: (BuildContext popupContext) => <PopupMenuEntry<String>>[
+                  const PopupMenuItem<String>(
+                    value: 'edit',
+                    child: ListTile(leading: Icon(Icons.edit_outlined), title: Text('Edit Room')),
+                  ),
+                  const PopupMenuItem<String>(
+                    value: 'delete',
+                    child: ListTile(
+                      leading: Icon(Icons.delete_outline, color: Colors.red),
+                      title: Text('Delete Room', style: TextStyle(color: Colors.red)),
+                    ),
+                  ),
+                ],
                 icon: const Icon(Icons.more_vert),
                 tooltip: "Room options",
               ),

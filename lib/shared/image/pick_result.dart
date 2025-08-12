@@ -1,3 +1,5 @@
+// lib/shared/image/pick_result.dart
+
 import 'dart:io';
 
 /// Discriminated result for image-pick and persistence flows.

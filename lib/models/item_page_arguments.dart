@@ -8,8 +8,7 @@ class ItemPageArguments {
   final String roomName;
   final String roomId;
   final String containerName;
-  final String?
-  containerId; // Make containerId optional if name is primary key for now
+  final String? containerId; // Make containerId optional if name is primary key for now
 
   ItemPageArguments({
     required this.locationName,

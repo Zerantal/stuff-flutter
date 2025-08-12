@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 
-import '../routing/app_route_ext.dart';
-import '../routing/app_routes.dart';
+import '../app/routing/app_route_ext.dart';
+import '../app/routing/app_routes.dart';
 import '../models/room_model.dart';
 
 final Logger _logger = Logger('ContainersPage');
@@ -36,10 +36,7 @@ class _ContainersPageState extends State<ContainersPage> {
   List<String> _fetchContainersForRoomPlaceholder(String roomId) {
     _logger.info('Fetching containers for room ID: $roomId (placeholder)');
     // In a real app, this would return List<ContainerModel> from a service
-    return List.generate(
-      4,
-      (index) => 'Container ${index + 1} in ${widget.room.name}',
-    );
+    return List.generate(4, (index) => 'Container ${index + 1} in ${widget.room.name}');
   }
 
   // Future<List<ContainerModel>> _fetchContainersForRoom(String roomId) async {
