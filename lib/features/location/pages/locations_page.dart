@@ -37,6 +37,9 @@ class _LocationsView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<LocationsViewModel>();
+    final width = MediaQuery.sizeOf(context).width;
+    final useExtendedFab = width >= 720; // wide screens get an extended FAB
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Locations'),
@@ -58,11 +61,12 @@ class _LocationsView extends StatelessWidget {
           stream: vm.locations,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
-              return const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(24),
-                  child: CircularProgressIndicator(key: Key('locations_waiting_spinner')),
-                ),
+              // Skeletons while first batch loads
+              return ListView.separated(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                itemCount: 6,
+                separatorBuilder: (_, _) => const SizedBox(height: 4),
+                itemBuilder: (context, i) => const _SkeletonTile(),
               );
             }
             if (snapshot.hasError) {
@@ -78,30 +82,30 @@ class _LocationsView extends StatelessWidget {
               );
             }
 
-            return ListView.builder(
-              itemCount: items.length,
-              itemBuilder: (context, i) {
-                final item = items[i];
-                return _LocationCard(
-                  location: item.location,
-                  image: item.image, // ImageRef? (null => placeholder)
-                  onView: (loc) =>
-                      AppRoutes.rooms.push(context, pathParams: {'locationId': loc.id}),
-                  onEdit: (loc) =>
-                      AppRoutes.locationsEdit.push(context, pathParams: {'locationId': loc.id}),
-                );
-              },
+            return _ResponsiveLocations(
+              items: items,
+              onView: (loc) => AppRoutes.rooms.push(context, pathParams: {'locationId': loc.id}),
+              onEdit: (loc) =>
+                  AppRoutes.locationsEdit.push(context, pathParams: {'locationId': loc.id}),
             );
           },
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        key: const ValueKey('add_location_fab'),
-        heroTag: 'locationsPageFAB',
-        onPressed: () => AppRoutes.locationsAdd.push(context),
-        tooltip: 'Add Location',
-        child: const Icon(Icons.add_location_alt_outlined),
-      ),
+      floatingActionButton: useExtendedFab
+          ? FloatingActionButton.extended(
+              key: const ValueKey('add_location_fab'),
+              heroTag: 'locationsPageFAB',
+              onPressed: () => AppRoutes.locationsAdd.push(context),
+              icon: const Icon(Icons.add_location_alt_outlined),
+              label: const Text('Add Location'),
+            )
+          : FloatingActionButton(
+              key: const ValueKey('add_location_fab'),
+              heroTag: 'locationsPageFAB',
+              onPressed: () => AppRoutes.locationsAdd.push(context),
+              tooltip: 'Add Location',
+              child: const Icon(Icons.add_location_alt_outlined),
+            ),
     );
   }
 }
@@ -241,76 +245,264 @@ class _LocationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Card(
       key: ValueKey('location_card_${location.id}'),
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ImageThumb(
-              key: Key('location_thumb_${location.id}'),
-              image: image, // null => placeholderWidget shown
-              width: 80,
-              height: 80,
-              borderRadius: BorderRadius.circular(8),
-              placeholderWidget: buildImage(
-                const ImageRef.asset('assets/images/location_placeholder.jpg'),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => onView(location),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ImageThumb(
+                key: Key('location_thumb_${location.id}'),
+                image: image, // null => placeholderWidget shown
                 width: 80,
                 height: 80,
-                fit: BoxFit.cover,
+                borderRadius: BorderRadius.circular(8),
+                placeholderWidget: buildImage(
+                  const ImageRef.asset('assets/images/location_placeholder.jpg'),
+                  width: 80,
+                  height: 80,
+                  fit: BoxFit.cover,
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(location.name, style: Theme.of(context).textTheme.titleLarge),
-                  if ((location.description ?? '').isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text(
-                        location.description!,
-                        style: Theme.of(context).textTheme.bodySmall,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      location.name,
+                      style: theme.textTheme.titleLarge,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  if ((location.address ?? '').isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text(
-                        'Address: ${location.address!}',
-                        style: Theme.of(context).textTheme.bodySmall,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                    if ((location.description ?? '').isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          location.description!,
+                          style: theme.textTheme.bodySmall,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                    ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      ElevatedButton.icon(
-                        key: Key('view_location_${location.id}'),
-                        icon: const Icon(Icons.meeting_room_outlined),
-                        label: const Text('View'),
-                        onPressed: () => onView(location),
+                    if ((location.address ?? '').isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 6),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.place_outlined, size: 14),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                location.address!,
+                                style: theme.textTheme.bodySmall,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                      const SizedBox(width: 8),
-                      OutlinedButton.icon(
-                        key: Key('edit_location_${location.id}'),
-                        icon: const Icon(Icons.edit_outlined),
-                        label: const Text('Edit'),
-                        onPressed: () => onEdit(location),
-                      ),
-                    ],
-                  ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              PopupMenuButton<int>(
+                tooltip: 'More',
+                onSelected: (v) {
+                  if (v == 0) onEdit(location);
+                  if (v == 1) onView(location);
+                },
+                itemBuilder: (ctx) => const [
+                  PopupMenuItem(value: 0, child: Text('Edit')),
+                  PopupMenuItem(value: 1, child: Text('View')),
                 ],
               ),
-            ),
-          ],
+            ],
+          ),
         ),
+      ),
+    );
+  }
+}
+
+/// Responsive list: list on phones, grid on wider screens.
+class _ResponsiveLocations extends StatelessWidget {
+  const _ResponsiveLocations({required this.items, required this.onView, required this.onEdit});
+
+  final List<LocationListItem> items;
+  final void Function(Location) onView;
+  final void Function(Location) onEdit;
+
+  @override
+  Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    final useGrid = width >= 720;
+
+    if (!useGrid) {
+      return ListView.builder(
+        itemCount: items.length,
+        itemBuilder: (context, i) {
+          final item = items[i];
+          return _LocationCard(
+            location: item.location,
+            image: item.image,
+            onView: onView,
+            onEdit: onEdit,
+          );
+        },
+      );
+    }
+
+    final columns = width >= 1100 ? 3 : 2;
+    return GridView.builder(
+      padding: const EdgeInsets.all(12),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: columns,
+        mainAxisExtent: 132,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+      ),
+      itemCount: items.length,
+      itemBuilder: (context, i) {
+        final item = items[i];
+        return _GridLocationCard(
+          location: item.location,
+          image: item.image,
+          onView: onView,
+          onEdit: onEdit,
+        );
+      },
+    );
+  }
+}
+
+class _GridLocationCard extends StatelessWidget {
+  const _GridLocationCard({
+    required this.location,
+    required this.image,
+    required this.onView,
+    required this.onEdit,
+  });
+
+  final Location location;
+  final ImageRef? image;
+  final void Function(Location) onView;
+  final void Function(Location) onEdit;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => onView(location),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              ImageThumb(
+                image: image,
+                width: 80,
+                height: 80,
+                borderRadius: BorderRadius.circular(8),
+                placeholderWidget: buildImage(
+                  const ImageRef.asset('assets/images/location_placeholder.jpg'),
+                  width: 80,
+                  height: 80,
+                  fit: BoxFit.cover,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      location.name,
+                      style: theme.textTheme.titleMedium,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if ((location.address ?? '').isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.place_outlined, size: 14),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                location.address!,
+                                style: theme.textTheme.bodySmall,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              PopupMenuButton<int>(
+                tooltip: 'More',
+                onSelected: (v) {
+                  if (v == 0) onEdit(location);
+                  if (v == 1) onView(location);
+                },
+                itemBuilder: (ctx) => const [
+                  PopupMenuItem(value: 0, child: Text('Edit')),
+                  PopupMenuItem(value: 1, child: Text('View')),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Simple skeleton placeholder row used during initial load.
+class _SkeletonTile extends StatelessWidget {
+  const _SkeletonTile();
+
+  @override
+  Widget build(BuildContext context) {
+    final c = Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.6);
+    Widget box(double w, double h, {BorderRadius? r}) => Container(
+      width: w,
+      height: h,
+      decoration: BoxDecoration(color: c, borderRadius: r ?? BorderRadius.circular(6)),
+    );
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          box(80, 80, r: BorderRadius.circular(8)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                box(double.infinity, 16),
+                const SizedBox(height: 8),
+                box(180, 14),
+                const SizedBox(height: 6),
+                box(120, 14),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
