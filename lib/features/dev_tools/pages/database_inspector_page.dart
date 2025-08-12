@@ -73,7 +73,7 @@ class _DatabaseInspectorPageState extends State<DatabaseInspectorPage>
       1 => 'Rooms tab selection',
       _ => '',
     };
-    final scaffoldMessenger = ScaffoldMessenger.of(context);  // capture
+    final scaffoldMessenger = ScaffoldMessenger.of(context); // capture
     await Clipboard.setData(ClipboardData(text: data));
 
     if (!mounted) return;
