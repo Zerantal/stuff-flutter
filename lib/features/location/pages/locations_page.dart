@@ -12,6 +12,7 @@ import '../../../services/contracts/data_service_interface.dart';
 import '../../../services/contracts/image_data_service_interface.dart';
 import '../viewmodels/locations_view_model.dart';
 import '../../../shared/Widgets/image_thumb.dart';
+import '../../dev_tools/pages/database_inspector_page.dart';
 
 // final Logger _log = Logger('LocationsPage');
 
@@ -126,6 +127,25 @@ class _DeveloperDrawer extends StatelessWidget {
                 ),
               ),
             ),
+            ListTile(
+              leading: const Icon(Icons.manage_search),
+              title: const Text('Database Inspector'),
+              subtitle: const Text('Browse records (debug)'),
+              onTap: () {
+                final nav = Navigator.of(context); // capture before any await
+                if (Navigator.canPop(context)) nav.pop(); // close drawer
+                nav.push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => Provider<IDataService>.value(
+                      // Pass through the same IDataService already in scope
+                      value: context.read<IDataService>(),
+                      child: const DatabaseInspectorPage(),
+                    ),
+                  ),
+                );
+              },
+            ),
+            const Divider(height: 1),
             ListTile(
               leading: const Icon(Icons.delete_sweep_outlined),
               title: const Text('Reset DB with Sample Data'),
