@@ -6,7 +6,7 @@ import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
 
 import 'package:stuff/services/impl/flutter_image_picker_service.dart';
-import 'package:stuff/services/permission_service_interface.dart';
+import 'package:stuff/services/contracts/permission_service_interface.dart';
 import '../../utils/test_logger_manager.dart';
 
 // import generated mock file

@@ -2,15 +2,15 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../models/location_model.dart';
-import '../../models/room_model.dart';
-import '../../models/item_page_arguments.dart';
-import '../../pages/locations_page.dart';
-import '../../pages/edit_location_page.dart';
-import '../../pages/rooms_page.dart';
-import '../../pages/edit_room_page.dart';
-import '../../pages/containers_page.dart';
-import '../../pages/items_page.dart';
+import '../../domain/models/location_model.dart';
+import '../../domain/models/room_model.dart';
+import '../../domain/models/item_page_arguments.dart';
+import '../../features/location/pages/locations_page.dart';
+import '../../features/location/pages/edit_location_page.dart';
+import '../../features/room/pages/rooms_page.dart';
+import '../../features/room/pages/edit_room_page.dart';
+import '../../features/container/pages/containers_page.dart';
+import '../../features/Item/pages/items_page.dart';
 
 import 'app_routes.dart';
 

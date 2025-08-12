@@ -1,7 +1,7 @@
 // lib/services/geolocator_location_service.dart
 import 'dart:async';
 import 'package:logging/logging.dart';
-import 'package:stuff/services/permission_service_interface.dart';
+import 'package:stuff/services/contracts/permission_service_interface.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart' as geocoding;
 
@@ -10,7 +10,7 @@ import '../wrappers/geocoding_wrapper.dart';
 import '../wrappers/impl/geolocator_wrapper_impl.dart';
 import '../wrappers/impl/geocoding_wrapper_impl.dart';
 import '../impl/permission_handler_service.dart';
-import '../location_service_interface.dart';
+import '../contracts/location_service_interface.dart';
 import '../exceptions/permission_exceptions.dart';
 import '../exceptions/os_service_exceptions.dart';
 

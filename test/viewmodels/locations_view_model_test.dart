@@ -5,11 +5,11 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'package:stuff/viewmodels/locations_view_model.dart';
-import 'package:stuff/services/data_service_interface.dart';
-import 'package:stuff/services/image_data_service_interface.dart';
+import 'package:stuff/features/location/viewmodels/locations_view_model.dart';
+import 'package:stuff/services/contracts/data_service_interface.dart';
+import 'package:stuff/services/contracts/image_data_service_interface.dart';
 import 'package:stuff/shared/image/image_ref.dart';
-import 'package:stuff/models/location_model.dart';
+import 'package:stuff/domain/models/location_model.dart';
 
 class MockDataService extends Mock implements IDataService {}
 

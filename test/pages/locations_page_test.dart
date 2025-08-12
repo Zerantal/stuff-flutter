@@ -7,10 +7,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:provider/provider.dart';
 
-import 'package:stuff/pages/locations_page.dart';
-import 'package:stuff/services/data_service_interface.dart';
-import 'package:stuff/services/image_data_service_interface.dart';
-import 'package:stuff/models/location_model.dart';
+import 'package:stuff/features/location/pages/locations_page.dart';
+import 'package:stuff/services/contracts/data_service_interface.dart';
+import 'package:stuff/services/contracts/image_data_service_interface.dart';
+import 'package:stuff/domain/models/location_model.dart';
 import 'package:stuff/shared/image/image_ref.dart';
 
 class MockDataService extends Mock implements IDataService {}

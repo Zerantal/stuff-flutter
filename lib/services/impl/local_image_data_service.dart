@@ -6,7 +6,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../shared/image/image_ref.dart';
-import '../image_data_service_interface.dart';
+import '../contracts/image_data_service_interface.dart';
 
 /// Stores images locally under an app-owned directory and exposes GUID lookups.
 /// - GUID == filename (uuid + original extension)

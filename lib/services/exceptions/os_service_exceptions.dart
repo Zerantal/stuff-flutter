@@ -1,3 +1,5 @@
+// lib/services/exceptions/os_service_exceptions.dart
+
 class OSServiceDisabledException implements Exception {
   final String serviceName; // e.g., "Location", "Bluetooth", "Wi-Fi"
   final String message;

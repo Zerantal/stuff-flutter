@@ -5,11 +5,11 @@ import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
 
-import '../services/data_service_interface.dart';
-import '../services/location_service_interface.dart';
-import '../services/image_picker_service_interface.dart';
-import '../services/temporary_file_service_interface.dart';
-import '../services/image_data_service_interface.dart';
+import '../services/contracts/data_service_interface.dart';
+import '../services/contracts/location_service_interface.dart';
+import '../services/contracts/image_picker_service_interface.dart';
+import '../services/contracts/temporary_file_service_interface.dart';
+import '../services/contracts/image_data_service_interface.dart';
 
 import '../services/impl/geolocator_location_service.dart';
 import '../services/impl/flutter_image_picker_service.dart';

@@ -10,7 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:stuff/services/impl/geolocator_location_service.dart';
 import 'package:stuff/services/wrappers/geolocator_wrapper.dart';
 import 'package:stuff/services/wrappers/geocoding_wrapper.dart';
-import 'package:stuff/services/permission_service_interface.dart';
+import 'package:stuff/services/contracts/permission_service_interface.dart';
 import 'package:stuff/services/exceptions/permission_exceptions.dart';
 import 'package:stuff/services/exceptions/os_service_exceptions.dart';
 import '../../utils/test_logger_manager.dart';

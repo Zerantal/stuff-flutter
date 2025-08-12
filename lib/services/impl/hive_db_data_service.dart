@@ -2,9 +2,9 @@
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:logging/logging.dart';
 
-import '../../models/room_model.dart';
-import '../../models/location_model.dart';
-import '../data_service_interface.dart';
+import '../../domain/models/room_model.dart';
+import '../../domain/models/location_model.dart';
+import '../contracts/data_service_interface.dart';
 
 final Logger _logger = Logger('HiveDatabaseService');
 

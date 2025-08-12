@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:stuff/models/location_model.dart';
+import 'package:stuff/domain/models/location_model.dart';
 
 void main() {
   group('Location Model', () {

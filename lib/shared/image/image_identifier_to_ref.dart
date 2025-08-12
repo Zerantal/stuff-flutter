@@ -4,7 +4,7 @@
 
 import 'image_ref.dart';
 import '../../core/image_identifier.dart';
-import '../../services/image_data_service_interface.dart';
+import '../../services/contracts/image_data_service_interface.dart';
 
 /// Convert a single ImageIdentifier to an ImageRef via the service.
 Future<ImageRef?> toImageRef(

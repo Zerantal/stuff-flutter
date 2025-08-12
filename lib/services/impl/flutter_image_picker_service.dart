@@ -3,8 +3,8 @@ import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:logging/logging.dart';
 
-import '../image_picker_service_interface.dart';
-import '../permission_service_interface.dart';
+import '../contracts/image_picker_service_interface.dart';
+import '../contracts/permission_service_interface.dart';
 import 'permission_handler_service.dart';
 
 final Logger _logger = Logger('FlutterImagePickerService');

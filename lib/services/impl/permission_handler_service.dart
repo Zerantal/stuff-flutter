@@ -3,7 +3,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:logging/logging.dart';
 
-import '../permission_service_interface.dart';
+import '../contracts/permission_service_interface.dart';
 
 final Logger _logger = Logger('PermissionHandlerService');
 

@@ -5,10 +5,10 @@ import 'package:logging/logging.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../models/location_model.dart';
-import '../../models/room_model.dart';
-import '../data_service_interface.dart';
-import '../image_data_service_interface.dart';
+import '../../domain/models/location_model.dart';
+import '../../domain/models/room_model.dart';
+import '../contracts/data_service_interface.dart';
+import '../contracts/image_data_service_interface.dart';
 
 final Logger _logger = Logger('SampleDataPopulator');
 const Uuid _uuid = Uuid(); // For generating unique IDs for temp files if needed

@@ -5,7 +5,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 
-import '../temporary_file_service_interface.dart';
+import '../contracts/temporary_file_service_interface.dart';
 
 final _log = Logger('PathProviderTemporaryFileService');
 

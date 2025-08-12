@@ -5,9 +5,9 @@ import 'dart:io';
 import 'package:logging/logging.dart';
 import 'package:path/path.dart' as p;
 
-import '../../services/image_picker_service_interface.dart';
-import '../../services/image_data_service_interface.dart';
-import '../../services/temporary_file_service_interface.dart';
+import '../../services/contracts/image_picker_service_interface.dart';
+import '../../services/contracts/image_data_service_interface.dart';
+import '../../services/contracts/temporary_file_service_interface.dart';
 import 'pick_result.dart';
 
 final Logger _log = Logger('ImagePickerController');

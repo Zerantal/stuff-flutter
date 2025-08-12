@@ -6,9 +6,9 @@ import 'package:path/path.dart' as p;
 
 import 'package:stuff/shared/image/image_picker_controller.dart';
 import 'package:stuff/shared/image/pick_result.dart';
-import 'package:stuff/services/image_picker_service_interface.dart';
-import 'package:stuff/services/image_data_service_interface.dart';
-import 'package:stuff/services/temporary_file_service_interface.dart';
+import 'package:stuff/services/contracts/image_picker_service_interface.dart';
+import 'package:stuff/services/contracts/image_data_service_interface.dart';
+import 'package:stuff/services/contracts/temporary_file_service_interface.dart';
 import 'package:stuff/shared/image/image_ref.dart';
 
 // ---------------------------------------------------------------------------
