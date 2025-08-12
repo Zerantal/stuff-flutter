@@ -4,8 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
-import 'package:path_provider/path_provider.dart';
-
 import '../services/contracts/data_service_interface.dart';
 import '../services/impl/hive_db_data_service.dart';
 import '../shared/Widgets/error_display_app.dart';
