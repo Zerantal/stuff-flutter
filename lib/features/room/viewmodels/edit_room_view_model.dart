@@ -23,7 +23,7 @@ class EditRoomViewModel extends ChangeNotifier /*with HasImagePicking*/ {
   final IDataService _dataService;
   // final IImagePickerService _imagePickerService;
   final IImageDataService? _imageDataService;
-  final ITemporaryFileService _tempFileService;
+  // final ITemporaryFileService _tempFileService;
 
   final Location _parentLocation;
   final Room? _initialRoom;
@@ -61,7 +61,7 @@ class EditRoomViewModel extends ChangeNotifier /*with HasImagePicking*/ {
   }) : _dataService = dataService,
        // _imagePickerService = imagePickerService,
        _imageDataService = imageDataService,
-       _tempFileService = tempFileService,
+       // _tempFileService = tempFileService,
        _parentLocation = parentLocation,
        _initialRoom = initialRoom {
     _logger.info(
@@ -336,7 +336,7 @@ class EditRoomViewModel extends ChangeNotifier /*with HasImagePicking*/ {
     List<String> finalImageGuidsForRoom = [];
 
     if (_imageDataService != null) {
-      final imageService = _imageDataService;
+      // final imageService = _imageDataService;
 
       for (var identifier in _currentImages) {
         if (identifier is TempFileIdentifier) {
@@ -377,11 +377,11 @@ class EditRoomViewModel extends ChangeNotifier /*with HasImagePicking*/ {
         _logger.severe(
           "Cannot save room: New images were picked but IImageDataService is not available.",
         );
-        for (var identifier in _currentImages.whereType<TempFileIdentifier>()) {
-          try {
-            // await _tempFileService.deleteFile(identifier.file);
-          } catch (_) {}
-        }
+        // for (var identifier in _currentImages.whereType<TempFileIdentifier>()) {
+        //   try {
+        //     // await _tempFileService.deleteFile(identifier.file);
+        //   } catch (_) {}
+        // }
         throw Exception("Cannot save new images as the image service is unavailable.");
       }
       finalImageGuidsForRoom = _currentImages
