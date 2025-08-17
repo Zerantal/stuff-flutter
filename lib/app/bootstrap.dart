@@ -3,48 +3,57 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
-import 'package:hive_ce_flutter/hive_flutter.dart';
+
+import '../data/drift/open_db.dart';
 import '../services/contracts/data_service_interface.dart';
-import '../services/impl/hive_db_data_service.dart';
-import '../shared/Widgets/error_display_app.dart';
+import '../services/impl/drift_data_service.dart';
+import '../services/contracts/image_data_service_interface.dart';
+import '../services/impl/local_image_data_service.dart';
 
-/// Expose essential singletons constructed during bootstrap.
-late final EssentialServices essentialServices;
+final _log = Logger('Bootstrap');
 
-/// Public entrypoint used by main.dart to start the app after bootstrapping.
-Future<void> bootstrap(Widget Function() appBuilder) async {
-  runZonedGuarded(
-    () async {
-      WidgetsFlutterBinding.ensureInitialized();
-      _log.info("Flutter bindings ensured. Beginning bootstrap.");
+/// Holds fully initialized core services.
+class AppCore {
+  final IDataService dataService;
+  final IImageDataService imageDataService;
+  AppCore({required this.dataService, required this.imageDataService});
+}
 
-      _setupLogging();
-      _setupFlutterErrorHooks();
+/// Configure logging once, early.
+void configureLogging() {
+  Logger.root.level = kReleaseMode ? Level.INFO : Level.ALL;
+  Logger.root.onRecord.listen((r) {
+    // One line per field to avoid Logcat truncation issues
+    debugPrint('${r.level.name.padRight(7)} ${r.loggerName}: ${r.message}');
+    if (r.error != null) debugPrint('ERROR: ${r.error}');
+    if (r.stackTrace != null) debugPrint('STACKTRACE:\n${r.stackTrace}');
+  });
+}
 
-      try {
-        // await _initHiveAndRegisterAdapters();
-        final ds = await _initHiveAndGetDataService();
+Future<IDataService> buildDataService() async {
+  final db = await openAppDatabase();
+  final svc = DriftDataService(db);
+  await svc.init();
+  return svc;
+}
 
-        essentialServices = EssentialServices(dataService: ds);
-      } catch (error, stackTrace) {
-        _log.severe('Fatal during core initialization. App cannot start.', error, stackTrace);
-        runApp(ErrorDisplayApp(error: error, stackTrace: stackTrace));
-        return;
-      }
+/// DataService + ImageDataService in order.
+/// Returns instances that are READY to use.
+Future<AppCore> bootstrapCore() async {
+  WidgetsFlutterBinding.ensureInitialized();
 
-      _log.info('Core services ready. Launching UI...');
-      runApp(appBuilder());
-    },
-    (error, stack) {
-      // Last-ditch safety net for anything that escapes the zone.
-      _log.severe('Uncaught zone error', error, stack);
-      runApp(ErrorDisplayApp(error: error, stackTrace: stack));
-    },
-  );
+  final dataService = await buildDataService();
+
+  _log.info('Creating/initializing LocalImageDataService...');
+  final images = LocalImageDataService();
+  await images.init();
+  _log.info('ImageDataService initialized');
+
+  return AppCore(dataService: dataService, imageDataService: images);
 }
 
 /// Catch framework and platform errors.
-void _setupFlutterErrorHooks() {
+void setupFlutterErrorHooks() {
   FlutterError.onError = (FlutterErrorDetails details) {
     _log.severe('FlutterError', details.exception, details.stack);
   };
@@ -55,34 +64,4 @@ void _setupFlutterErrorHooks() {
     // Return true to indicate we handled it (prevents default crash)
     return true;
   };
-}
-
-Future<IDataService> _initHiveAndGetDataService() async {
-  _log.info('Initializing Hive...');
-  await Hive.initFlutter('database');
-
-  _log.info('Creating/initializing DataService (HiveDbDataService)...');
-  final IDataService ds = HiveDbDataService();
-  await ds.init();
-  _log.info('DataService initialized');
-  return ds;
-}
-
-/// Container for core app-wide singletons created before runApp().
-class EssentialServices {
-  final IDataService dataService;
-
-  EssentialServices({required this.dataService});
-}
-
-final _log = Logger('Bootstrap');
-
-void _setupLogging() {
-  Logger.root.level = kReleaseMode ? Level.INFO : Level.ALL;
-  Logger.root.onRecord.listen((r) {
-    // One line per field to avoid Logcat truncation issues
-    debugPrint('${r.level.name.padRight(7)} ${r.loggerName}: ${r.message}');
-    if (r.error != null) debugPrint('ERROR: ${r.error}');
-    if (r.stackTrace != null) debugPrint('STACKTRACE:\n${r.stackTrace}');
-  });
 }

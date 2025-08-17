@@ -251,7 +251,7 @@ class _LocationCard extends StatelessWidget {
           _KeyValue('name', loc.name),
           _KeyValue('address', loc.address),
           _KeyValue('description', loc.description),
-          _KeyValue('images', loc.images.isEmpty ? '(none)' : loc.images.join(', ')),
+          _KeyValue('imageGuids', loc.imageGuids.isEmpty ? '(none)' : loc.imageGuids.join(', ')),
           const SizedBox(height: 8),
           Row(
             children: [
@@ -362,7 +362,7 @@ Location(
   name: ${l.name},
   address: ${l.address ?? '(null)'},
   description: ${l.description ?? '(null)'},
-  images: [${l.images.join(', ')}],
+  images: [${l.imageGuids.join(', ')}],
 )''';
 
 String _formatRoom(Room r) =>

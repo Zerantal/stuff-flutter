@@ -1,4 +1,4 @@
-// services/sample_data_populator.dart
+// services/util/sample_data_populator.dart
 import 'dart:io';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:logging/logging.dart';
@@ -145,21 +145,21 @@ class SampleDataPopulator {
         name: 'Cozy Home',
         description: 'Primary residence with a small garden.',
         address: '123 Sample St, Testville',
-        images: homeImageGuids,
+        imageGuids: homeImageGuids,
       ),
       Location(
         id: officeLocationId,
         name: 'Downtown Office',
         description: 'Vacuum cleaner business.',
         address: '456 Dev Ave, Coder City',
-        images: officeImageGuids,
+        imageGuids: officeImageGuids,
       ),
       Location(
         id: lakehouseLocationId,
         name: 'Lakehouse Retreat',
         description: 'Vacation property by the lake.',
         address: '789 Shore Ln, Mockington',
-        images: [], // No specific image for this sample
+        imageGuids: [], // No specific image for this sample
       ),
     ];
 

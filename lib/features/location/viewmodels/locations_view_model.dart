@@ -8,6 +8,7 @@ import '../../../shared/image/image_ref.dart';
 import '../../../domain/models/location_model.dart';
 import '../../../services/contracts/data_service_interface.dart';
 import '../../../services/contracts/image_data_service_interface.dart';
+import '../../../services/utils/image_data_service_extensions.dart';
 import '../../../services/utils/sample_data_populator.dart';
 
 final Logger _log = Logger('LocationsViewModel');
@@ -15,8 +16,8 @@ final Logger _log = Logger('LocationsViewModel');
 /// Simple DTO the UI can render directly.
 class LocationListItem {
   final Location location;
-  final ImageRef? image; // null => placeholder in the view
-  const LocationListItem({required this.location, required this.image});
+  final List<ImageRef> images; // empty => placeholder in the view
+  const LocationListItem({required this.location, required this.images});
 }
 
 class LocationsViewModel with ChangeNotifier {
@@ -26,14 +27,21 @@ class LocationsViewModel with ChangeNotifier {
   }) : _data = dataService,
        _imageDataService = imageDataService {
     // Map the domain stream to UI-ready items without doing any I/O verification.
-    locations = _data.getLocationsStream().asyncMap(_attachLeadImages);
+
+    locations = _data
+        .getLocationsStream()
+        .map((list) => list.map(_toListItem).toList(growable: false))
+        .handleError((e, s) {
+          _log.severe('locations stream error', e, s);
+        });
+
     _log.fine('Subscribed to locations stream');
   }
 
   final IDataService _data;
   final IImageDataService _imageDataService;
 
-  late final Stream<List<LocationListItem>>? locations;
+  late final Stream<List<LocationListItem>> locations;
 
   bool _isBusy = false;
   bool get isBusy => _isBusy;
@@ -64,27 +72,31 @@ class LocationsViewModel with ChangeNotifier {
     }
   }
 
+  Future<void> deleteLocationById(String id) async {
+    try {
+      // Need to get all photos associated with location first
+      final loc = await _data.getLocationById(id);
+      if (loc == null) return;
+
+      final imagesToBeDeleted = List<String>.from(loc.imageGuids);
+
+      final rooms = await _data.getRoomsForLocation(id);
+      imagesToBeDeleted.addAll(rooms.expand((room) => room.imageGuids));
+
+      await _data.deleteLocation(id);
+
+      _imageDataService.deleteImages(imagesToBeDeleted);
+    } catch (e, s) {
+      _log.severe("Failed to delete location $id", e, s);
+    }
+  }
+
   // ---- internals -----------------------------------------------------------
 
-  /// Produces UI items with a best-effort image ref:
-  /// - If there is no image GUID, we return null (view shows placeholder).
-  /// - If there is a GUID, we ask the image service for a ref *without* verifying existence.
-  ///   Any errors from the service turn into null so the view can show its error/placeholder.
-  Future<List<LocationListItem>> _attachLeadImages(List<Location> locations) async {
-    return Future.wait(
-      locations.map((l) async {
-        final guid = l.images.isNotEmpty ? l.images.first : null;
-        if (guid == null) return LocationListItem(location: l, image: null);
-
-        try {
-          // IMPORTANT: no existence verification; just return a handle.
-          final img = await _imageDataService.getImage(guid, verifyExists: false);
-          return LocationListItem(location: l, image: img);
-        } catch (e, s) {
-          _log.warning('Image ref build failed for guid=$guid', e, s);
-          return LocationListItem(location: l, image: null);
-        }
-      }),
-    );
+  // Build list item with zero-I/O image refs for smooth scrolling.
+  LocationListItem _toListItem(Location loc) {
+    final guids = loc.imageGuids;
+    final refs = _imageDataService.refsForGuids(guids);
+    return LocationListItem(location: loc, images: refs);
   }
 }

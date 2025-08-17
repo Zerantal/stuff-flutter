@@ -1,4 +1,4 @@
-// test/image_picker_controller_test.dart
+// test/shared/image/image_picker_controller_test.dart
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -86,6 +86,12 @@ class _FakeStore extends IImageDataService {
 
   @override
   Future<void> deleteAllImages() async {}
+
+  @override
+  ImageRef refForGuid(String imageGuid) {
+    // not needed for these tests
+    throw UnimplementedError();
+  }
 }
 
 class _FakeTempSession implements TempSession {

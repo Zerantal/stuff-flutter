@@ -82,7 +82,7 @@ class EditRoomViewModel extends ChangeNotifier /*with HasImagePicking*/ {
     if (_initialRoom != null) {
       _nameController.text = _initialRoom.name;
       _descriptionController.text = _initialRoom.description ?? '';
-      _initialPersistedGuids = List.from(_initialRoom.imageGuids ?? []);
+      _initialPersistedGuids = List.from(_initialRoom.imageGuids);
       _currentImages = _initialPersistedGuids.map((guid) => GuidIdentifier(guid)).toList();
     } else {
       _initialPersistedGuids = [];

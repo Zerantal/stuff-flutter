@@ -11,6 +11,7 @@ import '../../../domain/models/location_model.dart';
 import '../../../services/contracts/data_service_interface.dart';
 import '../../../services/contracts/location_service_interface.dart';
 import '../../../services/contracts/image_data_service_interface.dart';
+import '../../../services/utils/image_data_service_extensions.dart';
 import '../state/edit_location_state.dart';
 
 final Logger _log = Logger('EditLocationViewModel');
@@ -89,7 +90,7 @@ class EditLocationViewModel extends ChangeNotifier {
         _imageIds
           ..clear()
           ..addAll(
-            (_loadedLocation!.images)
+            (_loadedLocation!.imageGuids)
                 .where((g) => g.isNotEmpty)
                 .map<GuidIdentifier>((g) => GuidIdentifier(g)),
           );
@@ -226,10 +227,10 @@ class EditLocationViewModel extends ChangeNotifier {
 
     try {
       // A) Remember what was previously persisted for this location
-      final previousGuids = (_loadedLocation?.images ?? const <String>[]).toSet();
+      final previousGuids = (_loadedLocation?.imageGuids ?? const <String>[]).toSet();
 
       // B) Persist any temp files → GUIDs (order preserved)
-      final guids = await persist.ensureGuids(
+      final guids = await persist.persistTempImages(
         _imageIds,
         _imageStore,
         deleteTempOnSuccess: true, // cleanup
@@ -249,7 +250,7 @@ class EditLocationViewModel extends ChangeNotifier {
             ? null
             : descriptionController.text.trim(),
         address: addressController.text.trim().isEmpty ? null : addressController.text.trim(),
-        images: guids,
+        imageGuids: guids,
       );
 
       // E) After the model is persisted, delete orphaned images

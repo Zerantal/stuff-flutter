@@ -1,11 +1,16 @@
-// lib/routing/app_route_ext.dart
+// lib/app/routing/app_route_ext.dart
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 import 'app_routes.dart';
 
 extension AppRouteNav on AppRoutes {
+  Set<String> get _placeholders {
+    final re = RegExp(r':([A-Za-z0-9_]+)');
+    return re.allMatches(path).map((m) => m.group(1)!).toSet();
+  }
+
   void _check(Map<String, String> pathParams) {
-    final missing = requiredPathParams.difference(pathParams.keys.toSet());
+    final missing = _placeholders.difference(pathParams.keys.toSet());
     if (missing.isNotEmpty) {
       throw ArgumentError('Missing path params for $name: ${missing.join(", ")}');
     }
