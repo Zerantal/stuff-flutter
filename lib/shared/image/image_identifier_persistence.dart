@@ -1,11 +1,14 @@
 // lib/shared/image/image_identifier_persistence.dart
 import 'dart:io';
+
 import '../../core/image_identifier.dart';
 import '../../services/contracts/image_data_service_interface.dart';
+import '../../services/utils/image_data_service_extensions.dart';
 
-/// Converts a mixed list of identifiers to GUIDs, persisting temp files via [store].
-/// Preserves original ordering. Optionally deletes temp sources on success.
-Future<List<String>> ensureGuids(
+/// persist temp files to storage via [store]. Optionally delete temp sources
+/// on success. Return a list of GUIDs for all images, preserving order in
+/// [ids]
+Future<List<String>> persistTempImages(
   List<ImageIdentifier> ids,
   IImageDataService store, {
   bool deleteTempOnSuccess = false,

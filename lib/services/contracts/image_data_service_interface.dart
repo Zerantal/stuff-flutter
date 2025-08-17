@@ -18,25 +18,20 @@ abstract class IImageDataService {
   /// Throws on failure.
   Future<String> saveImage(File imageFile, {bool deleteSource = false});
 
-  /// Convenience batch: persists all files in parallel. Throws if any save fails.
-  Future<List<String>> saveImages(Iterable<File> files, {bool deleteSource = false}) async {
-    return Future.wait(files.map((f) => saveImage(f, deleteSource: deleteSource)));
-  }
-
   Future<void> deleteImage(String imageGuid);
 
-  /// Best-effort batch delete (errors are logged but don’t fail the whole op).
-  Future<void> deleteImages(Iterable<String> guids) async {
-    await Future.wait(
-      guids.map((g) async {
-        try {
-          await deleteImage(g);
-        } catch (_) {
-          // swallow per-file failures; caller already succeeded saving the model
-        }
-      }),
-    );
-  }
-
   Future<void> deleteAllImages();
+
+  // ---------------------------------------------------------------------------
+  // Synchronous, zero-I/O references
+  // ---------------------------------------------------------------------------
+  /// Build a best-effort [ImageRef] synchronously from a GUID **without** any I/O.
+  ///
+  /// Implementations should deterministically map a GUID to a path/URL and
+  /// return an [ImageRef] (e.g., `ImageRef.file('<store>/<guid>')`).
+  /// No existence check should be performed here.
+  ///
+  /// Use this for list/grid previews and fast UI assembly; rely on the widget’s
+  /// ImageProvider to load lazily and surface errors.
+  ImageRef refForGuid(String imageGuid);
 }

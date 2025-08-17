@@ -1,3 +1,4 @@
+// test/domain/models/location_model_test.dart
 import 'package:flutter_test/flutter_test.dart';
 import 'package:stuff/domain/models/location_model.dart';
 
@@ -17,7 +18,7 @@ void main() {
           name: 'Test Location',
           description: 'A description',
           address: '123 Test St',
-          images: imageGuids,
+          imageGuids: imageGuids,
           createdAt: specificCreatedAt, // Explicitly provide createdAt
           updatedAt: specificUpdatedAt, // Explicitly provide updatedAt
         );
@@ -32,7 +33,7 @@ void main() {
         expect(location.name, 'Test Location');
         expect(location.description, 'A description');
         expect(location.address, '123 Test St');
-        expect(location.images, equals(imageGuids));
+        expect(location.imageGuids, equals(imageGuids));
       });
 
       test('id should be a non-null UUID string if not provided', () {
@@ -83,11 +84,11 @@ void main() {
 
       test('imageGuids should default to an empty list if null is passed to constructor', () {
         // Act
-        final location = Location(name: 'No Images Location', images: null);
+        final location = Location(name: 'No Images Location', imageGuids: null);
 
         // Assert
-        expect(location.images, isNotNull);
-        expect(location.images, isEmpty);
+        expect(location.imageGuids, isNotNull);
+        expect(location.imageGuids, isEmpty);
       });
 
       test('imageGuids should default to an empty list if not provided in constructor', () {
@@ -97,8 +98,8 @@ void main() {
           // imageGuids is not provided
         );
         // Assert
-        expect(location.images, isNotNull);
-        expect(location.images, isEmpty);
+        expect(location.imageGuids, isNotNull);
+        expect(location.imageGuids, isEmpty);
       });
 
       test(
@@ -111,18 +112,18 @@ void main() {
             name: 'Full Location',
             description: 'Full Desc',
             address: 'Full Address',
-            images: imgGuids,
+            imageGuids: imgGuids,
           );
           final locationMinimal = Location(name: 'Minimal Location');
 
           // Assert
           expect(locationFull.description, 'Full Desc');
           expect(locationFull.address, 'Full Address');
-          expect(locationFull.images, imgGuids);
+          expect(locationFull.imageGuids, imgGuids);
 
           expect(locationMinimal.description, isNull);
           expect(locationMinimal.address, isNull);
-          expect(locationMinimal.images, isEmpty); // Defaults to empty list
+          expect(locationMinimal.imageGuids, isEmpty); // Defaults to empty list
         },
       );
     });

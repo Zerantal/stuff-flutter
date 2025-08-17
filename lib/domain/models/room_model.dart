@@ -1,23 +1,16 @@
 // lib/domain/models/room_model.dart
-import 'package:hive_ce/hive.dart';
+import 'dart:collection';
 
 import '../../core/models/base_model.dart';
 
-part 'room_model.g.dart';
-
-@HiveType(typeId: 1)
 class Room extends BaseModel {
-  @HiveField(3)
   String locationId; // Foreign key to Location
 
-  @HiveField(4)
   String name;
 
-  @HiveField(5)
   String? description;
 
-  @HiveField(6)
-  List<String>? imageGuids;
+  final UnmodifiableListView<String> imageGuids;
 
   Room({
     super.id,
@@ -27,5 +20,22 @@ class Room extends BaseModel {
     List<String>? imageGuids,
     super.createdAt,
     super.updatedAt,
-  }) : imageGuids = imageGuids ?? [];
+  }) : imageGuids = UnmodifiableListView(imageGuids ?? []);
+
+  Room copyWith({String? locationId, String? name, String? description, List<String>? imageGuids}) {
+    // Prepare new list: clone provided or existing
+    final newImages = imageGuids != null
+        ? UnmodifiableListView(List<String>.from(imageGuids))
+        : UnmodifiableListView(List<String>.from(this.imageGuids));
+
+    return Room(
+      id: id,
+      locationId: locationId ?? this.locationId,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      imageGuids: newImages,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+    );
+  }
 }

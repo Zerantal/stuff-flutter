@@ -12,7 +12,7 @@ import '../contracts/image_data_service_interface.dart';
 /// - GUID == filename (uuid + original extension)
 /// - getImage() returns ImageRef.file(...)
 /// - saveImage() copies or moves (when deleteSource: true)
-class LocalImageDataService extends IImageDataService {
+class LocalImageDataService implements IImageDataService {
   LocalImageDataService({String? subdirectoryName, Directory? rootOverride})
     : _subdir = subdirectoryName ?? 'images',
       _rootOverride = rootOverride;
@@ -208,5 +208,18 @@ class LocalImageDataService extends IImageDataService {
     } else {
       await src.copy(dest.path);
     }
+  }
+
+  @override
+  ImageRef refForGuid(String imageGuid) {
+    if (!_initialized) {
+      throw StateError('LocalImageDataService not initialized. Call init() before use.');
+    }
+
+    final safeGuid = _sanitizeGuid(imageGuid);
+
+    final absPath = p.join(rootDir.path, safeGuid);
+
+    return ImageRef.file(absPath);
   }
 }

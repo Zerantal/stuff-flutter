@@ -16,6 +16,7 @@ analyzer:
 
   exclude:
     - '**/*.mocks.dart'
+    - 'lib/**.g.*'
 
 linter:
   # The lint rules applied to this project can be customized in the
@@ -31,6 +32,10 @@ linter:
   rules:      
     avoid_print: true
     prefer_const_constructors: true
+    prefer_relative_imports: true
+
+formatter:
+  page_width: 100
 
 # Additional information about this file can be found at
 # https://dart.dev/guides/language/analysis-options

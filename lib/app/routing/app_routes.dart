@@ -1,27 +1,27 @@
 // lib/routing/app_routes.dart
 
+// lib/app/routing/app_routes.dart
 enum AppRoutes {
   locations('/locations'),
   locationsAdd('/locations/add'),
-  locationsEdit('/locations/:locationId/edit', requiredPathParams: {'locationId'}),
+  locationsEdit('/locations/:locationId/edit'),
 
-  rooms('/rooms/:locationId', requiredPathParams: {'locationId'}),
-  roomsAdd('/rooms/:locationId/add', requiredPathParams: {'locationId'}),
-  roomsEdit('/rooms/:roomId/edit', requiredPathParams: {'roomId'}),
+  rooms('/rooms/:locationId'),
+  roomsAdd('/rooms/:locationId/add'),
+  roomsEdit('/rooms/:roomId/edit'),
 
-  containers('/containers/:roomId', requiredPathParams: {'roomId'}),
-  containersAdd('/containers/:roomId/add', requiredPathParams: {'roomId'}),
-  containersEdit('/containers/:containerId/edit', requiredPathParams: {'containerId'}),
+  containers('/containers/:roomId'),
+  containersAdd('/containers/:roomId/add'),
+  containersEdit('/containers/:containerId/edit'),
 
-  // param 't' = 'room' or 'container'
-  items('/items/:t/:roomOrContainerId', requiredPathParams: {':t', 'roomOrContainerId'}),
-  itemsAdd('/items/:t/:roomOrContainerId/add', requiredPathParams: {':t', 'roomOrContainerId'}),
-  itemsEdit('/items/:itemId/edit', requiredPathParams: {'itemId'});
+  // param 't' = type ('room' or 'container')
+  items('/items/:t/:roomOrContainerId'),
+  itemsAdd('/items/:t/:roomOrContainerId/add'),
+  itemsEdit('/items/:itemId/edit');
 
   /// The actual path string for the route.
   final String path;
-  final Set<String> requiredPathParams;
 
   /// Constant constructor for the enum.
-  const AppRoutes(this.path, {this.requiredPathParams = const {}});
+  const AppRoutes(this.path);
 }
