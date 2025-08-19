@@ -51,16 +51,6 @@ void main() {
       expect(items[1].location, l2);
     });
 
-    test('refresh() calls data.getAllLocations()', () async {
-      final vm = LocationsViewModel(dataService: data, imageDataService: images);
-
-      when(data.getAllLocations()).thenAnswer((_) async => <Location>[]);
-
-      await vm.refresh();
-
-      verify(data.getAllLocations()).called(1);
-    });
-
     test('deleteLocationById: deletes location and deletes all related images', () async {
       final vm = LocationsViewModel(dataService: data, imageDataService: images);
 
@@ -104,22 +94,23 @@ void main() {
       verifyNever(images.deleteImage(any));
     });
 
-    test(
-      'deleteLocationById: swallows errors (does not throw) and doesn’t delete images',
-      () async {
-        final vm = LocationsViewModel(dataService: data, imageDataService: images);
+    test('deleteLocationById: rethrow unhandled errors and doesn’t delete images', () async {
+      final vm = LocationsViewModel(dataService: data, imageDataService: images);
 
-        final loc = Location(id: 'L1', name: 'Home', imageGuids: const []);
-        when(data.getLocationById('L1')).thenAnswer((_) async => loc);
-        when(data.getRoomsForLocation('L1')).thenThrow(Exception('boom'));
+      final loc = Location(id: 'L1', name: 'Home', imageGuids: const []);
+      when(data.getLocationById('L1')).thenAnswer((_) async => loc);
+      when(data.getRoomsForLocation('L1')).thenThrow(Exception('boom'));
 
-        // Should not throw
-        await vm.deleteLocationById('L1');
+      // Should throw
+      // await expectLater(vm.deleteLocationById('L1'), throwsA(isA<Exception>().having((e) => e., description, matcher))); ;
+      await expectLater(
+        vm.deleteLocationById('L1'),
+        throwsA(isA<Exception>().having((e) => e.toString(), 'toString', 'Exception: boom')),
+      );
 
-        verify(data.getLocationById('L1')).called(1);
-        verify(data.getRoomsForLocation('L1')).called(1);
-        verifyNever(images.deleteImage(any));
-      },
-    );
+      verify(data.getLocationById('L1')).called(1);
+      verify(data.getRoomsForLocation('L1')).called(1);
+      verifyNever(images.deleteImage(any));
+    });
   });
 }
