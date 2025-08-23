@@ -27,7 +27,7 @@ void main() {
     expect(find.byKey(const ValueKey('delete_btn')), findsOneWidget);
 
     expect(find.text('Edit'), findsOneWidget);
-    expect(find.text('Open'), findsOneWidget);
+    expect(find.text('View'), findsOneWidget);
     expect(find.text('Delete'), findsOneWidget);
   });
 
@@ -112,11 +112,9 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('edit_btn')));
     await tester.pumpAndSettle();
 
-    await _openMenu(tester);
     await tester.tap(find.byKey(const ValueKey('view_btn')));
     await tester.pumpAndSettle();
 
-    await _openMenu(tester);
     await tester.tap(find.byKey(const ValueKey('delete_btn')));
     await tester.pumpAndSettle();
 

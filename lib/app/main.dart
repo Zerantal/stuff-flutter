@@ -44,6 +44,7 @@ class _App extends StatelessWidget {
   Widget build(BuildContext context) {
     final router = AppRouter.router;
     return MaterialApp.router(
+      restorationScopeId: 'root',
       debugShowCheckedModeBanner: true,
       routerConfig: router,
       theme: buildAppTheme(),

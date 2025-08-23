@@ -3,6 +3,7 @@ import 'dart:async';
 
 import 'package:logging/logging.dart';
 
+import '../../../services/ops/db_ops.dart';
 import '../../../shared/image/image_ref.dart';
 import '../../../domain/models/location_model.dart';
 import '../../../services/contracts/data_service_interface.dart';
@@ -23,7 +24,8 @@ class LocationsViewModel {
     required IDataService dataService,
     required IImageDataService imageDataService,
   }) : _data = dataService,
-       _imageDataService = imageDataService {
+       _imageDataService = imageDataService,
+       _dbOps = DbOps(dataService, imageDataService) {
     // Map the domain stream to UI-ready items without doing any I/O verification.
     locations = _data
         .getLocationsStream()
@@ -37,28 +39,11 @@ class LocationsViewModel {
 
   final IDataService _data;
   final IImageDataService _imageDataService;
+  final DbOps _dbOps;
 
   late final Stream<List<LocationListItem>> locations;
 
-  Future<void> deleteLocationById(String id) async {
-    try {
-      // Need to get all photos associated with location first
-      final loc = await _data.getLocationById(id);
-      if (loc == null) return;
-
-      final imagesToBeDeleted = List<String>.from(loc.imageGuids);
-
-      final rooms = await _data.getRoomsForLocation(id);
-      imagesToBeDeleted.addAll(rooms.expand((room) => room.imageGuids));
-
-      await _data.deleteLocation(id);
-
-      _imageDataService.deleteImages(imagesToBeDeleted);
-    } catch (e, s) {
-      _log.severe("Failed to delete location $id", e, s);
-      rethrow;
-    }
-  }
+  Future<void> deleteLocationById(String locationId) => _dbOps.deleteLocation(locationId);
 
   // ---- internals -----------------------------------------------------------
 

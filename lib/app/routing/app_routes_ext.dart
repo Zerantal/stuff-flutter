@@ -1,4 +1,4 @@
-// lib/app/routing/app_route_ext.dart
+// lib/app/routing/app_routes_ext.dart
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 import 'app_routes.dart';
@@ -17,7 +17,7 @@ extension AppRouteNav on AppRoutes {
   }
 
   // Build URL without context (useful in tests or share links)
-  String format({
+  String toUrlString({
     Map<String, String> pathParams = const {},
     Map<String, String> queryParams = const {},
   }) {
@@ -48,6 +48,17 @@ extension AppRouteNav on AppRoutes {
     Object? extra,
   }) {
     _check(pathParams);
+    context.pushNamed(name, pathParameters: pathParams, queryParameters: queryParams, extra: extra);
+  }
+
+  void popAndPush(
+    BuildContext context, {
+    Map<String, String> pathParams = const {},
+    Map<String, String> queryParams = const {},
+    Object? extra,
+  }) {
+    _check(pathParams);
+    if (context.canPop()) context.pop();
     context.pushNamed(name, pathParameters: pathParams, queryParameters: queryParams, extra: extra);
   }
 

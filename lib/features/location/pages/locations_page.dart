@@ -5,7 +5,7 @@ import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
 
 import '../../../app/routing/app_routes.dart';
-import '../../../app/routing/app_route_ext.dart';
+import '../../../app/routing/app_routes_ext.dart';
 import '../../../services/contracts/data_service_interface.dart';
 import '../../../services/contracts/image_data_service_interface.dart';
 import '../../../services/utils/sample_data_populator.dart';
@@ -21,16 +21,32 @@ import '../viewmodels/locations_view_model.dart';
 
 final Logger _log = Logger('LocationsPage');
 
-class LocationsPage extends StatelessWidget {
+class LocationsPage extends StatefulWidget {
   const LocationsPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final vm = LocationsViewModel(
+  State<LocationsPage> createState() => _LocationsPageState();
+}
+
+class _LocationsPageState extends State<LocationsPage> {
+  late final LocationsViewModel vm;
+
+  @override
+  void initState() {
+    super.initState();
+    vm = LocationsViewModel(
       dataService: context.read<IDataService>(),
       imageDataService: context.read<IImageDataService>(),
     );
+  }
 
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
     final useExtendedFab = width >= 720; // wide screens get an extended FAB
 
@@ -81,6 +97,7 @@ class LocationsPage extends StatelessWidget {
           }
 
           return ResponsiveEntityList<LocationListItem>(
+            minTileWidth: 300,
             items: items,
             onTap: (it) =>
                 AppRoutes.rooms.push(context, pathParams: {'locationId': it.location.id}),

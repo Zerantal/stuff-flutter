@@ -1,62 +1,51 @@
-// lib/features/location/state/edit_location_state.dart
+// lib/features/room/state/edit_room_state.dart
 //
-// Immutable state for the Edit Location screen.
+// Immutable state for the Edit Room screen.
 
 import '../../../shared/image/image_ref.dart';
 
-class EditLocationState {
+class EditRoomState {
   final String name;
   final String? description;
-  final String? address;
 
   /// UI-agnostic images the page can render directly.
   final List<ImageRef> images;
 
-  final bool isNewLocation;
+  final bool isNewRoom;
   final bool isSaving;
   final bool isPickingImage;
-  final bool isGettingLocation;
-  final bool deviceHasLocationService;
   final bool hasUnsavedChanges;
   final bool hasTempSession;
 
-  const EditLocationState({
+  const EditRoomState({
     required this.name,
     this.description,
-    this.address,
     this.images = const [],
-    required this.isNewLocation,
+    required this.isNewRoom,
     this.isSaving = false,
     this.isPickingImage = false,
-    this.isGettingLocation = false,
-    this.deviceHasLocationService = true,
     this.hasUnsavedChanges = false,
     this.hasTempSession = false,
   });
 
-  EditLocationState copyWith({
+  EditRoomState copyWith({
     String? name,
     String? description,
     String? address,
     List<ImageRef>? images,
-    bool? isNewLocation,
+    bool? isNewRoom,
     bool? isSaving,
     bool? isPickingImage,
-    bool? isGettingLocation,
-    bool? deviceHasLocationService,
     bool? hasUnsavedChanges,
     bool? hasTempSession,
   }) {
-    return EditLocationState(
+    return EditRoomState(
       name: name ?? this.name,
       description: description ?? this.description,
-      address: address ?? this.address,
       images: images ?? this.images,
-      isNewLocation: isNewLocation ?? this.isNewLocation,
+      isNewRoom: isNewRoom ?? this.isNewRoom,
       isSaving: isSaving ?? this.isSaving,
       isPickingImage: isPickingImage ?? this.isPickingImage,
-      isGettingLocation: isGettingLocation ?? this.isGettingLocation,
-      deviceHasLocationService: deviceHasLocationService ?? this.deviceHasLocationService,
       hasUnsavedChanges: hasUnsavedChanges ?? this.hasUnsavedChanges,
       hasTempSession: hasTempSession ?? this.hasTempSession,
     );
