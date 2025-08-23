@@ -7,7 +7,7 @@ import 'package:mockito/mockito.dart';
 
 import 'package:stuff/features/location/pages/locations_page.dart';
 import 'package:stuff/domain/models/location_model.dart';
-import 'package:stuff/shared/Widgets/empty_list_state.dart';
+import 'package:stuff/shared/widgets/empty_list_state.dart';
 import 'package:stuff/shared/widgets/entity_item.dart';
 
 import '../../../utils/test_logger_manager.dart';

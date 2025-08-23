@@ -8,7 +8,7 @@ import 'bootstrap.dart';
 import 'injection.dart';
 import 'routing/app_router.dart';
 import 'theme.dart';
-import '../shared/Widgets/error_display_app.dart';
+import '../shared/widgets/error_display_app.dart';
 
 Future<void> main() async {
   configureLogging();

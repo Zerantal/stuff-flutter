@@ -1,4 +1,4 @@
-// lib/shared/Widgets/image_manager_input.dart
+// lib/shared/widgets/image_manager_input.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 

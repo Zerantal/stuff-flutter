@@ -9,7 +9,7 @@ import '../../../services/contracts/location_service_interface.dart';
 import '../../../services/contracts/temporary_file_service_interface.dart';
 import '../../../shared/widgets/edit_entity_scaffold.dart';
 import '../viewmodels/edit_location_view_model.dart';
-import '../../../shared/Widgets/image_manager_input.dart';
+import '../../../shared/widgets/image_manager_input.dart';
 
 const _kLocationPlaceholderAsset = 'Assets/images/location_placeholder.jpg';
 // final _log = Logger('EditLocationPage');
