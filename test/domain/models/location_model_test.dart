@@ -128,4 +128,57 @@ void main() {
       );
     });
   });
+
+  group('copyWith', () {
+    test('updates provided fields and preserves others', () {
+      final original = Location(
+        id: 'fixed_id',
+        name: 'home',
+        description: 'Home',
+        address: '123 Home St',
+        imageGuids: ['x', 'y'],
+        createdAt: DateTime(2024, 1, 1, 9),
+        updatedAt: DateTime(2024, 1, 1, 10),
+      );
+
+      final copy = original.copyWith(
+        name: 'Holiday house',
+        description: 'Mountain cabin',
+        imageGuids: ['a', 'b', 'c'],
+      );
+
+      // BaseModel preserved
+      expect(copy.id, original.id);
+      expect(copy.createdAt, original.createdAt);
+      expect(copy.updatedAt, original.updatedAt);
+
+      // Changed fields
+      expect(copy.name, 'Holiday house');
+      expect(copy.description, 'Mountain cabin');
+      expect(copy.imageGuids, ['a', 'b', 'c']);
+
+      // Unchanged fields
+      expect(copy.address, original.address);
+    });
+
+    test('clones provided imageGuids and remains unmodifiable', () {
+      final original = Location(name: 'Home');
+      final external = <String>['one', 'two'];
+
+      final copy = original.copyWith(imageGuids: external);
+
+      // Mutate the external list; Room should not reflect it if cloning is correct
+      external.add('three');
+      expect(copy.imageGuids, ['one', 'two']);
+      expect(() => copy.imageGuids.add('four'), throwsUnsupportedError);
+    });
+
+    test('when imageGuids not provided, copy keeps same contents and is independent', () {
+      final original = Location(name: 'Office', imageGuids: ['a']);
+      final copy = original.copyWith();
+
+      expect(copy.imageGuids, ['a']);
+      expect(() => copy.imageGuids.add('b'), throwsUnsupportedError);
+    });
+  });
 }

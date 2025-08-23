@@ -4,12 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 
 import 'package:stuff/features/location/pages/edit_location_page.dart';
-import 'package:stuff/services/contracts/data_service_interface.dart';
-import 'package:stuff/services/contracts/image_data_service_interface.dart';
-import 'package:stuff/services/contracts/location_service_interface.dart';
-import 'package:stuff/services/contracts/temporary_file_service_interface.dart';
 import 'package:stuff/domain/models/location_model.dart';
-import 'package:stuff/shared/image/image_ref.dart';
 
 import '../../../utils/mocks.dart';
 import '../../../utils/dummies.dart';
