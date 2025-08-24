@@ -15,8 +15,11 @@ analyzer:
     implicit-dynamic: false  # disallow `dynamic` falling back
 
   exclude:
+    - '**/*.g.dart'
     - '**/*.mocks.dart'
-    - 'lib/**.g.*'
+    - '**/*.freezed.dart'
+    - '**/*.gr.dart'
+    - '**/*.gen.dart'
 
 linter:
   # The lint rules applied to this project can be customized in the
