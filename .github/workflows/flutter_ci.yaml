@@ -13,13 +13,23 @@ jobs:
     name: Analyze
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Setup Flutter
+        id: flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
+          flutter-version: 3.35.1
+          cache: true
+
+      - name: Cache build_runner
+        uses: actions/cache@v4
+        with:
+          path: .dart_tool/build
+          key: ${{ runner.os }}-build-${{ steps.flutter.outputs.VERSION }}-${{ hashFiles('pubspec.lock','build.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ steps.flutter.outputs.VERSION }}-
 
       - name: Install dependencies
         run: flutter pub get
@@ -34,31 +44,41 @@ jobs:
     name: Check formatting
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
+          flutter-version: 3.35.1
+          cache: true
 
-      - name: Install dependencies
-        run: flutter pub get
-
+      # No pub get needed for formatting
       - name: Check Dart format
-        run: dart format --output=none --set-exit-if-changed  .
+        run: dart format --output=none --set-exit-if-changed .
 
   test:
     name: Run tests
     runs-on: ubuntu-latest
+    needs: [analyze, format]
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Setup Flutter
+        id: flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
+          flutter-version: 3.35.1
+          cache: true
+
+      - name: Cache build_runner
+        uses: actions/cache@v4
+        with:
+          path: .dart_tool/build
+          key: ${{ runner.os }}-build-${{ steps.flutter.outputs.VERSION }}-${{ hashFiles('pubspec.lock','build.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ steps.flutter.outputs.VERSION }}-
 
       - name: Install dependencies
         run: flutter pub get
@@ -67,7 +87,7 @@ jobs:
         run: dart run build_runner build --delete-conflicting-outputs
 
       - name: Run tests
-        run: flutter test --coverage
+        run: flutter test --coverage -j 2
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
