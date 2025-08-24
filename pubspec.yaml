@@ -61,7 +61,6 @@ dev_dependencies:
   permission_handler_platform_interface: ^4.3.0
   geolocator_platform_interface: ^4.2.6
   drift_dev: ^2.28.1
-  clock: ^1.1.2
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
