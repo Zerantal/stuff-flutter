@@ -17,61 +17,56 @@ void main() {
     registerCommonDummies();
   });
 
-  testWidgets('router.goNamed navigates to RoomsPage, then to EditRoomPage (add)',
-          (tester) async {
-        final router = AppRouter.buildRouter();
+  testWidgets('router.goNamed navigates to RoomsPage, then to EditRoomPage (add)', (tester) async {
+    final router = AppRouter.buildRouter();
 
-        await pumpPageWithServices(
-          tester,
-          pageWidget: const SizedBox.shrink(),
-          router: router,
-          // stub any services needed by EditRoomPage so its ImageManager can render
-          onMocksReady: (m) {
-            when(
-              m.temporaryFileService.startSession(label: anyNamed('label')),
-            ).thenAnswer((_) async => MockTempSession());
-          },
-        );
+    await pumpPageWithServices(
+      tester,
+      pageWidget: const SizedBox.shrink(),
+      router: router,
+      // stub any services needed by EditRoomPage so its ImageManager can render
+      onMocksReady: (m) {
+        when(
+          m.temporaryFileService.startSession(label: anyNamed('label')),
+        ).thenAnswer((_) async => MockTempSession());
+      },
+    );
 
-        await tester.pumpAndSettle();
+    await tester.pumpAndSettle();
 
-        // Initial route: /locations (from AppRouter)
-        // Navigate to Rooms for a location
-        router.goNamed(AppRoutes.rooms.name, pathParameters: {'locationId': 'L1'});
-        await tester.pumpAndSettle();
+    // Initial route: /locations (from AppRouter)
+    // Navigate to Rooms for a location
+    router.goNamed(AppRoutes.rooms.name, pathParameters: {'locationId': 'L1'});
+    await tester.pumpAndSettle();
 
-        expect(find.byType(RoomsPage), findsOneWidget);
+    expect(find.byType(RoomsPage), findsOneWidget);
 
-        // Now navigate to add room page
-        router.goNamed(AppRoutes.roomsAdd.name, pathParameters: {'locationId': 'L1'});
-        await tester.pumpAndSettle();
+    // Now navigate to add room page
+    router.goNamed(AppRoutes.roomsAdd.name, pathParameters: {'locationId': 'L1'});
+    await tester.pumpAndSettle();
 
-        expect(find.byType(EditRoomPage), findsOneWidget);
-      });
+    expect(find.byType(EditRoomPage), findsOneWidget);
+  });
 
-  testWidgets('router.goNamed navigates to EditRoomPage (edit existing room)',
-          (tester) async {
-        final router = AppRouter.buildRouter();
+  testWidgets('router.goNamed navigates to EditRoomPage (edit existing room)', (tester) async {
+    final router = AppRouter.buildRouter();
 
-        await pumpPageWithServices(
-          tester,
-          pageWidget: const SizedBox.shrink(),
-          router: router,
-          onMocksReady: (m) {
-            when(
-              m.temporaryFileService.startSession(label: anyNamed('label')),
-            ).thenAnswer((_) async => MockTempSession());
-          },
-        );
+    await pumpPageWithServices(
+      tester,
+      pageWidget: const SizedBox.shrink(),
+      router: router,
+      onMocksReady: (m) {
+        when(
+          m.temporaryFileService.startSession(label: anyNamed('label')),
+        ).thenAnswer((_) async => MockTempSession());
+      },
+    );
 
-        await tester.pumpAndSettle();
+    await tester.pumpAndSettle();
 
-        router.goNamed(
-          AppRoutes.roomsEdit.name,
-          pathParameters: {'locationId': 'L1', 'roomId': 'R1'},
-        );
-        await tester.pumpAndSettle();
+    router.goNamed(AppRoutes.roomsEdit.name, pathParameters: {'locationId': 'L1', 'roomId': 'R1'});
+    await tester.pumpAndSettle();
 
-        expect(find.byType(EditRoomPage), findsOneWidget);
-      });
+    expect(find.byType(EditRoomPage), findsOneWidget);
+  });
 }
