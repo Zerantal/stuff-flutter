@@ -57,9 +57,9 @@ jobs:
       - name: Install dependencies (read-only; uses cache)
         run: flutter pub get --offline || flutter pub get
 
-      # Read-only formatting check matching your formatter.page_width: 100
+      # No pub get needed for formatting
       - name: Check Dart format
-        run: dart format --dry-run --set-exit-if-changed -l 100 .
+        run: dart format --output=none --set-exit-if-changed .
 
   test:
     name: Run tests
