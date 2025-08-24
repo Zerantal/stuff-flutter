@@ -1,4 +1,5 @@
 // test/domain/models/location_model_test.dart
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:stuff/domain/models/location_model.dart';
 
@@ -51,34 +52,17 @@ void main() {
       test(
         'createdAt and updatedAt should be recent DateTime if not provided, and updatedAt should equal createdAt on new instance',
         () {
-          // Arrange
-          final beforeCreation = DateTime.now();
+          withClock(Clock.fixed(DateTime.now()), () {
+            // Act
+            final location = Location(name: 'Test Location with auto timestamps');
 
-          // Act
-          final location = Location(name: 'Test Location with auto timestamps');
-
-          // Assert
-          final afterCreation = DateTime.now();
-
-          expect(location.createdAt, isNotNull);
-          expect(location.createdAt, isA<DateTime>());
-          expect(
-            location.createdAt.isAfter(beforeCreation) ||
-                location.createdAt.isAtSameMomentAs(beforeCreation),
-            isTrue,
-          );
-          expect(
-            location.createdAt.isBefore(afterCreation) ||
-                location.createdAt.isAtSameMomentAs(afterCreation),
-            isTrue,
-          );
-
-          expect(location.updatedAt, isNotNull);
-          expect(
-            location.updatedAt,
-            location.createdAt,
-            reason: "On new instance, updatedAt should equal createdAt",
-          );
+            expect(location.createdAt, isNotNull);
+            expect(location.createdAt, isA<DateTime>());
+            expect(location.updatedAt, isNotNull);
+            expect(location.updatedAt, isA<DateTime>());
+            expect(location.createdAt, clock.now());
+            expect(location.updatedAt, clock.now());
+          });
         },
       );
 
