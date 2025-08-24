@@ -107,9 +107,9 @@ class EditRoomViewModel extends ChangeNotifier {
 
     final String sessionLabel;
     if (roomId != null) {
-      sessionLabel = 'edit_room_${roomId!.substring(0, 10)}';
+      sessionLabel = 'edit_room_$roomId!';
     } else {
-      sessionLabel = 'add_room_${locationId.substring(0, 10)}';
+      sessionLabel = 'add_room_$locationId';
     }
 
     _tempSession = await _tmpFileSvc.startSession(label: sessionLabel);
