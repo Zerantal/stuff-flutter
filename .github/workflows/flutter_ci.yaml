@@ -53,9 +53,13 @@ jobs:
           flutter-version: 3.35.1
           cache: true
 
-      # No pub get needed for formatting
+      # Needed so the package: include in analysis_options.yaml resolves
+      - name: Install dependencies (read-only; uses cache)
+        run: flutter pub get --offline || flutter pub get
+
+      # Read-only formatting check matching your formatter.page_width: 100
       - name: Check Dart format
-        run: dart format --output=none --set-exit-if-changed .
+        run: dart format --dry-run --set-exit-if-changed -l 100 .
 
   test:
     name: Run tests
