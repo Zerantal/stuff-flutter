@@ -79,6 +79,15 @@ jobs:
           flutter-version: 3.35.1
           cache: true
 
+      # Cache pub dependencies
+      - name: Cache Pub
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ steps.flutter.outputs.VERSION }}-${{ hashFiles('pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-${{ steps.flutter.outputs.VERSION }}-
+
       - name: Cache build_runner
         uses: actions/cache@v4
         with:
@@ -93,21 +102,23 @@ jobs:
       - name: Generate files
         run: dart run build_runner build --delete-conflicting-outputs
 
-      # PRs: faster (no coverage)
       - name: Run tests (PRs)
-        if: github.event_name == 'pull_request'
-        run: flutter test -j 2 --no-pub
+        run: flutter test -j 2 --coverage --no-pub --test-randomize-ordering-seed=random
 
-      # main: collect coverage
-      - name: Run tests with coverage (main)
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: flutter test --coverage -j 2 --no-pub
-
-      - name: Upload coverage report (main)
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      # Keep a copy of coverage in CI for debugging
+      - name: Upload coverage artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-report
-          path: coverage/
-          if-no-files-found: error
-          compression-level: 1
+          name: lcov.info
+          path: coverage/lcov.info
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Upload coverage to Codecov
+        if: ${{ github.event_name == 'push' || github.event_name == 'pull_request' }}
+        uses: codecov/codecov-action@v4
+        with:
+          files: coverage/lcov.info
+          flags: unittests
+          fail_ci_if_error: true
