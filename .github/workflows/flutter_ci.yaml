@@ -1,26 +1,76 @@
 # .github/workflows/flutter_ci.yaml
 name: Flutter CI
 
-# Cancel older runs for the same ref
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'lib/**'
+      - 'test/**'
+      - 'pubspec.*'
+      - 'analysis_options.yaml'
+      - '.github/workflows/flutter_ci.yaml'
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - '**.md'
+      - 'LICENSE'
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-
 jobs:
-  ci:
-    name: Format, Analyze & Test
-    runs-on: ubuntu-24.04
+  format:
+    name: Check formatting
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
       - name: Setup Flutter
-        # subosito action caches the Flutter SDK + pub cache
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.35.1
+          cache: true
+
+      # Optional but keeps dart format from warning about analysis_options include:
+      - name: Install dependencies (read-only; uses cache)
+        run: flutter pub get --offline || flutter pub get
+
+      # PRs: only check changed Dart source files (skip generated)
+      - name: "Check Dart format (PR: changed files only)"
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="${{ github.event.pull_request.base.sha }}"
+          git fetch --depth=1 origin "$base"
+          files="$(git diff --name-only --diff-filter=AM "$base"...HEAD \
+            | grep -E '\.dart$' \
+            | grep -Ev '\.(g|freezed|mocks|gr|gen)\.dart$' || true)"
+          if [ -z "$files" ]; then
+            echo "No Dart source changes."
+            exit 0
+          fi
+          echo "$files" | xargs dart format --output=none --set-exit-if-changed -l 100
+
+      # Pushes to main: check entire repo (skip generated)
+      - name: "Check Dart format (push to main: full repo)"
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: bash
+        run: |
+          git ls-files '*.dart' \
+            | grep -Ev '\.(g|freezed|mocks|gr|gen)\.dart$' \
+            | xargs -r dart format --output=none --set-exit-if-changed -l 100
+
+  verify:
+    name: Analyze & Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
         id: flutter
         uses: subosito/flutter-action@v2
         with:
@@ -28,14 +78,8 @@ jobs:
           flutter-version: 3.35.1
           cache: true
 
-      - name: Install dependencies (offline-first)
-        run: flutter pub get --offline || flutter pub get
-
-      # ✅ Check formatting before generated files exist
-      - name: Check Dart format
-        run: dart format --output=none --set-exit-if-changed -l 100 .
-
-      - name: Cache build_runner outputs
+      # Warm build_runner graph across runs
+      - name: Cache build_runner
         uses: actions/cache@v4
         with:
           path: .dart_tool/build
@@ -43,27 +87,21 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-build-${{ steps.flutter.outputs.VERSION }}-
 
-      - name: Generate files (build_runner)
-        run: dart run build_runner build --delete-conflicting-outputs  
+      - name: Install dependencies
+        run: flutter pub get --offline || flutter pub get
 
-      - name: Analyze
+      # Generate once for both analyzer and tests
+      - name: Generate files
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Run analyzer
         run: flutter analyze
 
-      # Faster PR loop: no coverage
-      - name: Test (PRs)
-        if: github.event_name == 'pull_request'
-        run: flutter test -j 2 --no-pub
-
-      # Keep coverage on main
-      - name: Test with coverage (main)
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      - name: Run tests
         run: flutter test --coverage -j 2 --no-pub
 
-      - name: Upload coverage (main)
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      - name: Upload coverage report
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
           path: coverage/
-          if-no-files-found: error
-          compression-level: 1
