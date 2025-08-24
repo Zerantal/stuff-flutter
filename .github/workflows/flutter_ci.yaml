@@ -1,8 +1,7 @@
 # .github/workflows/flutter_ci.yaml
-
 name: Flutter CI
 
-# Cancel older runs for the same ref (saves minutes on rapid pushes)
+# Cancel older runs for the same ref
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -14,13 +13,14 @@ on:
     branches: [ main ]
 
 jobs:
-  analyze:
-    name: Analyze
+  ci:
+    name: Format, Analyze & Test
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
       - name: Setup Flutter
+        # subosito action caches the Flutter SDK + pub cache
         id: flutter
         uses: subosito/flutter-action@v2
         with:
@@ -28,7 +28,7 @@ jobs:
           flutter-version: 3.35.1
           cache: true
 
-      - name: Cache build_runner
+      - name: Cache build_runner outputs
         uses: actions/cache@v4
         with:
           path: .dart_tool/build
@@ -36,74 +36,29 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-build-${{ steps.flutter.outputs.VERSION }}-
 
-      - name: Install dependencies
-        run: flutter pub get --offline || flutter pub get
-
-      - name: Generate files
-        run: dart run build_runner build --delete-conflicting-outputs
-
-      - name: Run analyzer
-        run: flutter analyze
-
-  format:
-    name: Check formatting
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          flutter-version: 3.35.1
-          cache: true
-
-      # Needed so analysis_options.yaml's package: include resolves
       - name: Install dependencies (offline-first)
         run: flutter pub get --offline || flutter pub get
+
+      - name: Generate files (build_runner)
+        run: dart run build_runner build --delete-conflicting-outputs
 
       - name: Check Dart format
         run: dart format --output=none --set-exit-if-changed -l 100 .
 
-  test:
-    name: Run tests
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v4
+      - name: Analyze
+        run: flutter analyze
 
-      - name: Setup Flutter
-        id: flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          flutter-version: 3.35.1
-          cache: true
-
-      - name: Cache build_runner
-        uses: actions/cache@v4
-        with:
-          path: .dart_tool/build
-          key: ${{ runner.os }}-build-${{ steps.flutter.outputs.VERSION }}-${{ hashFiles('pubspec.lock','build.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-build-${{ steps.flutter.outputs.VERSION }}-
-
-      - name: Install dependencies
-        run: flutter pub get --offline || flutter pub get
-
-      - name: Generate files
-        run: dart run build_runner build --delete-conflicting-outputs
-
-      # PRs: faster (no coverage)
-      - name: Run tests (PRs)
+      # Faster PR loop: no coverage
+      - name: Test (PRs)
         if: github.event_name == 'pull_request'
         run: flutter test -j 2 --no-pub
 
-      # main: collect coverage
-      - name: Run tests with coverage (main)
+      # Keep coverage on main
+      - name: Test with coverage (main)
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: flutter test --coverage -j 2 --no-pub
 
-      - name: Upload coverage report (main)
+      - name: Upload coverage (main)
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v4
         with:
