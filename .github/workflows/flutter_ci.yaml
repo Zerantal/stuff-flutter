@@ -68,7 +68,6 @@ jobs:
   test:
     name: Run tests
     runs-on: ubuntu-24.04
-    needs: [analyze, format]
     steps:
       - uses: actions/checkout@v4
 
