@@ -22,11 +22,7 @@ void main() {
       final controller = StreamController<List<Room>>();
       when(data.getRoomsStream('L1')).thenAnswer((_) => controller.stream);
 
-      final vm = RoomsViewModel(
-        data: data,
-        images: images,
-        locationId: 'L1',
-      );
+      final vm = RoomsViewModel(data: data, images: images, locationId: 'L1');
 
       // Act / Assert: first emission
       final futureFirst = vm.rooms.first;
@@ -51,11 +47,7 @@ void main() {
       when(data.getRoomsStream(any)).thenAnswer((_) => const Stream<List<Room>>.empty());
       when(data.deleteRoom('R-Z')).thenAnswer((_) async => Future.value());
 
-      final vm = RoomsViewModel(
-        data: data,
-        images: images,
-        locationId: 'L1',
-      );
+      final vm = RoomsViewModel(data: data, images: images, locationId: 'L1');
 
       await vm.deleteRoom('R-Z'); // Should not throw
       verify(data.deleteRoom('R-Z')).called(1);

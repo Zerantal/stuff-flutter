@@ -24,8 +24,7 @@ void main() {
       tempFiles = MockITemporaryFileService();
       mockSession = MockTempSession();
 
-      when(tempFiles.startSession(label: anyNamed('label')))
-          .thenAnswer((_) async => mockSession);
+      when(tempFiles.startSession(label: anyNamed('label'))).thenAnswer((_) async => mockSession);
     });
 
     test('init() - create mode - starts temp session, ends initialising', () async {
@@ -41,9 +40,9 @@ void main() {
       await vm.init();
 
       // Session created, flag set, initialising false
-      verify(tempFiles.startSession(
-        label: argThat(startsWith('add_room_L1'), named: 'label'),
-      )).called(1);
+      verify(
+        tempFiles.startSession(label: argThat(startsWith('add_room_L1'), named: 'label')),
+      ).called(1);
       expect(vm.hasTempSession, isTrue);
       expect(vm.isInitialising, isFalse);
       expect(vm.isNewRoom, isTrue);
@@ -51,8 +50,15 @@ void main() {
     });
 
     test('init() - edit mode: loads room, populates controllers, sets isNewRoom=false', () async {
-      when(data.getRoomById('R1')).thenAnswer((_) async =>
-          Room(id: 'R1', locationId: 'L1', name: 'Garage', description: 'tools', imageGuids: const []));
+      when(data.getRoomById('R1')).thenAnswer(
+        (_) async => Room(
+          id: 'R1',
+          locationId: 'L1',
+          name: 'Garage',
+          description: 'tools',
+          imageGuids: const [],
+        ),
+      );
 
       final vm = EditRoomViewModel(
         dataService: data,
@@ -65,9 +71,9 @@ void main() {
       await vm.init();
 
       verify(data.getRoomById('R1')).called(1);
-      verify(tempFiles.startSession(
-          label: argThat(startsWith('edit_room_R1'), named: 'label'),
-      )).called(1);
+      verify(
+        tempFiles.startSession(label: argThat(startsWith('edit_room_R1'), named: 'label')),
+      ).called(1);
 
       expect(vm.isNewRoom, isFalse);
       expect(vm.nameController.text, 'Garage');
@@ -108,7 +114,10 @@ void main() {
       expect(vm.images, isEmpty);
 
       // Pick one temp image
-      vm.onImagePicked(TempFileIdentifier(File('/tmp/pic.png')), const ImageRef.asset('assets/x.png'));
+      vm.onImagePicked(
+        TempFileIdentifier(File('/tmp/pic.png')),
+        const ImageRef.asset('assets/x.png'),
+      );
       expect(vm.images.length, 1);
       expect(vm.hasUnsavedChanges, isTrue);
 
@@ -132,7 +141,9 @@ void main() {
       verify(mockSession.dispose()).called(1);
     });
 
-    testWidgets('saveRoom returns false immediately if already saving OR form invalid', (tester) async {
+    testWidgets('saveRoom returns false immediately if already saving OR form invalid', (
+      tester,
+    ) async {
       final vm = EditRoomViewModel(
         dataService: data,
         imageDataService: images,
@@ -166,8 +177,6 @@ void main() {
       );
       final ok = await vm.saveRoom();
       expect(ok, isFalse);
-
     });
   });
 }
-
