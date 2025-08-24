@@ -1,4 +1,5 @@
-// lib/shared/Widgets/confirmation_dialog.dart
+// lib/shared/widgets/confirmation_dialog.dart
+
 import 'package:flutter/material.dart';
 
 class ConfirmationDialog {

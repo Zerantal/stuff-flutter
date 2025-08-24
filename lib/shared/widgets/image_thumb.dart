@@ -1,4 +1,4 @@
-// lib/shared/Widgets/image_thumb.dart
+// lib/shared/widgets/image_thumb.dart
 //
 // Reusable thumbnail widget for ImageRef sources.
 // ViewModels should return ImageRef; this widget handles presentation.

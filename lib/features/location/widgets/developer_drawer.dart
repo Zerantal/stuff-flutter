@@ -1,9 +1,11 @@
-import 'package:flutter/material.dart';
-import 'package:logging/logging.dart';
-import 'package:provider/provider.dart';
+import 'dart:io';
 
-import '../../../services/contracts/data_service_interface.dart';
-import '../../dev_tools/pages/database_inspector_page.dart';
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:logging/logging.dart';
+
+import '../../../app/routing/app_routes.dart';
+import '../../../app/routing/app_routes_ext.dart';
 
 final Logger _log = Logger('DeveloperDrawer');
 
@@ -21,11 +23,12 @@ class DeveloperDrawer extends StatefulWidget {
 }
 
 class _DeveloperDrawerState extends State<DeveloperDrawer> {
-  bool _busy = false;
+  bool _busyPopulating = false;
+  bool _busyDumping = false;
 
   Future<void> _handlePopulate() async {
-    if (_busy) return;
-    setState(() => _busy = true);
+    if (_busyPopulating) return;
+    setState(() => _busyPopulating = true);
     final messenger = ScaffoldMessenger.of(context);
 
     try {
@@ -37,7 +40,33 @@ class _DeveloperDrawerState extends State<DeveloperDrawer> {
       messenger.showSnackBar(const SnackBar(content: Text('Sample data failed')));
       _log.severe('Failed to load sample data', e, s);
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) setState(() => _busyPopulating = false);
+    }
+  }
+
+  Future<void> _handleDumpWidgetTree() async {
+    if (_busyDumping) return;
+    setState(() => _busyDumping = true);
+    final messenger = ScaffoldMessenger.of(context);
+
+    try {
+      final String? treeDump = WidgetsBinding.instance.rootElement
+          ?.toDiagnosticsNode()
+          .toStringDeep(minLevel: DiagnosticLevel.fine);
+      if (treeDump == null) {
+        messenger.showSnackBar(const SnackBar(content: Text('Widget tree is empty')));
+        _log.warning('Widget tree dump was empty');
+        return;
+      }
+      final file = File('${Directory.systemTemp.path}/widget_tree_dump.txt');
+      await file.writeAsString(treeDump);
+      messenger.showSnackBar(SnackBar(content: Text('Widget tree dumped to ${file.path}')));
+      _log.info('Widget tree dumped to ${file.path}');
+    } catch (e, s) {
+      messenger.showSnackBar(const SnackBar(content: Text('Failed to dump widget tree')));
+      _log.severe('Failed to dump widget tree', e, s);
+    } finally {
+      if (mounted) setState(() => _busyDumping = false);
     }
   }
 
@@ -63,17 +92,10 @@ class _DeveloperDrawerState extends State<DeveloperDrawer> {
               title: const Text('Database Inspector'),
               subtitle: const Text('Browse records (debug)'),
               onTap: () {
-                final nav = Navigator.of(context); // capture before any await
-                if (Navigator.canPop(context)) nav.pop(); // close drawer
-                nav.push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => Provider<IDataService>.value(
-                      // Pass through the same IDataService already in scope
-                      value: context.read<IDataService>(),
-                      child: const DatabaseInspectorPage(),
-                    ),
-                  ),
-                );
+                StatefulNavigationShell.of(context).goBranch(1);
+
+                Navigator.pop(context);
+                AppRoutes.debugDbInspector.go(context);
               },
             ),
             const Divider(height: 1),
@@ -82,9 +104,25 @@ class _DeveloperDrawerState extends State<DeveloperDrawer> {
               leading: const Icon(Icons.delete_sweep_outlined),
               title: const Text('Reset with Sample Data'),
               subtitle: const Text('Clears & seeds local DB for demo/testing'),
-              enabled: !_busy,
+              enabled: !_busyPopulating,
               onTap: _handlePopulate,
-              trailing: _busy
+              trailing: _busyPopulating
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : null,
+            ),
+            const Divider(height: 1),
+            ListTile(
+              key: const ValueKey('dev_dump_widget_tree_btn'),
+              leading: const Icon(Icons.description_outlined),
+              title: const Text('Dump Widget Tree'),
+              subtitle: const Text('Saves current widget tree to a file'),
+              enabled: !_busyDumping,
+              onTap: _handleDumpWidgetTree,
+              trailing: _busyDumping
                   ? const SizedBox(
                       width: 18,
                       height: 18,

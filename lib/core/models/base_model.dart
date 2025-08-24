@@ -1,5 +1,6 @@
 // lib/core/models/base_model.dart
 import 'package:uuid/uuid.dart';
+import 'package:clock/clock.dart';
 
 abstract class BaseModel {
   /// A unique ID
@@ -13,9 +14,9 @@ abstract class BaseModel {
 
   BaseModel({String? id, DateTime? createdAt, DateTime? updatedAt})
     : id = id ?? const Uuid().v4(),
-      createdAt = createdAt ?? DateTime.now(),
-      updatedAt = updatedAt ?? DateTime.now();
+      createdAt = createdAt ?? clock.now(),
+      updatedAt = updatedAt ?? clock.now();
 
   /// Call this to bump the updatedAt timestamp
-  void touch() => updatedAt = DateTime.now();
+  void touch() => updatedAt = clock.now();
 }

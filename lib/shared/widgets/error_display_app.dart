@@ -1,4 +1,5 @@
-// lib/shared/Widgets/error_display_app.dart
+// lib/shared/widgets/error_display_app.dart
+
 import 'package:flutter/material.dart';
 
 class ErrorDisplayApp extends StatelessWidget {

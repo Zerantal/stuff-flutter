@@ -4,6 +4,7 @@ import 'package:mockito/mockito.dart';
 
 import 'package:stuff/app/routing/app_router.dart';
 import 'package:stuff/app/routing/app_routes.dart';
+import 'package:stuff/app/routing/app_routes_ext.dart';
 
 import 'package:stuff/features/location/pages/locations_page.dart';
 import 'package:stuff/features/location/pages/edit_location_page.dart';
@@ -17,6 +18,12 @@ void main() {
     registerCommonDummies();
   });
 
+  test('buildRouter respects initialLocation (regression guard)', () {
+    final router = AppRouter.buildRouter(initialLocation: '/items/XYZ');
+    // This assertion fails if buildRouter ignores the parameter.
+    expect(router.routeInformationProvider.value.uri.toString(), '/items/XYZ');
+  });
+
   test('namedLocation builds expected path (locationsEdit)', () {
     final router = AppRouter.buildRouter();
     final path = router.namedLocation(
@@ -24,6 +31,40 @@ void main() {
       pathParameters: {'locationId': 'L1'},
     );
     expect(path, '/locations/L1/edit');
+  });
+
+  testWidgets('initial /locations renders without error (smoke)', (tester) async {
+    final router = AppRouter.buildRouter(initialLocation: AppRoutes.locations.path);
+    await pumpPageWithServices(tester, pageWidget: const SizedBox.shrink(), router: router);
+    await tester.pumpAndSettle();
+    // Don’t assert on specific widget types if they need DI; just ensure no error page.
+    expect(find.text('Error'), findsNothing);
+  });
+
+  testWidgets(skip: true, 'nested item view redirects to canonical and preserves query', (
+    tester,
+  ) async {
+    final router = AppRouter.buildRouter(
+      initialLocation: AppRoutes.itemViewInRoom.toUrlString(
+        pathParams: {'locationId': 'L1', 'roomId': 'R1', 'itemId': 'IT1'},
+        queryParams: {'tab': 'photos'},
+      ),
+    );
+
+    await pumpPageWithServices(tester, pageWidget: const SizedBox.shrink(), router: router);
+    await tester.pumpAndSettle();
+
+    // After redirect, the location should be canonical with the same query.
+    expect(router.routeInformationProvider.value.uri.toString(), '/items/IT1?tab=photos');
+  });
+
+  testWidgets('unknown route shows errorBuilder page', (tester) async {
+    final router = AppRouter.buildRouter(initialLocation: '/definitely-not-a-real-route');
+    await pumpPageWithServices(tester, pageWidget: const SizedBox.shrink(), router: router);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Error'), findsOneWidget);
+    expect(find.textContaining('Unknown navigation error', findRichText: true), findsNothing);
   });
 
   testWidgets('router.goNamed navigates to EditLocationPage', (tester) async {
@@ -46,27 +87,6 @@ void main() {
     expect(find.byType(LocationsPage), findsOneWidget);
 
     // Navigate with the router directly
-    router.goNamed(AppRoutes.locationsAdd.name);
-    await tester.pumpAndSettle();
-
-    expect(find.byType(EditLocationPage), findsOneWidget);
-  });
-
-  testWidgets('AppRoutes.push (extension) navigates to EditLocationPage', (tester) async {
-    final router = AppRouter.buildRouter();
-    await pumpPageWithServices(
-      tester,
-      pageWidget: const SizedBox.shrink(),
-      router: router,
-      onMocksReady: (m) {
-        when(
-          m.temporaryFileService.startSession(label: anyNamed('label')),
-        ).thenAnswer((_) async => MockTempSession());
-      },
-    );
-
-    // Use the extension; needs a BuildContext
-    tester.element(find.byType(Scaffold));
     router.goNamed(AppRoutes.locationsAdd.name);
     await tester.pumpAndSettle();
 

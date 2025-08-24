@@ -2,8 +2,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../../core/image_identifier.dart';
+import '../../../services/contracts/temporary_file_service_interface.dart';
 import '../../../shared/image/image_ref.dart';
 import '../../../shared/image/image_identifier_to_ref.dart' as id2ref;
 import '../../../shared/image/image_identifier_persistence.dart' as persist;
@@ -12,6 +14,7 @@ import '../../../services/contracts/data_service_interface.dart';
 import '../../../services/contracts/location_service_interface.dart';
 import '../../../services/contracts/image_data_service_interface.dart';
 import '../../../services/utils/image_data_service_extensions.dart';
+import '../../../services/ops/db_ops.dart';
 import '../state/edit_location_state.dart';
 
 final Logger _log = Logger('EditLocationViewModel');
@@ -28,7 +31,9 @@ class EditLocationViewModel extends ChangeNotifier {
   final IDataService _data;
   final IImageDataService _imageStore;
   final ILocationService _geo;
+  final ITemporaryFileService _tmpFileSvc;
   final String? _locationId;
+  final DbOps _dbOps;
 
   bool _isInitialising;
   bool get isInitialising => _isInitialising;
@@ -43,12 +48,17 @@ class EditLocationViewModel extends ChangeNotifier {
     required IDataService dataService,
     required IImageDataService imageDataService,
     required ILocationService locationService,
+    required ITemporaryFileService tempFileService,
     required String? locationId,
   }) : _data = dataService,
        _imageStore = imageDataService,
        _geo = locationService,
+       _tmpFileSvc = tempFileService,
        _locationId = locationId,
-       _isInitialising = locationId != null;
+       _isInitialising = locationId != null,
+       _dbOps = DbOps(dataService, imageDataService);
+
+  final uuid = const Uuid();
 
   // Form / state
   final formKey = GlobalKey<FormState>();
@@ -66,12 +76,17 @@ class EditLocationViewModel extends ChangeNotifier {
   bool get isGettingLocation => _state.isGettingLocation;
   bool get deviceHasLocationService => _state.deviceHasLocationService;
   bool get hasUnsavedChanges => _state.hasUnsavedChanges;
+  bool get hasTempSession => _state.hasTempSession;
 
   // Images for UI:
   List<ImageRef> get images => _state.images;
 
   // Underlying identifiers we persist on save (kept in index-lockstep with _state.images)
   final List<ImageIdentifier> _imageIds = [];
+
+  // Temp session for storing picked images
+  TempSession? _tempSession;
+  TempSession? get tempSession => _tempSession;
 
   Location? _loadedLocation;
 
@@ -109,6 +124,16 @@ class EditLocationViewModel extends ChangeNotifier {
       }
     }
 
+    final String sessionLabel;
+    if (_locationId != null) {
+      sessionLabel = 'edit_room_$_locationId';
+    } else {
+      sessionLabel = 'add_room_${uuid.v4()}';
+    }
+
+    _tempSession = await _tmpFileSvc.startSession(label: sessionLabel);
+    _state = _state.copyWith(hasTempSession: true);
+
     // React to user typing to flip hasUnsavedChanges
     nameController.addListener(_onAnyFieldChanged);
     descriptionController.addListener(_onAnyFieldChanged);
@@ -123,6 +148,7 @@ class EditLocationViewModel extends ChangeNotifier {
     nameController.dispose();
     descriptionController.dispose();
     addressController.dispose();
+    _tempSession?.dispose();
     super.dispose();
   }
 
@@ -209,6 +235,8 @@ class EditLocationViewModel extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  Future<void> deleteLocation() => _dbOps.deleteLocation(_loadedLocation!.id);
 
   // ----- Save ---------------------------------------------------------------
 

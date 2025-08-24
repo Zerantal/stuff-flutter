@@ -1,464 +1,253 @@
-import 'dart:io';
-
+// lib/features/room/viewmodels/edit_room_view_model.dart
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
-import 'package:collection/collection.dart';
-import 'package:uuid/uuid.dart';
 
 import '../../../core/image_identifier.dart';
-import '../../../core/image_source_type_enum.dart';
 import '../../../domain/models/room_model.dart';
-import '../../../domain/models/location_model.dart';
 import '../../../services/contracts/data_service_interface.dart';
-import '../../../services/contracts/image_picker_service_interface.dart';
 import '../../../services/contracts/image_data_service_interface.dart';
 import '../../../services/contracts/temporary_file_service_interface.dart';
+import '../../../services/utils/image_data_service_extensions.dart';
+import '../../../services/ops/db_ops.dart';
+import '../../../shared/image/image_identifier_persistence.dart' as persist;
+import '../../../shared/image/image_identifier_to_ref.dart' as id2ref;
+import '../../../shared/image/image_ref.dart';
+import '../state/edit_room_state.dart';
 
-// legacy support
-// import '../services/image_data_service_legacy_shim.dart';
+final _log = Logger('EditRoomViewModel');
 
-final Logger _logger = Logger('EditRoomVM');
+class EditRoomViewModel extends ChangeNotifier {
+  final IDataService _data;
+  final IImageDataService _imageStore;
+  final ITemporaryFileService _tmpFileSvc;
+  final String locationId;
+  final String? roomId; // null => create
+  final DbOps _dbOps;
 
-class EditRoomViewModel extends ChangeNotifier /*with HasImagePicking*/ {
-  final IDataService _dataService;
-  // final IImagePickerService _imagePickerService;
-  final IImageDataService? _imageDataService;
-  // final ITemporaryFileService _tempFileService;
+  bool _isInitialising = true;
 
-  final Location _parentLocation;
-  final Room? _initialRoom;
+  bool get isInitialising => _isInitialising;
 
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  GlobalKey<FormState> get formKey => _formKey;
-
-  final TextEditingController _nameController = TextEditingController();
-  TextEditingController get nameController => _nameController;
-
-  final TextEditingController _descriptionController = TextEditingController();
-  TextEditingController get descriptionController => _descriptionController;
-
-  List<ImageIdentifier> _currentImages = [];
-  List<ImageIdentifier> get currentImages => List.unmodifiable(_currentImages);
-  List<String> _initialPersistedGuids = [];
-  Directory? _sessionTempDir;
-
-  bool _isSaving = false;
-  bool get isSaving => _isSaving;
-
-  bool get isNewRoom => _initialRoom == null;
-
-  String get appBarTitle => isNewRoom
-      ? 'Add New Room to ${_parentLocation.name}'
-      : 'Edit Room: ${_initialRoom?.name ?? ''}';
+  void setInitialising(bool v) {
+    if (_isInitialising == v) return;
+    _isInitialising = v;
+    notifyListeners();
+  }
 
   EditRoomViewModel({
     required IDataService dataService,
-    required IImagePickerService imagePickerService,
     required IImageDataService imageDataService,
     required ITemporaryFileService tempFileService,
-    required Location parentLocation,
-    Room? initialRoom,
-  }) : _dataService = dataService,
-       // _imagePickerService = imagePickerService,
-       _imageDataService = imageDataService,
-       // _tempFileService = tempFileService,
-       _parentLocation = parentLocation,
-       _initialRoom = initialRoom {
-    _logger.info(
-      "EditRoomViewModel created. New room: $isNewRoom for location '${_parentLocation.name}'. Initial room: ${_initialRoom?.name}",
-    );
+    required this.locationId,
+    required this.roomId,
+  }) : _data = dataService,
+       _imageStore = imageDataService,
+       _tmpFileSvc = tempFileService,
+       _dbOps = DbOps(dataService, imageDataService);
 
-    // wire mixin deps
-    // imagePicker = ImagePickerController(
-    //   picker: imagePickerService,
-    //   store: imageDataService,
-    //   temp: tempFileService,
-    // );
+  // Form
+  final formKey = GlobalKey<FormState>();
+  final nameController = TextEditingController();
+  final descriptionController = TextEditingController();
 
-    _initialize();
-  }
+  // State
+  EditRoomState _state = const EditRoomState(name: '', isNewRoom: true);
 
-  void _initialize() {
-    if (_initialRoom != null) {
-      _nameController.text = _initialRoom.name;
-      _descriptionController.text = _initialRoom.description ?? '';
-      _initialPersistedGuids = List.from(_initialRoom.imageGuids);
-      _currentImages = _initialPersistedGuids.map((guid) => GuidIdentifier(guid)).toList();
-    } else {
-      _initialPersistedGuids = [];
-      _currentImages = [];
-    }
+  EditRoomState get state => _state;
 
-    if (_imageDataService == null) {
-      _initializeSessionTempDir();
-    }
+  // Expose bits the page expects
+  bool get isNewRoom => _state.isNewRoom;
+  bool get isSaving => _state.isSaving;
+  bool get hasUnsavedChanges => _state.hasUnsavedChanges;
+  bool get hasTempSession => _state.hasTempSession;
 
-    _nameController.addListener(_handleFieldChange);
-    _descriptionController.addListener(_handleFieldChange);
-  }
+  // Images for UI:
+  List<ImageRef> get images => _state.images;
 
-  Future<void> _initializeSessionTempDir() async {
-    try {
-      // await _tempFileService.init(sessionPrefix: 'edit_room_session');
-      _logger.info("Session temporary directory initialized");
-    } catch (e, s) {
-      _logger.severe("Failed to initialize session temporary directory", e, s);
-    }
-  }
+  // Underlying identifiers we persist on save (kept in index-lockstep with _state.images)
+  final List<ImageIdentifier> _imageIds = [];
 
-  bool _hasUnsavedChanges = false;
-  bool get hasUnsavedChanges => _hasUnsavedChanges;
+  // Temp session for storing picked images
+  TempSession? _tempSession;
+  TempSession? get tempSession => _tempSession;
 
-  void _handleFieldChange() {
-    if (isNewRoom) {
-      _hasUnsavedChanges =
-          _nameController.text.isNotEmpty ||
-          _descriptionController.text.isNotEmpty ||
-          _currentImages.isNotEmpty;
-    } else if (_initialRoom != null) {
-      bool nameChanged = _nameController.text != _initialRoom.name;
-      bool descriptionChanged = _descriptionController.text != (_initialRoom.description ?? '');
+  Room? _loadedRoom;
 
-      List<String> currentGuidsForComparison = _currentImages
-          .whereType<GuidIdentifier>()
-          .map((gi) => gi.guid)
-          .toList();
-      bool hasTempFiles = _currentImages.any((img) => img is TempFileIdentifier);
+  // ----- Lifecycle ----------------------------------------------------------
+  Future<void> init() async {
+    // editing an existing location, pull it from the DB
+    if (roomId != null) {
+      _loadedRoom = await _data.getRoomById(roomId!);
 
-      bool imagesChanged =
-          hasTempFiles ||
-          !const ListEquality().equals(currentGuidsForComparison, _initialPersistedGuids);
+      if (_loadedRoom != null) {
+        nameController.text = _loadedRoom!.name;
+        descriptionController.text = _loadedRoom!.description ?? '';
 
-      _hasUnsavedChanges = nameChanged || descriptionChanged || imagesChanged;
-    }
-    _logger.finest(
-      "Unsaved changes status: $_hasUnsavedChanges. Current images count: ${_currentImages.length}",
-    );
-  }
-
-  Future<void> pickImageFromCamera() async {
-    _logger.info("Attempting to pick image from camera via helper...");
-    await _pickImageWithHelper(ImageSourceType.camera);
-  }
-
-  Future<void> pickImageFromGallery() async {
-    _logger.info("Attempting to pick image from gallery via helper...");
-    await _pickImageWithHelper(ImageSourceType.gallery);
-  }
-
-  Future<void> _pickImageWithHelper(ImageSourceType source) async {
-    // if (_isPickingImage) return;
-    // _isPickingImage = true;
-    notifyListeners();
-
-    // Determine direct save based on ImageDataService availability for Rooms
-    bool directSave = _imageDataService != null;
-
-    if (!directSave && _sessionTempDir == null) {
-      _logger.severe(
-        "Cannot pick image: Session temporary directory is not initialized, and direct save is not possible.",
-      );
-      // _isPickingImage = false;
-      notifyListeners();
-      return;
-    }
-
-    _logger.finer(
-      "Calling helper. Direct save: $directSave. Session temp dir: ${_sessionTempDir?.path}",
-    );
-
-    try {
-      // final ImageIdentifier? newImageId = await pickOne(
-      //   source: source,
-      //   directSaveWithImageDataService: directSave,
-      //   sessionTempDir: _sessionTempDir, // Pass Room's session temp dir
-      // );
-      //
-      // if (newImageId != null) {
-      //   _currentImages.add(newImageId);
-      //   _handleFieldChange(); // Existing method
-      //   notifyListeners();
-      // }
-    } catch (e, s) {
-      _logger.severe("Error reported from ImagePickingHelper to EditRoomViewMode", e, s);
-      // Handle error as needed
-    } finally {
-      // _isPickingImage = false;
-      notifyListeners();
-    }
-  }
-
-  // Future<void> _pickImage(ImageSourceType source) async {
-  //   final File? pickedFileFromPicker;
-  //   try {
-  //     if (source == ImageSourceType.camera) {
-  //       pickedFileFromPicker = await _imagePickerService.pickImageFromCamera();
-  //     } else {
-  //       pickedFileFromPicker = await _imagePickerService.pickImageFromGallery();
-  //     }
-  //
-  //     if (pickedFileFromPicker != null) {
-  //       if (_imageDataService != null) {
-  //         _logger.finer("Image picked: ${pickedFileFromPicker.path}. Saving to permanent storage via ImageDataService...");
-  //         final String imageGuid = await _imageDataService!.saveUserImage(pickedFileFromPicker);
-  //         _currentImages.add(GuidIdentifier(imageGuid));
-  //         _logger.info("Image saved with GUID: $imageGuid and added to current images.");
-  //         try {
-  //           await pickedFileFromPicker.delete();
-  //         } catch (e) {
-  //           _logger.warning("Failed to delete picker's temp file ${pickedFileFromPicker.path}: $e");
-  //         }
-  //       } else {
-  //         if (_sessionTempDir == null) {
-  //           _logger.severe("Cannot pick image: Session temporary directory is not initialized and ImageDataService is null.");
-  //           return;
-  //         }
-  //         _logger.finer("Image picked: ${pickedFileFromPicker.path}. ImageDataService is null. Copying to session temp dir...");
-  //
-  //         final File tempCopiedFile = await _tempFileService.copyToTempDir(pickedFileFromPicker, _sessionTempDir!);
-  //         _currentImages.add(TempFileIdentifier(tempCopiedFile));
-  //         _logger.info("Image copied to session temp: ${tempCopiedFile.path}");
-  //         try {
-  //           await pickedFileFromPicker.delete();
-  //         } catch (e) {
-  //            _logger.warning("Failed to delete picker's temp file ${pickedFileFromPicker.path} after copying to session: $e");
-  //         }
-  //       }
-  //       _handleFieldChange();
-  //       notifyListeners();
-  //     } else {
-  //       _logger.info("Image picking cancelled or failed (null file returned).");
-  //     }
-  //   } catch (e, s) {
-  //     _logger.severe('Error picking/processing image: $e', e, s);
-  //   }
-  // }
-
-  // Future<void> pickImageFromCamera() async {
-  //   _logger.info("Attempting to pick image from camera...");
-  //   await _pickImage(ImageSourceType.camera);
-  // }
-  //
-  // Future<void> pickImageFromGallery() async {
-  //   _logger.info("Attempting to pick image from gallery...");
-  //   await _pickImage(ImageSourceType.gallery);
-  // }
-
-  Future<void> removeImage(int index) async {
-    if (index < 0 || index >= _currentImages.length) {
-      _logger.warning("Invalid index for image removal: $index");
-      return;
-    }
-
-    final imageIdToRemove = _currentImages.removeAt(index);
-    _logger.info("Attempting to remove image at index $index, Identifier: $imageIdToRemove");
-
-    _handleFieldChange();
-    notifyListeners();
-
-    if (imageIdToRemove is TempFileIdentifier) {
-      try {
-        // await _tempFileService.deleteFile(imageIdToRemove.file);
-        _logger.info("Temporary image file deleted: ${imageIdToRemove.file.path}");
-      } catch (e, s) {
-        _logger.warning(
-          "Failed to delete temporary "
-          "image file ${imageIdToRemove.file.path}",
-          e,
-          s,
-        );
-      }
-    } else if (imageIdToRemove is GuidIdentifier) {
-      _logger.info(
-        "Image GUID ${imageIdToRemove.guid} removed from current list. Will be processed on save.",
-      );
-    }
-  }
-
-  Widget getImageThumbnailWidget(
-    ImageIdentifier identifier, {
-    double? width,
-    double? height,
-    BoxFit? fit,
-  }) {
-    width ??= 100;
-    height ??= 100;
-    fit ??= BoxFit.cover;
-
-    if (identifier is GuidIdentifier) {
-      if (_imageDataService == null) {
-        _logger.warning(
-          "ImageDataService is null, cannot display persisted image for GUID: ${identifier.guid}",
-        );
-        return Container(
-          width: width,
-          height: height,
-          color: Colors.grey[300],
-          child: const Icon(Icons.broken_image, color: Colors.grey),
-        );
-      }
-      // return _imageDataService.getUserImage(
-      //   identifier.guid,
-      //   width: width,
-      //   height: height,
-      //   fit: fit,
-      // );
-    } else if (identifier is TempFileIdentifier) {
-    } else if (identifier is TempFileIdentifier) {
-      return Image.file(
-        identifier.file,
-        width: width,
-        height: height,
-        fit: fit,
-        errorBuilder: (context, e, s) {
-          _logger.severe("Error loading TEMP image ${identifier.file.path} in ViewModel", e, s);
-          return Container(
-            width: width,
-            height: height,
-            color: Colors.grey[300],
-            child: const Icon(Icons.broken_image, color: Colors.grey),
+        // Build identifiers from persisted GUIDs
+        _imageIds
+          ..clear()
+          ..addAll(
+            (_loadedRoom!.imageGuids)
+                .where((g) => g.isNotEmpty)
+                .map<GuidIdentifier>((g) => GuidIdentifier(g)),
           );
-        },
-      );
+
+        // Map to ImageRef for UI
+        final refs = await id2ref.toImageRefs(_imageIds, _imageStore);
+
+        _state = _state.copyWith(
+          name: _loadedRoom!.name,
+          description: _loadedRoom!.description ?? '',
+          images: refs,
+          isNewRoom: false,
+          hasUnsavedChanges: false,
+        );
+      }
     }
-    _logger.warning(
-      "Unknown ImageIdentifier type in getImageThumbnailWidget: ${identifier.runtimeType}",
-    );
-    return Container(
-      width: width,
-      height: height,
-      color: Colors.grey[300],
-      child: const Icon(Icons.help_outline, color: Colors.grey),
-    );
-  }
 
-  Future<List<String>> _processImagesForSave() async {
-    List<String> finalImageGuidsForRoom = [];
-
-    if (_imageDataService != null) {
-      // final imageService = _imageDataService;
-
-      for (var identifier in _currentImages) {
-        if (identifier is TempFileIdentifier) {
-          try {
-            _logger.info("Processing TempFileIdentifier for save: ${identifier.file.path}");
-            // final String savedGuid = await imageService.saveUserImage(identifier.file);
-            // finalImageGuidsForRoom.add(savedGuid);
-            // await _tempFileService.deleteFile(identifier.file);
-          } catch (e, s) {
-            _logger.severe(
-              "Failed to save temp image ${identifier.file.path} during "
-              "final save",
-              e,
-              s,
-            );
-            throw Exception("Failed to save image ${identifier.file.path}");
-          }
-        } else if (identifier is GuidIdentifier) {
-          finalImageGuidsForRoom.add(identifier.guid);
-        }
-      }
-
-      Set<String> currentPersistedGuidsInFinalList = finalImageGuidsForRoom.toSet();
-      List<String> guidsToDeletePermanently = _initialPersistedGuids
-          .where((initialGuid) => !currentPersistedGuidsInFinalList.contains(initialGuid))
-          .toList();
-
-      for (String guidToDelete in guidsToDeletePermanently) {
-        try {
-          _logger.info("Permanently deleting room image GUID: $guidToDelete as it was removed.");
-          // await imageService.deleteUserImage(guidToDelete);
-        } catch (e, s) {
-          _logger.severe("Failed to delete room image GUID $guidToDelete", e, s);
-        }
-      }
+    final String sessionLabel;
+    if (roomId != null) {
+      sessionLabel = 'edit_room_${roomId!.substring(0, 10)}';
     } else {
-      if (_currentImages.any((img) => img is TempFileIdentifier)) {
-        _logger.severe(
-          "Cannot save room: New images were picked but IImageDataService is not available.",
-        );
-        // for (var identifier in _currentImages.whereType<TempFileIdentifier>()) {
-        //   try {
-        //     // await _tempFileService.deleteFile(identifier.file);
-        //   } catch (_) {}
-        // }
-        throw Exception("Cannot save new images as the image service is unavailable.");
-      }
-      finalImageGuidsForRoom = _currentImages
-          .whereType<GuidIdentifier>()
-          .map((gi) => gi.guid)
-          .toList();
-      _logger.warning(
-        "IImageDataService is null. Proceeding with only previously persisted image GUIDs for room.",
-      );
+      sessionLabel = 'add_room_${locationId.substring(0, 10)}';
     }
-    return finalImageGuidsForRoom;
-  }
 
-  Future<bool> saveRoom() async {
-    if (!_formKey.currentState!.validate()) {
-      _logger.info("Form validation failed. Room save aborted.");
-      return false;
-    }
-    _isSaving = true;
+    _tempSession = await _tmpFileSvc.startSession(label: sessionLabel);
+    _state = _state.copyWith(hasTempSession: true);
+
+    // React to user typing to flip hasUnsavedChanges
+    nameController.addListener(_onAnyFieldChanged);
+    descriptionController.addListener(_onAnyFieldChanged);
     notifyListeners();
-    _logger.info("Attempting to save room. New room: $isNewRoom. Name: '${_nameController.text}'");
 
-    try {
-      final List<String> finalImageGuids = await _processImagesForSave();
-
-      final roomData = Room(
-        id: _initialRoom?.id ?? const Uuid().v4(),
-        name: _nameController.text.trim(),
-        description: _descriptionController.text.trim().isNotEmpty
-            ? _descriptionController.text.trim()
-            : null,
-        locationId: _parentLocation.id,
-        imageGuids: finalImageGuids.isEmpty ? null : finalImageGuids,
-        createdAt: _initialRoom?.createdAt,
-      );
-
-      if (isNewRoom) {
-        await _dataService.addRoom(roomData);
-        _logger.info(
-          "New room '${roomData.name}' added successfully to location '${_parentLocation.name}'.",
-        );
-      } else {
-        await _dataService.updateRoom(roomData);
-        _logger.info(
-          "Room '${roomData.name}' updated successfully in location '${_parentLocation.name}'.",
-        );
-      }
-
-      _hasUnsavedChanges = false;
-      _initialPersistedGuids = List.from(finalImageGuids);
-      _currentImages = finalImageGuids.map((guid) => GuidIdentifier(guid)).toList();
-
-      return true;
-    } catch (e, s) {
-      _logger.severe('Failed to save room', e, s);
-      return false;
-    } finally {
-      _isSaving = false;
-      notifyListeners();
-    }
-  }
-
-  Future<void> handleDiscardOrPop() async {
-    _logger.info("EditRoomViewModel handling discard/pop. Cleaning up session resources.");
-    // await _tempFileService.clearSession();
+    setInitialising(false);
   }
 
   @override
   void dispose() {
-    _logger.info("Disposing EditRoomViewModel for room: ${_initialRoom?.name ?? 'New Room'}");
-    _nameController.removeListener(_handleFieldChange);
-    _descriptionController.removeListener(_handleFieldChange);
-    _nameController.dispose();
-    _descriptionController.dispose();
-
-    // _tempFileService.dispose();
-
+    nameController.dispose();
+    descriptionController.dispose();
+    _tempSession?.dispose();
     super.dispose();
+  }
+
+  Future<void> deleteRoom() => _dbOps.deleteRoom(roomId!);
+
+  Future<bool> saveRoom() async {
+    if (_state.isSaving) return false;
+
+    // Validate the form if a validator is wired.
+    final form = formKey.currentState;
+    if (form != null && !form.validate()) return false;
+
+    _state = _state.copyWith(isSaving: true);
+    notifyListeners();
+
+    try {
+      // A) Remember what was previously persisted for this location
+      final previousGuids = (_loadedRoom?.imageGuids ?? const <String>[]).toSet();
+
+      // B) Persist any temp files → GUIDs (order preserved)
+      final guids = await persist.persistTempImages(
+        _imageIds,
+        _imageStore,
+        deleteTempOnSuccess: true, // cleanup
+      );
+
+      // C) Replace temp identifiers in the VM with their new GUIDs
+      for (var i = 0; i < _imageIds.length; i++) {
+        if (_imageIds[i] is TempFileIdentifier) {
+          _imageIds[i] = GuidIdentifier(guids[i]);
+        }
+      }
+
+      // D) Build new model and save it
+      late final Room toSave;
+      if (_loadedRoom == null) {
+        toSave = Room(
+          locationId: locationId,
+          name: nameController.text.trim(),
+          description: descriptionController.text.trim().isEmpty
+              ? null
+              : descriptionController.text.trim(),
+          imageGuids: guids,
+        );
+      } else {
+        toSave = _loadedRoom!.copyWith(
+          name: nameController.text.trim(),
+          description: descriptionController.text.trim().isEmpty
+              ? null
+              : descriptionController.text.trim(),
+          imageGuids: guids,
+        );
+      }
+
+      // E) After the model is persisted, delete orphaned images
+      final newGuids = guids.toSet();
+      final toDelete = previousGuids.difference(newGuids);
+      if (toDelete.isNotEmpty) {
+        await _imageStore.deleteImages(toDelete); // best-effort
+      }
+
+      if (_loadedRoom == null) {
+        await _data.addRoom(toSave);
+        _loadedRoom = toSave; // locally consider it the current
+        _state = _state.copyWith(isNewRoom: false);
+      } else {
+        await _data.updateRoom(toSave);
+        _loadedRoom = toSave;
+      }
+
+      _state = _state.copyWith(hasUnsavedChanges: false);
+      return true;
+    } catch (e, s) {
+      _log.severe('saveLocation failed', e, s);
+      return false;
+    } finally {
+      _state = _state.copyWith(isSaving: false);
+      notifyListeners();
+    }
+  }
+
+  // ----- Internal helpers ---------------------------------------------------
+
+  // update form state data model
+  void _onAnyFieldChanged() {
+    final next = _state.copyWith(
+      name: nameController.text,
+      description: descriptionController.text,
+      hasUnsavedChanges: true,
+    );
+
+    if (next != _state) {
+      _state = next;
+      notifyListeners(); // <- needed so the UI reacts to hasUnsavedChanges updates
+    }
+  }
+
+  // ----- Image picking ------------------------------------------------------
+
+  void onImagePicked(ImageIdentifier id, ImageRef ref) {
+    // maintain list lockstep
+    _imageIds.add(id);
+    _state = _state.copyWith(images: [..._state.images, ref], hasUnsavedChanges: true);
+    notifyListeners();
+  }
+
+  void removeImage(int index) {
+    if (index < 0 || index >= _state.images.length) return;
+    final nextRefs = List<ImageRef>.from(_state.images);
+    nextRefs.removeAt(index);
+
+    final nextIds = List<ImageIdentifier>.from(_imageIds);
+    if (index < nextIds.length) {
+      nextIds.removeAt(index);
+    }
+
+    _imageIds
+      ..clear()
+      ..addAll(nextIds);
+    _state = _state.copyWith(images: nextRefs, hasUnsavedChanges: true);
+    notifyListeners();
   }
 }
