@@ -52,7 +52,7 @@ class _EditRoomScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<EditRoomViewModel>();
-    final disabled = vm.isInitialising || vm.isSaving;
+    final disabled = !vm.isInitialised || vm.isSaving;
 
     return EditEntityScaffold(
       title: vm.isNewRoom ? 'Add Room' : 'Edit Room',
@@ -61,7 +61,7 @@ class _EditRoomScaffold extends StatelessWidget {
       hasUnsavedChanges: vm.hasUnsavedChanges,
       onDelete: (vm.isNewRoom) ? null : vm.deleteRoom,
       onSave: vm.saveRoom,
-      body: vm.isInitialising
+      body: !vm.isInitialised
           ? const Center(child: CircularProgressIndicator())
           : Form(
               key: vm.formKey,

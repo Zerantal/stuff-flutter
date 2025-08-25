@@ -12,27 +12,18 @@ import '../../../services/ops/db_ops.dart';
 import '../../../shared/image/image_identifier_persistence.dart' as persist;
 import '../../../shared/image/image_identifier_to_ref.dart' as id2ref;
 import '../../../shared/image/image_ref.dart';
+import '../../shared/edit/edit_view_model_mixin.dart';
 import '../state/edit_room_state.dart';
 
 final _log = Logger('EditRoomViewModel');
 
-class EditRoomViewModel extends ChangeNotifier {
+class EditRoomViewModel extends ChangeNotifier with EditViewModelMixin {
   final IDataService _data;
   final IImageDataService _imageStore;
   final ITemporaryFileService _tmpFileSvc;
   final String locationId;
   final String? roomId; // null => create
   final DbOps _dbOps;
-
-  bool _isInitialising = true;
-
-  bool get isInitialising => _isInitialising;
-
-  void setInitialising(bool v) {
-    if (_isInitialising == v) return;
-    _isInitialising = v;
-    notifyListeners();
-  }
 
   EditRoomViewModel({
     required IDataService dataService,
@@ -120,7 +111,7 @@ class EditRoomViewModel extends ChangeNotifier {
     descriptionController.addListener(_onAnyFieldChanged);
     notifyListeners();
 
-    setInitialising(false);
+    setIsInitialised(true);
   }
 
   @override

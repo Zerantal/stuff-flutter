@@ -73,9 +73,9 @@ class _EditLocationScaffold extends StatelessWidget {
       hasUnsavedChanges: vm.hasUnsavedChanges,
       onDelete: (vm.isNewLocation) ? null : vm.deleteLocation,
       onSave: vm.saveLocation,
-      body: vm.isInitialising
-          ? const Center(child: CircularProgressIndicator())
-          : _EditForm(vm: vm),
+      body: vm.isInitialised
+          ? _EditForm(vm: vm)
+          : const Center(child: CircularProgressIndicator()),
     );
   }
 }
@@ -87,7 +87,7 @@ class _EditForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final disabled = vm.isInitialising || vm.isSaving;
+    final disabled = !vm.isInitialised || vm.isSaving;
 
     return Form(
       key: vm.formKey,

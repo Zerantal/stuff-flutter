@@ -15,6 +15,7 @@ import '../../../services/contracts/location_service_interface.dart';
 import '../../../services/contracts/image_data_service_interface.dart';
 import '../../../services/utils/image_data_service_extensions.dart';
 import '../../../services/ops/db_ops.dart';
+import '../../shared/edit/edit_view_model_mixin.dart';
 import '../state/edit_location_state.dart';
 
 final Logger _log = Logger('EditLocationViewModel');
@@ -27,22 +28,13 @@ final Logger _log = Logger('EditLocationViewModel');
 /// - On save:
 ///     - TempFileIdentifier entries are persisted via ImagePickerController.persistTemp(...)
 ///     - GuidIdentifier entries are kept as-is
-class EditLocationViewModel extends ChangeNotifier {
+class EditLocationViewModel extends ChangeNotifier with EditViewModelMixin {
   final IDataService _data;
   final IImageDataService _imageStore;
   final ILocationService _geo;
   final ITemporaryFileService _tmpFileSvc;
   final String? _locationId;
   final DbOps _dbOps;
-
-  bool _isInitialising;
-  bool get isInitialising => _isInitialising;
-
-  void setInitialising(bool v) {
-    if (_isInitialising == v) return;
-    _isInitialising = v;
-    notifyListeners();
-  }
 
   EditLocationViewModel({
     required IDataService dataService,
@@ -55,7 +47,6 @@ class EditLocationViewModel extends ChangeNotifier {
        _geo = locationService,
        _tmpFileSvc = tempFileService,
        _locationId = locationId,
-       _isInitialising = locationId != null,
        _dbOps = DbOps(dataService, imageDataService);
 
   final uuid = const Uuid();
@@ -140,7 +131,7 @@ class EditLocationViewModel extends ChangeNotifier {
     addressController.addListener(_onAnyFieldChanged);
     notifyListeners();
 
-    setInitialising(false);
+    setIsInitialised(true);
   }
 
   @override
