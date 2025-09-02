@@ -12,18 +12,27 @@ import '../../../services/ops/db_ops.dart';
 import '../../../shared/image/image_identifier_persistence.dart' as persist;
 import '../../../shared/image/image_identifier_to_ref.dart' as id2ref;
 import '../../../shared/image/image_ref.dart';
-import '../../shared/edit/edit_view_model_mixin.dart';
 import '../state/edit_room_state.dart';
 
 final _log = Logger('EditRoomViewModel');
 
-class EditRoomViewModel extends ChangeNotifier with EditViewModelMixin {
+class EditRoomViewModel extends ChangeNotifier {
   final IDataService _data;
   final IImageDataService _imageStore;
   final ITemporaryFileService _tmpFileSvc;
   final String locationId;
   final String? roomId; // null => create
   final DbOps _dbOps;
+
+  bool _isInitialising = true;
+
+  bool get isInitialising => _isInitialising;
+
+  void setInitialising(bool v) {
+    if (_isInitialising == v) return;
+    _isInitialising = v;
+    notifyListeners();
+  }
 
   EditRoomViewModel({
     required IDataService dataService,
@@ -80,7 +89,7 @@ class EditRoomViewModel extends ChangeNotifier with EditViewModelMixin {
           ..addAll(
             (_loadedRoom!.imageGuids)
                 .where((g) => g.isNotEmpty)
-                .map<GuidIdentifier>((g) => GuidIdentifier(g)),
+                .map<PersistedImageIdentifier>((g) => PersistedImageIdentifier(g)),
           );
 
         // Map to ImageRef for UI
@@ -111,7 +120,7 @@ class EditRoomViewModel extends ChangeNotifier with EditViewModelMixin {
     descriptionController.addListener(_onAnyFieldChanged);
     notifyListeners();
 
-    setIsInitialised(true);
+    setInitialising(false);
   }
 
   @override
@@ -147,8 +156,8 @@ class EditRoomViewModel extends ChangeNotifier with EditViewModelMixin {
 
       // C) Replace temp identifiers in the VM with their new GUIDs
       for (var i = 0; i < _imageIds.length; i++) {
-        if (_imageIds[i] is TempFileIdentifier) {
-          _imageIds[i] = GuidIdentifier(guids[i]);
+        if (_imageIds[i] is TempImageIdentifier) {
+          _imageIds[i] = PersistedImageIdentifier(guids[i]);
         }
       }
 

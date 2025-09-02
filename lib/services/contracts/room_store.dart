@@ -8,6 +8,7 @@ abstract class IRoomStore {
   Future<List<Room>> getRoomsForLocation(String locationId);
   Future<Room?> getRoomById(String id);
   Future<Room> addRoom(Room room);
-  Future<Room> updateRoom(Room room); // may move location
+  Future<Room> updateRoom(Room room);
+  Future<Room> upsertRoom(Room room);
   Future<void> deleteRoom(String id);
 }

@@ -102,9 +102,8 @@ void main() {
 
     testWidgets('AppRoutes.push (extension) navigates to EditLocationPage', (tester) async {
       final router = AppRouter.buildRouter();
-      await pumpPageWithServices(
+      await pumpAppWithMocks(
         tester,
-        pageWidget: const SizedBox.shrink(),
         router: router,
         onMocksReady: (m) {
           when(
@@ -129,10 +128,8 @@ void main() {
     testWidgets('popAndPush removes EditLocationPage from the stack', (tester) async {
       final router = AppRouter.buildRouter();
 
-      await pumpPageWithServices(
+      await pumpAppWithMocks(
         tester,
-        // a dummy root; router will drive pages
-        pageWidget: const SizedBox.shrink(),
         router: router,
         onMocksReady: (m) {
           when(
@@ -178,9 +175,8 @@ void main() {
     ) async {
       final router = AppRouter.buildRouter();
 
-      await pumpPageWithServices(
+      await pumpAppWithMocks(
         tester,
-        pageWidget: const SizedBox.shrink(),
         router: router,
         onMocksReady: (m) {
           when(

@@ -5,6 +5,7 @@ import 'package:mockito/mockito.dart';
 
 import 'package:stuff/features/location/pages/edit_location_page.dart';
 import 'package:stuff/domain/models/location_model.dart';
+import 'package:stuff/features/location/viewmodels/edit_location_view_model.dart';
 
 import '../../../utils/mocks.dart';
 import '../../../utils/dummies.dart';
@@ -19,15 +20,20 @@ void main() {
     testWidgets('ADD mode: renders form and image manager once temp session is ready', (
       tester,
     ) async {
-      await pumpPageWithServices(
+      await pumpWithNotifierVm(
         tester,
-        // Mount page in ADD mode (locationId == null)
-        pageWidget: const EditLocationPage(),
-        onMocksReady: (m) async {
-          // When the VM init() runs, it will start a temp session.
+        home: const EditLocationPage(),
+        vmFactory: (m) => EditLocationViewModel(
+          dataService: m.dataService,
+          imageDataService: m.imageDataService,
+          locationService: m.locationService,
+          tempFileService: m.temporaryFileService,
+        ),
+        afterInit: (vm, m) async {
           when(
             m.temporaryFileService.startSession(label: anyNamed('label')),
           ).thenAnswer((_) async => MockTempSession());
+          await vm.initForNew();
         },
       );
 
@@ -58,20 +64,21 @@ void main() {
         imageGuids: const <String>[],
       );
 
-      await pumpPageWithServices(
+      await pumpWithNotifierVm(
         tester,
-        pageWidget: const EditLocationPage(locationId: locId),
-        onMocksReady: (m) async {
-          // VM loads the existing location
-          when(m.dataService.getLocationById(locId)).thenAnswer((_) async => location);
-
-          // Temp session for image manager
+        home: const EditLocationPage(locationId: 'L1'),
+        vmFactory: (m) => EditLocationViewModel(
+          dataService: m.dataService,
+          imageDataService: m.imageDataService,
+          tempFileService: m.temporaryFileService,
+          locationService: m.locationService,
+        ),
+        afterInit: (vm, m) async {
+          when(m.dataService.getLocationById('L1')).thenAnswer((_) async => location);
           when(
             m.temporaryFileService.startSession(label: anyNamed('label')),
           ).thenAnswer((_) async => MockTempSession());
-
-          // (Optional) If your VM consults locationService during init, make it a no-op.
-          when(m.locationService.getCurrentAddress()).thenAnswer((_) async => null);
+          await vm.initForEdit('L1');
         },
       );
 
@@ -97,10 +104,16 @@ void main() {
     });
 
     testWidgets('Use GPS failure shows SnackBar', (tester) async {
-      await pumpPageWithServices(
+      await pumpWithNotifierVm(
         tester,
-        pageWidget: const EditLocationPage(), // ADD mode
-        onMocksReady: (m) async {
+        home: const EditLocationPage(),
+        vmFactory: (m) => EditLocationViewModel(
+          dataService: m.dataService,
+          imageDataService: m.imageDataService,
+          tempFileService: m.temporaryFileService,
+          locationService: m.locationService,
+        ),
+        afterInit: (vm, m) async {
           when(
             m.temporaryFileService.startSession(label: anyNamed('label')),
           ).thenAnswer((_) async => MockTempSession());
@@ -108,6 +121,7 @@ void main() {
           // Cause VM.getCurrentAddress() to return false internally
           // by making the location service return null.
           when(m.locationService.getCurrentAddress()).thenAnswer((_) async => null);
+          await vm.initForNew();
         },
       );
 
@@ -125,13 +139,20 @@ void main() {
     });
 
     testWidgets('Save with empty name shows validation error', (tester) async {
-      await pumpPageWithServices(
+      await pumpWithNotifierVm(
         tester,
-        pageWidget: const EditLocationPage(), // ADD mode
-        onMocksReady: (m) async {
+        home: const EditLocationPage(),
+        vmFactory: (m) => EditLocationViewModel(
+          dataService: m.dataService,
+          imageDataService: m.imageDataService,
+          tempFileService: m.temporaryFileService,
+          locationService: m.locationService,
+        ),
+        afterInit: (vm, m) async {
           when(
             m.temporaryFileService.startSession(label: anyNamed('label')),
           ).thenAnswer((_) async => MockTempSession());
+          await vm.initForNew();
         },
       );
 
@@ -153,7 +174,7 @@ void main() {
       // Validation error should be visible
       expect(find.text('Name is required'), findsOneWidget);
 
-      // (Optional) Clear the error by entering a valid name and saving again
+      // Clear the error by entering a valid name and saving again
       await tester.enterText(nameFieldFinder, 'My Location');
       await tester.pump(); // let form rebuild
       await tester.tap(saveFab);

@@ -35,7 +35,7 @@ void main() {
 
   testWidgets('initial /locations renders without error (smoke)', (tester) async {
     final router = AppRouter.buildRouter(initialLocation: AppRoutes.locations.path);
-    await pumpPageWithServices(tester, pageWidget: const SizedBox.shrink(), router: router);
+    await pumpAppWithMocks(tester, router: router);
     await tester.pumpAndSettle();
     // Don’t assert on specific widget types if they need DI; just ensure no error page.
     expect(find.text('Error'), findsNothing);
@@ -51,7 +51,8 @@ void main() {
       ),
     );
 
-    await pumpPageWithServices(tester, pageWidget: const SizedBox.shrink(), router: router);
+    await pumpAppWithMocks(tester, router: router);
+
     await tester.pumpAndSettle();
 
     // After redirect, the location should be canonical with the same query.
@@ -60,7 +61,8 @@ void main() {
 
   testWidgets('unknown route shows errorBuilder page', (tester) async {
     final router = AppRouter.buildRouter(initialLocation: '/definitely-not-a-real-route');
-    await pumpPageWithServices(tester, pageWidget: const SizedBox.shrink(), router: router);
+    await pumpAppWithMocks(tester, router: router);
+
     await tester.pumpAndSettle();
 
     expect(find.text('Error'), findsOneWidget);
@@ -70,9 +72,9 @@ void main() {
   testWidgets('router.goNamed navigates to EditLocationPage', (tester) async {
     final router = AppRouter.buildRouter();
 
-    await pumpPageWithServices(
+    await pumpAppWithMocks(
       tester,
-      pageWidget: const SizedBox.shrink(),
+      home: const SizedBox.shrink(),
       router: router,
       onMocksReady: (m) {
         when(

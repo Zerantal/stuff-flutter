@@ -10,10 +10,10 @@ import '../../services/contracts/image_data_service_interface.dart';
 /// - `GuidIdentifier` → uses `imageDataService.refForGuid(guid)` (no I/O)
 /// - `TempFileIdentifier` → `ImageRef.file(temp.path)` (no I/O)
 ImageRef? toImageRefSync(ImageIdentifier id, IImageDataService imageDataService) {
-  if (id is GuidIdentifier) {
+  if (id is PersistedImageIdentifier) {
     return imageDataService.refForGuid(id.guid);
   }
-  if (id is TempFileIdentifier) {
+  if (id is TempImageIdentifier) {
     return ImageRef.file(id.file.path);
   }
   return null;
@@ -36,9 +36,9 @@ Future<ImageRef?> toImageRef(
 }) {
   if (!verifyExists) return Future.value(toImageRefSync(id, imageDataService));
 
-  if (id is GuidIdentifier) return imageDataService.getImage(id.guid, verifyExists: true);
+  if (id is PersistedImageIdentifier) return imageDataService.getImage(id.guid, verifyExists: true);
 
-  if (id is TempFileIdentifier) return Future.value(ImageRef.file(id.file.path));
+  if (id is TempImageIdentifier) return Future.value(ImageRef.file(id.file.path));
 
   return Future.value(null);
 }

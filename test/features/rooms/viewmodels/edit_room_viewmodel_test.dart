@@ -115,7 +115,7 @@ void main() {
 
       // Pick one temp image
       vm.onImagePicked(
-        TempFileIdentifier(File('/tmp/pic.png')),
+        TempImageIdentifier(File('/tmp/pic.png')),
         const ImageRef.asset('assets/x.png'),
       );
       expect(vm.images.length, 1);

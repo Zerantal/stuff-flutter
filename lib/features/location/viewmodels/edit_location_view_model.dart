@@ -1,24 +1,28 @@
 // lib/features/location/viewmodels/edit_location_view_model.dart
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:logging/logging.dart';
+import 'package:provider/provider.dart';
+// import 'package:logging/logging.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../core/image_identifier.dart';
 import '../../../services/contracts/temporary_file_service_interface.dart';
+import '../../../shared/forms/suppressible_text_editing_controller.dart';
 import '../../../shared/image/image_ref.dart';
-import '../../../shared/image/image_identifier_to_ref.dart' as id2ref;
-import '../../../shared/image/image_identifier_persistence.dart' as persist;
 import '../../../domain/models/location_model.dart';
 import '../../../services/contracts/data_service_interface.dart';
 import '../../../services/contracts/location_service_interface.dart';
 import '../../../services/contracts/image_data_service_interface.dart';
 import '../../../services/utils/image_data_service_extensions.dart';
 import '../../../services/ops/db_ops.dart';
-import '../../shared/edit/edit_view_model_mixin.dart';
+import '../../shared/edit/geolocate_mixin.dart';
+import '../../shared/edit/image_picking_mixin.dart';
+import '../../shared/edit/state_management_mixin.dart';
 import '../state/edit_location_state.dart';
 
-final Logger _log = Logger('EditLocationViewModel');
+// final Logger _log = Logger('EditLocationViewModel');
 
 /// ViewModel for the Edit Location page.
 ///
@@ -26,112 +30,130 @@ final Logger _log = Logger('EditLocationViewModel');
 ///     1) `_imageIds` ([List<ImageIdentifier>]) — truth for persistence (guid vs temp file)
 ///     2) `_state.images` ([List<ImageRef>]) — ready-to-render UI images
 /// - On save:
-///     - TempFileIdentifier entries are persisted via ImagePickerController.persistTemp(...)
-///     - GuidIdentifier entries are kept as-is
-class EditLocationViewModel extends ChangeNotifier with EditViewModelMixin {
-  final IDataService _data;
-  final IImageDataService _imageStore;
-  final ILocationService _geo;
-  final ITemporaryFileService _tmpFileSvc;
-  final String? _locationId;
-  final DbOps _dbOps;
-
+///     - TempImageIdentifier entries are persisted via ImagePickerController.persistTemp(...)
+///     - PersistentImageIdentifier entries are kept as-is
+class EditLocationViewModel extends ChangeNotifier
+    with StateManagementMixin<EditLocationState>, GeolocateMixin, ImageEditingMixin {
   EditLocationViewModel({
     required IDataService dataService,
     required IImageDataService imageDataService,
     required ILocationService locationService,
     required ITemporaryFileService tempFileService,
-    required String? locationId,
   }) : _data = dataService,
        _imageStore = imageDataService,
-       _geo = locationService,
-       _tmpFileSvc = tempFileService,
-       _locationId = locationId,
-       _dbOps = DbOps(dataService, imageDataService);
+       _dbOps = DbOps(dataService, imageDataService) {
+    configureGeolocate(locationService: locationService);
+
+    configureImageEditing(
+      imageStore: imageDataService,
+      tempFiles: tempFileService,
+      updateImages:
+          ({
+            required List<ImageRef> images,
+            required List<ImageIdentifier> imageIds,
+            bool notify = true,
+          }) {
+            updateState(
+              (s) => s.copyWith(images: images, imageIds: imageIds),
+              notify: notify,
+            );
+          },
+    );
+  }
+
+  // ------------------ Context-aware convenience factories --------------------
+
+  static EditLocationViewModel forEdit(BuildContext ctx, {required String locationId}) {
+    final vm = EditLocationViewModel(
+      dataService: ctx.read<IDataService>(),
+      imageDataService: ctx.read<IImageDataService>(),
+      tempFileService: ctx.read<ITemporaryFileService>(),
+      locationService: ctx.read<ILocationService>(),
+    );
+    scheduleMicrotask(() => vm.initForEdit(locationId));
+    return vm;
+  }
+
+  static EditLocationViewModel forNew(BuildContext ctx) {
+    final vm = EditLocationViewModel(
+      dataService: ctx.read<IDataService>(),
+      imageDataService: ctx.read<IImageDataService>(),
+      tempFileService: ctx.read<ITemporaryFileService>(),
+      locationService: ctx.read<ILocationService>(),
+    );
+    scheduleMicrotask(() => vm.initForNew());
+    return vm;
+  }
+  // ----------------------------------------------------------------------------------
+
+  final IDataService _data;
+  final IImageDataService _imageStore;
+  final DbOps _dbOps;
 
   final uuid = const Uuid();
 
   // Form / state
   final formKey = GlobalKey<FormState>();
-  final nameController = TextEditingController();
-  final descriptionController = TextEditingController();
-  final addressController = TextEditingController();
-
-  // State
-  EditLocationState _state = const EditLocationState(name: '', isNewLocation: true);
-  EditLocationState get state => _state;
+  final nameController = SuppressibleTextEditingController();
+  final descriptionController = SuppressibleTextEditingController();
+  final addressController = SuppressibleTextEditingController();
 
   // Expose bits the page expects
-  bool get isNewLocation => _state.isNewLocation;
-  bool get isSaving => _state.isSaving;
-  bool get isGettingLocation => _state.isGettingLocation;
-  bool get deviceHasLocationService => _state.deviceHasLocationService;
-  bool get hasUnsavedChanges => _state.hasUnsavedChanges;
-  bool get hasTempSession => _state.hasTempSession;
-
-  // Images for UI:
-  List<ImageRef> get images => _state.images;
-
-  // Underlying identifiers we persist on save (kept in index-lockstep with _state.images)
-  final List<ImageIdentifier> _imageIds = [];
-
-  // Temp session for storing picked images
-  TempSession? _tempSession;
-  TempSession? get tempSession => _tempSession;
+  bool get isNewLocation => _isNewLocation;
 
   Location? _loadedLocation;
+  late bool _isNewLocation;
 
   // ----- Lifecycle ----------------------------------------------------------
-  Future<void> init() async {
-    // editing an existing location, pull it from the DB
-    if (_locationId != null) {
-      _loadedLocation = await _data.getLocationById(_locationId);
+
+  Future<void> initForEdit(String locationId) async {
+    _isNewLocation = false;
+
+    await initialiseStateAsync(() async {
+      _loadedLocation = await _data.getLocationById(locationId);
 
       if (_loadedLocation != null) {
         nameController.text = _loadedLocation!.name;
         descriptionController.text = _loadedLocation!.description ?? '';
         addressController.text = _loadedLocation!.address ?? '';
 
-        // Build identifiers from persisted GUIDs
-        _imageIds
-          ..clear()
-          ..addAll(
-            (_loadedLocation!.imageGuids)
-                .where((g) => g.isNotEmpty)
-                .map<GuidIdentifier>((g) => GuidIdentifier(g)),
-          );
-
-        // Map to ImageRef for UI
-        final refs = await id2ref.toImageRefs(_imageIds, _imageStore);
-
-        _state = _state.copyWith(
+        return EditLocationState(
           name: _loadedLocation!.name,
           description: _loadedLocation!.description ?? '',
           address: _loadedLocation!.address ?? '',
-          images: refs,
-          isNewLocation: false,
-          hasUnsavedChanges: false,
+          images: _imageStore.refsForGuids(_loadedLocation!.imageGuids),
+          imageIds: _loadedLocation!.imageGuids
+              .map<ImageIdentifier>((g) => PersistedImageIdentifier(g))
+              .toList(growable: false),
         );
       }
-    }
+      throw Exception('Location not found');
+    });
 
-    final String sessionLabel;
-    if (_locationId != null) {
-      sessionLabel = 'edit_room_$_locationId';
-    } else {
-      sessionLabel = 'add_room_${uuid.v4()}';
-    }
+    // create session for storing temp files
+    final String sessionLabel = 'edit_room_$locationId';
+    startImageSession(sessionLabel);
+    seedExistingImages(_loadedLocation?.imageGuids ?? const <String>[], notify: true);
 
-    _tempSession = await _tmpFileSvc.startSession(label: sessionLabel);
-    _state = _state.copyWith(hasTempSession: true);
+    initTextControllers();
+  }
 
-    // React to user typing to flip hasUnsavedChanges
-    nameController.addListener(_onAnyFieldChanged);
-    descriptionController.addListener(_onAnyFieldChanged);
-    addressController.addListener(_onAnyFieldChanged);
-    notifyListeners();
+  Future<void> initForNew() async {
+    _isNewLocation = true;
 
-    setIsInitialised(true);
+    initialiseState(EditLocationState());
+
+    // create session for storing temp files
+    final String sessionLabel = 'add_room_${uuid.v4()}';
+    startImageSession(sessionLabel);
+
+    initTextControllers();
+  }
+
+  void initTextControllers() {
+    nameController.addListener(() => setName(nameController.text));
+    descriptionController.addListener(() => setDescription(descriptionController.text));
+    addressController.addListener(() => setAddress(addressController.text));
   }
 
   @override
@@ -139,163 +161,82 @@ class EditLocationViewModel extends ChangeNotifier with EditViewModelMixin {
     nameController.dispose();
     descriptionController.dispose();
     addressController.dispose();
-    _tempSession?.dispose();
+    disposeImageSession(); // deletes temp files, doesn't notify
     super.dispose();
   }
 
-  // ----- Internal helpers ---------------------------------------------------
+  // ===========================================================================
+  // Field setters
+  // ===========================================================================
 
-  // update form state data model
-  void _onAnyFieldChanged() {
-    final next = _state.copyWith(
-      name: nameController.text,
-      description: descriptionController.text,
-      address: addressController.text,
-      hasUnsavedChanges: true,
-    );
-
-    if (next != _state) {
-      _state = next;
-      notifyListeners(); // <- needed so the UI reacts to hasUnsavedChanges updates
-    }
+  void setName(String v) {
+    updateState((s) => s.copyWith(name: v));
   }
 
-  // ----- Image picking ------------------------------------------------------
-
-  void onImagePicked(ImageIdentifier id, ImageRef ref) {
-    // maintain list lockstep
-    _imageIds.add(id);
-    _state = _state.copyWith(images: [..._state.images, ref], hasUnsavedChanges: true);
-    notifyListeners();
+  void setDescription(String? v) {
+    updateState((s) => s.copyWith(description: v));
   }
 
-  void removeImage(int index) {
-    if (index < 0 || index >= _state.images.length) return;
-    final nextRefs = List<ImageRef>.from(_state.images);
-    nextRefs.removeAt(index);
-
-    final nextIds = List<ImageIdentifier>.from(_imageIds);
-    if (index < nextIds.length) {
-      nextIds.removeAt(index);
-    }
-
-    _imageIds
-      ..clear()
-      ..addAll(nextIds);
-    _state = _state.copyWith(images: nextRefs, hasUnsavedChanges: true);
-    notifyListeners();
-  }
-
-  // ----- Geocoding / address -------------------------------------------------
-
-  /// Attempts to resolve the current address and update the form.
-  /// Returns true on success (non-empty address), false otherwise.
-  Future<bool> getCurrentAddress() async {
-    if (_state.isGettingLocation) return false;
-
-    _state = _state.copyWith(
-      isGettingLocation: true,
-      // optimistic; will flip on error
-      deviceHasLocationService: true,
-    );
-    notifyListeners();
-
-    try {
-      final addr = await _geo.getCurrentAddress();
-      final ok = addr != null && addr.trim().isNotEmpty;
-
-      if (ok) {
-        final trimmed = addr.trim();
-        addressController.text = trimmed;
-        _state = _state.copyWith(
-          address: trimmed,
-          hasUnsavedChanges: true,
-          deviceHasLocationService: true,
-        );
-      } else {
-        _log.warning('getCurrentAddress returned null/empty');
-      }
-
-      return ok;
-    } catch (e, s) {
-      _log.severe('getCurrentAddress failed', e, s);
-      _state = _state.copyWith(deviceHasLocationService: false);
-      return false;
-    } finally {
-      _state = _state.copyWith(isGettingLocation: false);
-      notifyListeners();
-    }
+  void setAddress(String? v) {
+    updateState((s) => s.copyWith(address: v));
   }
 
   Future<void> deleteLocation() => _dbOps.deleteLocation(_loadedLocation!.id);
 
-  // ----- Save ---------------------------------------------------------------
+  // ----- StateManagementMixin overrides --------------------------------------------------
 
-  /// Validates form and persists the Location (and any temp images).
-  ///
-  /// Returns true if save succeeded.
-  Future<bool> saveLocation() async {
-    if (_state.isSaving) return false;
-
-    // Validate the form if a validator is wired.
+  @override
+  bool isValidState() {
     final form = formKey.currentState;
     if (form != null && !form.validate()) return false;
 
-    _state = _state.copyWith(isSaving: true);
-    notifyListeners();
+    return true;
+  }
 
-    try {
-      // A) Remember what was previously persisted for this location
-      final previousGuids = (_loadedLocation?.imageGuids ?? const <String>[]).toSet();
+  @override
+  Future<void> onSaveState(EditLocationState data) async {
+    // A) Compute the baseline set of GUIDs (from the original state before edits)
+    final prevGuids = originalState.imageIds
+        .whereType<PersistedImageIdentifier>()
+        .map((g) => g.guid)
+        .toSet();
 
-      // B) Persist any temp files → GUIDs (order preserved)
-      final guids = await persist.persistTempImages(
-        _imageIds,
-        _imageStore,
-        deleteTempOnSuccess: true, // cleanup
-      );
+    // B) Persist any temp images -> GUIDs (order preserved).
+    //    Also converts identifiers in the image mixin in-place from Temp -> Guid.
+    final guids = await persistImageGuids(deleteTempOnSuccess: true);
 
-      // C) Replace temp identifiers in the VM with their new GUIDs
-      for (var i = 0; i < _imageIds.length; i++) {
-        if (_imageIds[i] is TempFileIdentifier) {
-          _imageIds[i] = GuidIdentifier(guids[i]);
-        }
-      }
+    // C) Build and persist your domain model
+    EditLocationState s = currentState;
+    final model = Location(
+      id: _loadedLocation?.id,
+      name: s.name.trim(),
+      description: s.description.trim().isEmpty ? null : s.description.trim(),
+      address: s.address.trim().isEmpty ? null : s.address.trim(),
+      imageGuids: guids,
+    );
+    await _data.upsertLocation(model);
 
-      // D) Build new model and save it
-      final toSave = (_loadedLocation ?? Location(name: 'dummy_name')).copyWith(
-        name: nameController.text.trim(),
-        description: descriptionController.text.trim().isEmpty
-            ? null
-            : descriptionController.text.trim(),
-        address: addressController.text.trim().isEmpty ? null : addressController.text.trim(),
-        imageGuids: guids,
-      );
-
-      // E) After the model is persisted, delete orphaned images
-      final newGuids = guids.toSet();
-      final toDelete = previousGuids.difference(newGuids);
-      if (toDelete.isNotEmpty) {
-        await _imageStore.deleteImages(toDelete); // best-effort
-      }
-
-      if (_loadedLocation == null) {
-        await _data.addLocation(toSave);
-        _loadedLocation = toSave; // locally consider it the current
-        _state = _state.copyWith(isNewLocation: false);
-      } else {
-        await _data.updateLocation(toSave);
-        _loadedLocation = toSave;
-      }
-
-      _state = _state.copyWith(hasUnsavedChanges: false);
-      return true;
-    } catch (e, s) {
-      _log.severe('saveLocation failed', e, s);
-      return false;
-    } finally {
-      _state = _state.copyWith(isSaving: false);
-      notifyListeners();
+    // D) Best-effort orphan cleanup: delete any previously-persisted images
+    //    that were removed during editing (won't throw if using your extension).
+    final removed = prevGuids.difference(guids.toSet()).toList();
+    if (removed.isNotEmpty) {
+      await _imageStore.deleteImages(removed);
     }
+
+    // F) Normalize VM state so current == persisted:
+    //    update imageIds to all GUID-backed identifiers; keep images list as-is.
+    final newIds = guids
+        .map<ImageIdentifier>((g) => PersistedImageIdentifier(g))
+        .toList(growable: false);
+    updateState((st) => st.copyWith(imageIds: newIds), notify: false);
+  }
+
+  // ----- GeolocateMixin overrides --------------------------------------------------
+  @protected
+  @override
+  void onAcquiredAddress(String address) {
+    updateState((s) => s.copyWith(address: address), notify: false);
+
+    addressController.silentUpdate(address);
   }
 }

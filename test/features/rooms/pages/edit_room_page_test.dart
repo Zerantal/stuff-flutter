@@ -22,9 +22,8 @@ void main() {
     ) async {
       final router = AppRouter.buildRouter();
 
-      await pumpPageWithServices(
+      await pumpAppWithMocks(
         tester,
-        pageWidget: const SizedBox.shrink(),
         router: router,
         onMocksReady: (m) {
           when(
@@ -57,9 +56,8 @@ void main() {
     testWidgets('Save FAB validates name and allows save after entering text', (tester) async {
       final router = AppRouter.buildRouter();
 
-      await pumpPageWithServices(
+      await pumpAppWithMocks(
         tester,
-        pageWidget: const SizedBox.shrink(),
         router: router,
         onMocksReady: (m) {
           when(
@@ -87,9 +85,8 @@ void main() {
     testWidgets('Edit mode renders and still shows save FAB', (tester) async {
       final router = AppRouter.buildRouter();
 
-      await pumpPageWithServices(
+      await pumpAppWithMocks(
         tester,
-        pageWidget: const SizedBox.shrink(),
         router: router,
         onMocksReady: (m) {
           when(

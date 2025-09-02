@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 
@@ -20,9 +19,8 @@ void main() {
   testWidgets('router.goNamed navigates to RoomsPage, then to EditRoomPage (add)', (tester) async {
     final router = AppRouter.buildRouter();
 
-    await pumpPageWithServices(
+    await pumpAppWithMocks(
       tester,
-      pageWidget: const SizedBox.shrink(),
       router: router,
       // stub any services needed by EditRoomPage so its ImageManager can render
       onMocksReady: (m) {
@@ -51,9 +49,8 @@ void main() {
   testWidgets('router.goNamed navigates to EditRoomPage (edit existing room)', (tester) async {
     final router = AppRouter.buildRouter();
 
-    await pumpPageWithServices(
+    await pumpAppWithMocks(
       tester,
-      pageWidget: const SizedBox.shrink(),
       router: router,
       onMocksReady: (m) {
         when(

@@ -21,9 +21,9 @@ Future<List<String>> persistTempImages(
 
   for (var i = 0; i < ids.length; i++) {
     final id = ids[i];
-    if (id is GuidIdentifier) {
+    if (id is PersistedImageIdentifier) {
       guids[i] = id.guid;
-    } else if (id is TempFileIdentifier) {
+    } else if (id is TempImageIdentifier) {
       tempFiles.add(id.file);
       tempIndexes.add(i);
     }

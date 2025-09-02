@@ -1,50 +1,56 @@
 // lib/domain/models/location_model.dart
-import 'dart:collection';
+import 'package:meta/meta.dart';
 
 import '../../core/models/base_model.dart';
 
-class Location extends BaseModel {
+class Location extends BaseModel<Location> {
   final String name;
-
   final String? description;
-
   final String? address;
-
-  final UnmodifiableListView<String> imageGuids;
+  final List<String> imageGuids;
 
   Location({
     super.id,
+    super.createdAt,
+    super.updatedAt,
+
+    // Domain fields:
     required this.name,
     this.description,
     this.address,
-    List<String>? imageGuids,
-    super.createdAt,
-    super.updatedAt,
-  }) : imageGuids = UnmodifiableListView(imageGuids ?? []);
+    List<String> imageGuids = const [],
+  }) : imageGuids = List.unmodifiable(List<String>.from(imageGuids));
 
-  /// Creates a copy of this [Location] with the given fields updated.
-  ///
-  /// - `name`, `description`, `address` override those fields if non-null.
-  /// - `images` replaces the entire list if non-null; pass `[]` to clear.
+  /// Domain-only copyWith: callers never touch id/createdAt/updatedAt.
   Location copyWith({
     String? name,
     String? description,
     String? address,
     List<String>? imageGuids,
   }) {
-    // Prepare new list: clone provided or existing
-    final newImages = imageGuids != null
-        ? UnmodifiableListView(List<String>.from(imageGuids))
-        : UnmodifiableListView(List<String>.from(this.imageGuids));
-
     return Location(
-      id: id,
-      createdAt: createdAt,
-      updatedAt: updatedAt,
+      id: id, // unchanged
+      createdAt: createdAt, // unchanged
+      updatedAt: updatedAt, // unchanged (infra may bump via withTouched())
       name: name ?? this.name,
       description: description ?? this.description,
       address: address ?? this.address,
-      imageGuids: newImages,
+      imageGuids: imageGuids ?? this.imageGuids,
+    );
+  }
+
+  /// Infra-only: allow BaseModel to bump updatedAt.
+  @protected
+  @override
+  Location copyWithUpdatedAt(DateTime nextUpdatedAt) {
+    return Location(
+      id: id,
+      createdAt: createdAt,
+      updatedAt: nextUpdatedAt,
+      name: name,
+      description: description,
+      address: address,
+      imageGuids: imageGuids,
     );
   }
 }

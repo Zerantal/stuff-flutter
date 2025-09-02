@@ -3,15 +3,11 @@ import 'package:flutter/material.dart';
 // import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
 
-import '../../../services/contracts/data_service_interface.dart';
-import '../../../services/contracts/image_data_service_interface.dart';
-import '../../../services/contracts/location_service_interface.dart';
-import '../../../services/contracts/temporary_file_service_interface.dart';
 import '../../../shared/widgets/edit_entity_scaffold.dart';
 import '../viewmodels/edit_location_view_model.dart';
 import '../../../shared/widgets/image_manager_input.dart';
 
-const _kLocationPlaceholderAsset = 'Assets/images/location_placeholder.jpg';
+const _kLocationPlaceholderAsset = 'assets/images/location_placeholder.jpg';
 // final _log = Logger('EditLocationPage');
 
 /// Accepts an optional [locationId]. If null => creating a new location.
@@ -42,29 +38,19 @@ class _EditLocationPageState extends State<EditLocationPage> {
 
   @override
   Widget build(BuildContext context) {
-    // If your DI already provides the VM, remove this provider and just return _EditLocationScaffold.
-    return ChangeNotifierProvider<EditLocationViewModel>(
-      create: (ctx) => EditLocationViewModel(
-        dataService: ctx.read<IDataService>(),
-        imageDataService: ctx.read<IImageDataService>(),
-        locationService: ctx.read<ILocationService>(),
-        tempFileService: ctx.read<ITemporaryFileService>(),
-        locationId: locationId,
-      )..init(),
-      child: const _EditLocationScaffold(),
-    );
-  }
-}
-
-/// Wraps app bar, body, and FAB; keeps build simple and declarative.
-class _EditLocationScaffold extends StatelessWidget {
-  const _EditLocationScaffold();
-
-  @override
-  Widget build(BuildContext context) {
     final vm = context.watch<EditLocationViewModel>();
+
+    // ---------- HEAD GUARD ----------
+    if (!vm.isInitialised) {
+      // Lightweight shell while the VM finishes async init.
+      return Scaffold(
+        appBar: AppBar(title: const Text('Loading…')),
+        body: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+      );
+    }
+    // --------------------------------
+
     final isBusy = vm.isSaving || vm.isGettingLocation;
-    // final isLoading = vm.isInitialising;
 
     return EditEntityScaffold(
       title: vm.isNewLocation ? 'Add Location' : 'Edit Location',
@@ -72,10 +58,8 @@ class _EditLocationScaffold extends StatelessWidget {
       isBusy: isBusy,
       hasUnsavedChanges: vm.hasUnsavedChanges,
       onDelete: (vm.isNewLocation) ? null : vm.deleteLocation,
-      onSave: vm.saveLocation,
-      body: vm.isInitialised
-          ? _EditForm(vm: vm)
-          : const Center(child: CircularProgressIndicator()),
+      onSave: vm.saveState,
+      body: vm.isInitialised ? _EditForm(vm: vm) : const Center(child: CircularProgressIndicator()),
     );
   }
 }
@@ -87,7 +71,7 @@ class _EditForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final disabled = !vm.isInitialised || vm.isSaving;
+    final disabled = vm.isSaving;
 
     return Form(
       key: vm.formKey,
@@ -96,7 +80,7 @@ class _EditForm extends StatelessWidget {
         children: [
           TextFormField(
             key: const Key('loc_name'),
-            controller: vm.nameController,
+            controller: vm.nameController.raw,
             enabled: !disabled,
             decoration: const InputDecoration(
               labelText: 'Name',
@@ -114,7 +98,7 @@ class _EditForm extends StatelessWidget {
           const SizedBox(height: 12),
           TextFormField(
             key: const Key('loc_desc'),
-            controller: vm.descriptionController,
+            controller: vm.descriptionController.raw,
             enabled: !disabled,
             maxLines: 3,
             decoration: const InputDecoration(
@@ -131,7 +115,7 @@ class _EditForm extends StatelessWidget {
               Expanded(
                 child: TextFormField(
                   key: const Key('loc_address'),
-                  controller: vm.addressController,
+                  controller: vm.addressController.raw,
                   enabled: !disabled,
                   decoration: const InputDecoration(
                     labelText: 'Address',
@@ -149,7 +133,7 @@ class _EditForm extends StatelessWidget {
                       ? null
                       : () async {
                           final messenger = ScaffoldMessenger.of(context);
-                          final ok = await vm.getCurrentAddress();
+                          final ok = await vm.acquireCurrentAddress();
                           if (!context.mounted) return;
                           if (!ok) {
                             messenger.showSnackBar(
@@ -176,8 +160,8 @@ class _EditForm extends StatelessWidget {
             ImageManagerInput(
               key: const Key('image_manager'),
               session: vm.tempSession!,
-              images: vm.images,
-              onRemoveAt: vm.removeImage,
+              images: vm.currentState.images,
+              onRemoveAt: vm.onRemoveAt,
               onImagePicked: vm.onImagePicked,
               tileSize: 92,
               spacing: 8,

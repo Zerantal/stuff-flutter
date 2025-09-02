@@ -5,8 +5,6 @@ import 'package:provider/provider.dart';
 
 import '../../../app/routing/app_routes_ext.dart';
 import '../../../app/routing/app_routes.dart';
-import '../../../services/contracts/data_service_interface.dart';
-import '../../../services/contracts/image_data_service_interface.dart';
 import '../../../shared/widgets/confirmation_dialog.dart';
 import '../../../shared/widgets/context_action_menu.dart';
 import '../../../shared/widgets/gesture_wrapped_thumbnail.dart';
@@ -18,38 +16,14 @@ import '../../../shared/widgets/empty_list_state.dart';
 
 final _log = Logger('RoomsPage');
 
-class RoomsPage extends StatefulWidget {
-  final String locationId;
-  final String? locationName; // Optional, for subtitle
-
-  const RoomsPage({super.key, required this.locationId, this.locationName});
-
-  @override
-  State<RoomsPage> createState() => _RoomsPageState();
-}
-
-class _RoomsPageState extends State<RoomsPage> {
-  late final RoomsViewModel vm;
-
-  @override
-  void initState() {
-    super.initState();
-    vm = RoomsViewModel(
-      data: context.read<IDataService>(),
-      images: context.read<IImageDataService>(),
-      locationId: widget.locationId,
-    );
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-  }
+class RoomsPage extends StatelessWidget {
+  const RoomsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
     final useExtendedFab = width >= 720;
+    final vm = context.read<RoomsViewModel>();
 
     return Scaffold(
       appBar: AppBar(
@@ -57,8 +31,8 @@ class _RoomsPageState extends State<RoomsPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text('Rooms'),
-            if (widget.locationName != null)
-              Text(widget.locationName!, style: Theme.of(context).textTheme.bodySmall),
+            if (vm.locationName != null)
+              Text(vm.locationName!, style: Theme.of(context).textTheme.bodySmall),
           ],
         ),
       ),
@@ -68,7 +42,7 @@ class _RoomsPageState extends State<RoomsPage> {
               key: const ValueKey('add_room_fab'),
               heroTag: 'roomsPageFAB',
               onPressed: () =>
-                  AppRoutes.roomsAdd.push(context, pathParams: {'locationId': widget.locationId}),
+                  AppRoutes.roomsAdd.push(context, pathParams: {'locationId': vm.locationId}),
               icon: const Icon(Icons.add_outlined),
               label: const Text('Add Room'),
             )
@@ -76,7 +50,7 @@ class _RoomsPageState extends State<RoomsPage> {
               key: const ValueKey('add_room_fab'),
               heroTag: 'roomsPageFAB',
               onPressed: () =>
-                  AppRoutes.roomsAdd.push(context, pathParams: {'locationId': widget.locationId}),
+                  AppRoutes.roomsAdd.push(context, pathParams: {'locationId': vm.locationId}),
               tooltip: 'Add Room',
               child: const Icon(Icons.add_outlined),
             ),
@@ -100,7 +74,7 @@ class _RoomsPageState extends State<RoomsPage> {
         if (items.isEmpty) {
           return EmptyListState(
             onAdd: () =>
-                AppRoutes.roomsAdd.push(context, pathParams: {'locationId': widget.locationId}),
+                AppRoutes.roomsAdd.push(context, pathParams: {'locationId': vm.locationId}),
             text: "No rooms yet\nAdd your first room for this location",
             buttonText: "Add room",
             buttonIcon: const Icon(Icons.add_outlined),
@@ -111,7 +85,7 @@ class _RoomsPageState extends State<RoomsPage> {
           items: items,
           onTap: (it) => AppRoutes.roomContents.push(
             context,
-            pathParams: {'locationId': widget.locationId, 'roomId': it.room.id},
+            pathParams: {'locationId': vm.locationId, 'roomId': it.room.id},
           ),
           thumbnailBuilder: (ctx, it) => it.images.isNotEmpty
               ? GestureWrappedThumbnail(
@@ -134,11 +108,11 @@ class _RoomsPageState extends State<RoomsPage> {
           trailingBuilder: (ctx, it) => ContextActionMenu(
             onView: () => AppRoutes.roomContents.push(
               context,
-              pathParams: {'locationId': widget.locationId, 'roomId': it.room.id},
+              pathParams: {'locationId': vm.locationId, 'roomId': it.room.id},
             ),
             onEdit: () => AppRoutes.roomsEdit.push(
               ctx,
-              pathParams: {'locationId': widget.locationId, 'roomId': it.room.id},
+              pathParams: {'locationId': vm.locationId, 'roomId': it.room.id},
             ),
             onDelete: () => _confirmDelete(context, vm, it),
           ),

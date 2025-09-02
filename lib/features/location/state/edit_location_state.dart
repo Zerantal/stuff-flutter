@@ -2,63 +2,60 @@
 //
 // Immutable state for the Edit Location screen.
 
+import 'package:collection/collection.dart';
+
+import '../../../core/image_identifier.dart';
 import '../../../shared/image/image_ref.dart';
 
 class EditLocationState {
   final String name;
-  final String? description;
-  final String? address;
+  final String description;
+  final String address;
 
   /// UI-agnostic images the page can render directly.
   final List<ImageRef> images;
 
-  final bool isNewLocation;
-  final bool isSaving;
-  final bool isPickingImage;
-  final bool isGettingLocation;
-  final bool deviceHasLocationService;
-  final bool hasUnsavedChanges;
-  final bool hasTempSession;
+  /// Identity of each image (persisted or temp).
+  /// Used only for equality/dirty tracking.
+  final List<ImageIdentifier> imageIds;
 
-  const EditLocationState({
-    required this.name,
-    this.description,
-    this.address,
-    this.images = const [],
-    required this.isNewLocation,
-    this.isSaving = false,
-    this.isPickingImage = false,
-    this.isGettingLocation = false,
-    this.deviceHasLocationService = true,
-    this.hasUnsavedChanges = false,
-    this.hasTempSession = false,
-  });
+  EditLocationState({
+    this.name = '',
+    this.description = '',
+    this.address = '',
+    List<ImageRef> images = const [],
+    List<ImageIdentifier> imageIds = const [],
+  }) : images = List<ImageRef>.unmodifiable(List<ImageRef>.from(images)),
+       imageIds = List<ImageIdentifier>.unmodifiable(List<ImageIdentifier>.from(imageIds));
 
   EditLocationState copyWith({
     String? name,
     String? description,
     String? address,
     List<ImageRef>? images,
-    bool? isNewLocation,
-    bool? isSaving,
-    bool? isPickingImage,
-    bool? isGettingLocation,
-    bool? deviceHasLocationService,
-    bool? hasUnsavedChanges,
-    bool? hasTempSession,
+    List<ImageIdentifier>? imageIds,
   }) {
     return EditLocationState(
       name: name ?? this.name,
       description: description ?? this.description,
       address: address ?? this.address,
       images: images ?? this.images,
-      isNewLocation: isNewLocation ?? this.isNewLocation,
-      isSaving: isSaving ?? this.isSaving,
-      isPickingImage: isPickingImage ?? this.isPickingImage,
-      isGettingLocation: isGettingLocation ?? this.isGettingLocation,
-      deviceHasLocationService: deviceHasLocationService ?? this.deviceHasLocationService,
-      hasUnsavedChanges: hasUnsavedChanges ?? this.hasUnsavedChanges,
-      hasTempSession: hasTempSession ?? this.hasTempSession,
+      imageIds: imageIds ?? this.imageIds,
     );
   }
+
+  static const _idsEq = ListEquality<ImageIdentifier>();
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is EditLocationState &&
+          runtimeType == other.runtimeType &&
+          name == other.name &&
+          description == other.description &&
+          address == other.address &&
+          _idsEq.equals(imageIds, other.imageIds);
+
+  @override
+  int get hashCode => Object.hash(name, description, address, _idsEq.hash(imageIds));
 }

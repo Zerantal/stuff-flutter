@@ -2,6 +2,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
 import '../../features/container/pages/edit_container_page.dart';
 import '../../features/contents/pages/contents_page.dart';
@@ -9,9 +10,12 @@ import '../../features/dev_tools/pages/database_inspector_page.dart';
 import '../../features/item/pages/edit_item_page.dart';
 import '../../features/location/pages/locations_page.dart';
 import '../../features/location/pages/edit_location_page.dart';
+import '../../features/location/viewmodels/edit_location_view_model.dart';
+import '../../features/location/viewmodels/locations_view_model.dart';
 import '../../features/room/pages/edit_room_page.dart';
 import '../../features/room/pages/rooms_page.dart';
 
+import '../../features/room/viewmodels/rooms_view_model.dart';
 import 'app_routes_ext.dart';
 import 'app_routes.dart';
 
@@ -48,27 +52,43 @@ class AppRouter {
                 GoRoute(
                   name: AppRoutes.locations.name,
                   path: AppRoutes.locations.path,
-                  builder: (context, state) => const LocationsPage(),
+                  builder: (context, state) => Provider<LocationsViewModel>(
+                    key: state.pageKey, // recreate when params change
+                    create: (ctx) => LocationsViewModel.create(ctx),
+                    child: const LocationsPage(),
+                  ),
                 ),
                 GoRoute(
                   name: AppRoutes.locationsAdd.name,
                   path: AppRoutes.locationsAdd.path,
-                  builder: (context, state) => const EditLocationPage(),
+                  builder: (context, state) => ChangeNotifierProvider(
+                    key: state.pageKey,
+                    create: (_) => EditLocationViewModel.forNew(context),
+                    child: const EditLocationPage(),
+                  ),
                 ),
                 GoRoute(
                   name: AppRoutes.locationsEdit.name,
                   path: AppRoutes.locationsEdit.path,
-                  builder: (context, state) {
-                    return EditLocationPage(locationId: state.pathParameters['locationId']!);
-                  },
+                  builder: (context, state) => ChangeNotifierProvider(
+                    key: state.pageKey,
+                    create: (_) => EditLocationViewModel.forEdit(
+                      context,
+                      locationId: state.pathParameters['locationId']!,
+                    ),
+                    child: EditLocationPage(locationId: state.pathParameters['locationId']!),
+                  ),
                 ),
                 // --- Rooms ---
                 GoRoute(
                   name: AppRoutes.rooms.name,
                   path: AppRoutes.rooms.path,
-                  builder: (context, state) {
-                    return RoomsPage(locationId: state.pathParameters['locationId']!);
-                  },
+                  builder: (context, state) => Provider<RoomsViewModel>(
+                    key: state.pageKey,
+                    create: (ctx) =>
+                        RoomsViewModel.forLocation(ctx, state.pathParameters['locationId']!),
+                    child: const RoomsPage(),
+                  ),
                 ),
                 GoRoute(
                   name: AppRoutes.roomsAdd.name,
