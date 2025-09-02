@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../core/image_identifier.dart';
+import '../../../core/util/string_util.dart';
 import '../../../services/contracts/temporary_file_service_interface.dart';
 import '../../../shared/forms/suppressible_text_editing_controller.dart';
 import '../../../shared/image/image_ref.dart';
@@ -98,11 +99,10 @@ class EditLocationViewModel extends ChangeNotifier
   final descriptionController = SuppressibleTextEditingController();
   final addressController = SuppressibleTextEditingController();
 
-  // Expose bits the page expects
-  bool get isNewLocation => _isNewLocation;
-
   Location? _loadedLocation;
+
   late bool _isNewLocation;
+  bool get isNewLocation => _isNewLocation;
 
   // ----- Lifecycle ----------------------------------------------------------
 
@@ -131,11 +131,16 @@ class EditLocationViewModel extends ChangeNotifier
     });
 
     // create session for storing temp files
-    final String sessionLabel = 'edit_room_$locationId';
-    startImageSession(sessionLabel);
+    final String sessionLabel = concatenateFirstTenChars(['edit_location', locationId]);
+    await startImageSession(sessionLabel);
     seedExistingImages(_loadedLocation?.imageGuids ?? const <String>[], notify: true);
 
     initTextControllers();
+  }
+
+  Future<void> retryInitForEdit(String locationId) async {
+    clearInitialLoadError();
+    await initForEdit(locationId);
   }
 
   Future<void> initForNew() async {
@@ -144,8 +149,8 @@ class EditLocationViewModel extends ChangeNotifier
     initialiseState(EditLocationState());
 
     // create session for storing temp files
-    final String sessionLabel = 'add_room_${uuid.v4()}';
-    startImageSession(sessionLabel);
+    final String sessionLabel = concatenateFirstTenChars(['add_location', (uuid.v4())]);
+    await startImageSession(sessionLabel);
 
     initTextControllers();
   }
@@ -217,7 +222,7 @@ class EditLocationViewModel extends ChangeNotifier
     await _data.upsertLocation(model);
 
     // D) Best-effort orphan cleanup: delete any previously-persisted images
-    //    that were removed during editing (won't throw if using your extension).
+    //    that were removed during editing.
     final removed = prevGuids.difference(guids.toSet()).toList();
     if (removed.isNotEmpty) {
       await _imageStore.deleteImages(removed);

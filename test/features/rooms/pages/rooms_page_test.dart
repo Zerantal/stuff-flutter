@@ -3,6 +3,7 @@ import 'package:mockito/mockito.dart';
 
 import 'package:stuff/app/routing/app_router.dart';
 import 'package:stuff/app/routing/app_routes.dart';
+import 'package:stuff/domain/models/room_model.dart';
 
 import 'package:stuff/features/room/pages/rooms_page.dart';
 import 'package:stuff/features/room/pages/edit_room_page.dart';
@@ -56,6 +57,10 @@ void main() {
         when(
           m.temporaryFileService.startSession(label: anyNamed('label')),
         ).thenAnswer((_) async => MockTempSession());
+
+        when(m.dataService.getRoomById('R1')).thenAnswer(
+          (_) async => Room(id: 'R1', locationId: 'L1', name: 'Room 1', imageGuids: const []),
+        );
       },
     );
 

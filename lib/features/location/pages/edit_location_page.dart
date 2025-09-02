@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../shared/widgets/edit_entity_scaffold.dart';
+import '../../../shared/widgets/initial_load_error_panel.dart';
+import '../../../shared/widgets/loading_scaffold.dart';
 import '../viewmodels/edit_location_view_model.dart';
 import '../../../shared/widgets/image_manager_input.dart';
 
@@ -31,8 +33,6 @@ class _EditLocationPageState extends State<EditLocationPage> {
 
   @override
   void dispose() {
-    // Always safe to cleanup (after Save the session should be empty).
-    // _session?.dispose(deleteContents: true);
     super.dispose();
   }
 
@@ -40,15 +40,21 @@ class _EditLocationPageState extends State<EditLocationPage> {
   Widget build(BuildContext context) {
     final vm = context.watch<EditLocationViewModel>();
 
-    // ---------- HEAD GUARD ----------
-    if (!vm.isInitialised) {
-      // Lightweight shell while the VM finishes async init.
-      return Scaffold(
-        appBar: AppBar(title: const Text('Loading…')),
-        body: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+    // 1) Loading (before init completes)
+    if (!vm.isInitialised && vm.initialLoadError == null) {
+      return const LoadingScaffold(title: 'Edit Room');
+    }
+
+    // 2) Error (init failed)
+    if (vm.initialLoadError != null) {
+      return InitialLoadErrorPanel(
+        title: 'Edit Room',
+        message: 'Could not load room.',
+        details: vm.initialLoadError.toString(),
+        onRetry: (locationId == null) ? null : () => vm.retryInitForEdit(locationId!),
+        onClose: () => Navigator.of(context).maybePop(),
       );
     }
-    // --------------------------------
 
     final isBusy = vm.isSaving || vm.isGettingLocation;
 

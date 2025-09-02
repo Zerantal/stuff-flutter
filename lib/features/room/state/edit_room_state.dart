@@ -2,52 +2,55 @@
 //
 // Immutable state for the Edit Room screen.
 
+import 'package:collection/collection.dart';
+
+import '../../../core/image_identifier.dart';
 import '../../../shared/image/image_ref.dart';
 
 class EditRoomState {
   final String name;
-  final String? description;
+  final String description;
 
   /// UI-agnostic images the page can render directly.
   final List<ImageRef> images;
 
-  final bool isNewRoom;
-  final bool isSaving;
-  final bool isPickingImage;
-  final bool hasUnsavedChanges;
-  final bool hasTempSession;
+  /// Identity of each image (persisted or temp).
+  /// Used only for equality/dirty tracking.
+  final List<ImageIdentifier> imageIds;
 
-  const EditRoomState({
-    required this.name,
-    this.description,
-    this.images = const [],
-    required this.isNewRoom,
-    this.isSaving = false,
-    this.isPickingImage = false,
-    this.hasUnsavedChanges = false,
-    this.hasTempSession = false,
-  });
+  EditRoomState({
+    this.name = '',
+    this.description = '',
+    List<ImageRef> images = const [],
+    List<ImageIdentifier> imageIds = const [],
+  }) : images = List<ImageRef>.unmodifiable(List<ImageRef>.from(images)),
+       imageIds = List<ImageIdentifier>.unmodifiable(List<ImageIdentifier>.from(imageIds));
 
   EditRoomState copyWith({
     String? name,
     String? description,
-    String? address,
     List<ImageRef>? images,
-    bool? isNewRoom,
-    bool? isSaving,
-    bool? isPickingImage,
-    bool? hasUnsavedChanges,
-    bool? hasTempSession,
+    List<ImageIdentifier>? imageIds,
   }) {
     return EditRoomState(
       name: name ?? this.name,
       description: description ?? this.description,
       images: images ?? this.images,
-      isNewRoom: isNewRoom ?? this.isNewRoom,
-      isSaving: isSaving ?? this.isSaving,
-      isPickingImage: isPickingImage ?? this.isPickingImage,
-      hasUnsavedChanges: hasUnsavedChanges ?? this.hasUnsavedChanges,
-      hasTempSession: hasTempSession ?? this.hasTempSession,
+      imageIds: imageIds ?? this.imageIds,
     );
   }
+
+  static const _idsEq = ListEquality<ImageIdentifier>();
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is EditRoomState &&
+          runtimeType == other.runtimeType &&
+          name == other.name &&
+          description == other.description &&
+          _idsEq.equals(imageIds, other.imageIds);
+
+  @override
+  int get hashCode => Object.hash(name, description, _idsEq.hash(imageIds));
 }

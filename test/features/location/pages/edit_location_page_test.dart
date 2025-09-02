@@ -66,7 +66,7 @@ void main() {
 
       await pumpWithNotifierVm(
         tester,
-        home: const EditLocationPage(locationId: 'L1'),
+        home: const EditLocationPage(),
         vmFactory: (m) => EditLocationViewModel(
           dataService: m.dataService,
           imageDataService: m.imageDataService,

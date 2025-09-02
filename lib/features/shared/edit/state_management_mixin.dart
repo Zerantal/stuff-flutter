@@ -3,6 +3,9 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:logging/logging.dart';
+
+Logger _log = Logger('StateManagementMixin');
 
 /// View usage guide:
 /// Show a spinner when !vm.isInitialised && vm.initialLoadError == null.
@@ -90,31 +93,43 @@ mixin StateManagementMixin<T> on ChangeNotifier {
   /// Replace the "baseline" (e.g., after a successful save or external refresh).
   /// Optionally also replace the current state.
   @protected
-  void replaceOriginal(T data, {bool keepCurrent = true, bool notify = false}) {
+  bool replaceOriginal(T data, {bool keepCurrent = true, bool notify = false}) {
+    if (!_ensureInitialised('replaceOriginal')) return false;
+
     _originalState = data;
     if (!keepCurrent) {
       _currentState = data;
     }
     if (notify) notifyListeners();
+
+    return true;
   }
 
   /// Assign a new current state. No notify if unchanged.
   @protected
-  void setCurrentState(T next, {bool notify = true}) {
-    if (_areEqual(next, _currentState)) return;
+  bool setCurrentState(T next, {bool notify = true}) {
+    if (!_ensureInitialised('setCurrentState')) return false;
+
+    if (_areEqual(next, _currentState)) return true;
     _currentState = next;
     if (notify) notifyListeners();
+
+    return true;
   }
 
   @protected
-  void updateState(T Function(T current) build, {bool notify = true}) {
+  bool updateState(T Function(T current) build, {bool notify = true}) {
+    if (!_ensureInitialised('updateState')) return false;
     setCurrentState(build(_currentState), notify: notify);
+    return true;
   }
 
   /// Attempts to validate then save the current state.
   /// Returns true on success (including when nothing to save due to invalid).
   Future<bool> saveState() async {
-    if (!_isInitialised || _isSaving) return false;
+    if (!_ensureInitialised('saveState')) return false;
+
+    if (_isSaving) return false;
 
     // Prefer the async validator if supplied; otherwise fall back to isValidState().
     if (_validate != null) {
@@ -141,9 +156,18 @@ mixin StateManagementMixin<T> on ChangeNotifier {
     }
   }
 
+  // for retrying initialisation
+  @protected
+  void clearInitialLoadError() {
+    _initialLoadError = null;
+
+    notifyListeners();
+  }
+
   /// Revert to the original state.
   void cancel({bool notify = true}) {
-    if (!_isInitialised) return;
+    if (!_ensureInitialised('cancel')) return;
+
     setCurrentState(_originalState, notify: notify);
   }
 
@@ -168,5 +192,16 @@ mixin StateManagementMixin<T> on ChangeNotifier {
     final eq = _equals;
     if (eq != null) return eq(a, b);
     return a == b;
+  }
+
+  @protected
+  bool _ensureInitialised(String caller) {
+    if (_isInitialised) return true;
+    assert(() {
+      _log.warning('$runtimeType.$caller called before initialiseState; ignoring.');
+      return true;
+    }());
+
+    return false;
   }
 }

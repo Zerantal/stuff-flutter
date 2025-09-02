@@ -15,6 +15,7 @@ import '../../features/location/viewmodels/locations_view_model.dart';
 import '../../features/room/pages/edit_room_page.dart';
 import '../../features/room/pages/rooms_page.dart';
 
+import '../../features/room/viewmodels/edit_room_view_model.dart';
 import '../../features/room/viewmodels/rooms_view_model.dart';
 import 'app_routes_ext.dart';
 import 'app_routes.dart';
@@ -70,14 +71,14 @@ class AppRouter {
                 GoRoute(
                   name: AppRoutes.locationsEdit.name,
                   path: AppRoutes.locationsEdit.path,
-                  builder: (context, state) => ChangeNotifierProvider(
-                    key: state.pageKey,
-                    create: (_) => EditLocationViewModel.forEdit(
-                      context,
-                      locationId: state.pathParameters['locationId']!,
-                    ),
-                    child: EditLocationPage(locationId: state.pathParameters['locationId']!),
-                  ),
+                  builder: (context, state) {
+                    final locationId = state.pathParameters['locationId']!;
+                    return ChangeNotifierProvider(
+                      key: state.pageKey,
+                      create: (_) => EditLocationViewModel.forEdit(context, locationId: locationId),
+                      child: EditLocationPage(locationId: locationId),
+                    );
+                  },
                 ),
                 // --- Rooms ---
                 GoRoute(
@@ -93,17 +94,29 @@ class AppRouter {
                 GoRoute(
                   name: AppRoutes.roomsAdd.name,
                   path: AppRoutes.roomsAdd.path,
-                  builder: (context, state) {
-                    return EditRoomPage(locationId: state.pathParameters['locationId']!);
-                  },
+                  builder: (context, state) => ChangeNotifierProvider(
+                    key: state.pageKey,
+                    create: (_) => EditRoomViewModel.forNew(
+                      context,
+                      locationId: state.pathParameters['locationId']!,
+                    ),
+                    child: const EditRoomPage(),
+                  ),
                 ),
                 GoRoute(
                   name: AppRoutes.roomsEdit.name,
                   path: AppRoutes.roomsEdit.path,
                   builder: (context, state) {
-                    return EditRoomPage(
-                      locationId: state.pathParameters['locationId']!,
-                      roomId: state.pathParameters['roomId'],
+                    final roomId = state.pathParameters['roomId']!;
+                    final locationId = state.pathParameters['locationId']!;
+                    return ChangeNotifierProvider(
+                      key: state.pageKey,
+                      create: (_) => EditRoomViewModel.forEdit(
+                        context,
+                        locationId: locationId,
+                        roomId: roomId,
+                      ),
+                      child: EditRoomPage(roomId: roomId),
                     );
                   },
                 ),
