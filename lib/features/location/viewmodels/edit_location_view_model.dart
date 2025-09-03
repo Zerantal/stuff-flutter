@@ -49,18 +49,11 @@ class EditLocationViewModel extends ChangeNotifier
     configureImageEditing(
       imageStore: imageDataService,
       tempFiles: tempFileService,
-      updateImages:
-          ({
-            required ImageSet images,
-            bool notify = true,
-          }) {
-            _imageListRevision++;
+      updateImages: ({required ImageSet images, bool notify = true}) {
+        _imageListRevision++;
 
-            updateState(
-              (s) => s.copyWith(images: images),
-              notify: notify,
-            );
-          },
+        updateState((s) => s.copyWith(images: images), notify: notify);
+      },
     );
   }
 

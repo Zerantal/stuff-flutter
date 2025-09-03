@@ -18,11 +18,7 @@ import '../../../services/utils/image_data_service_extensions.dart';
 import '../../../shared/image/image_identifier_persistence.dart' as persist;
 import '../state/image_set.dart';
 
-typedef UpdateImagesCallback =
-    void Function({
-      required ImageSet images,
-      bool notify,
-    });
+typedef UpdateImagesCallback = void Function({required ImageSet images, bool notify});
 
 mixin ImageEditingMixin on ChangeNotifier {
   // Services
@@ -36,7 +32,6 @@ mixin ImageEditingMixin on ChangeNotifier {
 
   ImageSet _imageSet = ImageSet.empty();
   ImageSet get images => _imageSet;
-
 
   late UpdateImagesCallback _updateImages;
 
@@ -87,8 +82,9 @@ mixin ImageEditingMixin on ChangeNotifier {
   /// Wire to ImageManagerInput.onImagePicked
   void onImagePicked(ImageIdentifier id, ImageRef ref) {
     _imageSet = _imageSet.copyWith(
-        ids: List<ImageIdentifier>.from(_imageSet.ids) + [id],
-        refs: List<ImageRef>.from(_imageSet.refs) + [ref]);
+      ids: List<ImageIdentifier>.from(_imageSet.ids) + [id],
+      refs: List<ImageRef>.from(_imageSet.refs) + [ref],
+    );
 
     _updateImages(images: _imageSet, notify: true);
   }

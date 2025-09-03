@@ -15,13 +15,8 @@ class EditLocationState {
 
   final ImageSet images;
 
-  EditLocationState({
-    this.name = '',
-    this.description = '',
-    this.address = '',
-    ImageSet? images,
-  }) : images = images ?? ImageSet.empty();
-
+  EditLocationState({this.name = '', this.description = '', this.address = '', ImageSet? images})
+    : images = images ?? ImageSet.empty();
 
   EditLocationState copyWith({
     String? name,

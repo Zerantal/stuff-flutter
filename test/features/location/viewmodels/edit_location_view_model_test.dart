@@ -22,14 +22,7 @@ Location _loc({
   String? description = 'Desc',
   String? address = '123 Main',
   List<String> guids = const [],
-}) =>
-    Location(
-      id: id,
-      name: name,
-      description: description,
-      address: address,
-      imageGuids: guids,
-    );
+}) => Location(id: id, name: name, description: description, address: address, imageGuids: guids);
 
 void main() {
   group('EditLocationViewModel (Mockito)', () {
@@ -49,8 +42,7 @@ void main() {
 
       registerCommonDummies();
 
-      when(temps.startSession(label: anyNamed('label')))
-          .thenAnswer((_) async => session);
+      when(temps.startSession(label: anyNamed('label'))).thenAnswer((_) async => session);
 
       // Default upsert returns what was passed in (with id set if null)
       when(data.upsertLocation(any)).thenAnswer((inv) async {
@@ -79,14 +71,14 @@ void main() {
       expect(vm.currentState.images.ids, isEmpty);
       expect(vm.imageListRevision, 0);
 
-      verify(temps.startSession(label: argThat(startsWith('add_loc'), named: 'label')))
-          .called(1);
+      verify(temps.startSession(label: argThat(startsWith('add_loc'), named: 'label'))).called(1);
       expect(ticks, greaterThanOrEqualTo(1));
     });
 
     test('initForEdit success → loads model, seeds images (revision++), starts session', () async {
-      when(data.getLocationById('L1'))
-          .thenAnswer((_) async => _loc(id: 'L1', name: 'Garage', guids: ['a', 'b', 'c']));
+      when(
+        data.getLocationById('L1'),
+      ).thenAnswer((_) async => _loc(id: 'L1', name: 'Garage', guids: ['a', 'b', 'c']));
 
       await vm.initForEdit('L1');
 
@@ -96,8 +88,7 @@ void main() {
       expect(vm.currentState.images.length, 3);
       expect(vm.imageListRevision, 1, reason: 'seedExistingImages -> updateImages -> ++');
 
-      verify(temps.startSession(label: argThat(startsWith('edit_loc'), named: 'label')))
-          .called(1);
+      verify(temps.startSession(label: argThat(startsWith('edit_loc'), named: 'label'))).called(1);
       verify(data.getLocationById('L1')).called(1);
       verify(images.refForGuid(any)).called(3);
     });
@@ -153,8 +144,9 @@ void main() {
       TestWidgetsFlutterBinding.ensureInitialized();
       // Two sequential GUIDs returned by saveImage
       var seq = 0;
-      when(images.saveImage(any, deleteSource: anyNamed('deleteSource')))
-          .thenAnswer((_) async => 'guid_${++seq}');
+      when(
+        images.saveImage(any, deleteSource: anyNamed('deleteSource')),
+      ).thenAnswer((_) async => 'guid_${++seq}');
 
       await vm.initForNew();
 
@@ -186,8 +178,9 @@ void main() {
     });
 
     test('orphan cleanup deletes removed persisted images on save', () async {
-      when(data.getLocationById('Lx'))
-          .thenAnswer((_) async => _loc(id: 'Lx', name: 'N', guids: ['a', 'b']));
+      when(
+        data.getLocationById('Lx'),
+      ).thenAnswer((_) async => _loc(id: 'Lx', name: 'N', guids: ['a', 'b']));
 
       await vm.initForEdit('Lx');
 
@@ -196,7 +189,7 @@ void main() {
 
       await vm.saveState();
 
-      verify (images.deleteImage(any)).called(1);
+      verify(images.deleteImage(any)).called(1);
       verify(data.upsertLocation(any)).called(1);
     });
 
@@ -209,10 +202,10 @@ void main() {
 
       // Next try succeeds
       reset(data);
-      when(data.getLocationById('Z'))
-          .thenAnswer((_) async => _loc(id: 'Z', name: 'Loaded', guids: const []));
-      when(temps.startSession(label: anyNamed('label')))
-          .thenAnswer((_) async => session);
+      when(
+        data.getLocationById('Z'),
+      ).thenAnswer((_) async => _loc(id: 'Z', name: 'Loaded', guids: const []));
+      when(temps.startSession(label: anyNamed('label'))).thenAnswer((_) async => session);
 
       await vm.retryInitForEdit('Z');
       expect(vm.initialLoadError, isNull);

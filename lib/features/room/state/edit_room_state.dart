@@ -14,18 +14,10 @@ class EditRoomState {
 
   final ImageSet images;
 
-  EditRoomState({
-    this.name = '',
-    this.description = '',
-    ImageSet? images,
-  }) : images = images ?? ImageSet.empty();
+  EditRoomState({this.name = '', this.description = '', ImageSet? images})
+    : images = images ?? ImageSet.empty();
 
-
-  EditRoomState copyWith({
-    String? name,
-    String? description,
-    ImageSet? images,
-  }) {
+  EditRoomState copyWith({String? name, String? description, ImageSet? images}) {
     return EditRoomState(
       name: name ?? this.name,
       description: description ?? this.description,

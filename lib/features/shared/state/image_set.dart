@@ -11,7 +11,7 @@ import '../../../services/contracts/image_data_service_interface.dart';
 @immutable
 class ImageSet {
   final List<ImageIdentifier> _ids; // persisted or temp (truth for persistence)
-  final List<ImageRef> _refs;       // UI-ready images, index-aligned with ids
+  final List<ImageRef> _refs; // UI-ready images, index-aligned with ids
 
   UnmodifiableListView<ImageIdentifier> get ids => UnmodifiableListView(_ids);
   UnmodifiableListView<ImageRef> get refs => UnmodifiableListView(_refs);
@@ -30,24 +30,15 @@ class ImageSet {
   }
 
   /// Construct from explicit parallel lists (e.g., from image-picking mixin).
-  factory ImageSet.fromLists({
-    required List<ImageIdentifier> ids,
-    required List<ImageRef> refs,
-  }) {
+  factory ImageSet.fromLists({required List<ImageIdentifier> ids, required List<ImageRef> refs}) {
     assert(ids.length == refs.length, 'ids and refs must have same length');
-    return ImageSet._(
-      List<ImageIdentifier>.unmodifiable(ids),
-      List<ImageRef>.unmodifiable(refs),
-    );
+    return ImageSet._(List<ImageIdentifier>.unmodifiable(ids), List<ImageRef>.unmodifiable(refs));
   }
 
   int get length => _ids.length;
   bool get isEmpty => _ids.isEmpty;
 
-  ImageSet copyWith({
-    List<ImageIdentifier>? ids,
-    List<ImageRef>? refs,
-  }) {
+  ImageSet copyWith({List<ImageIdentifier>? ids, List<ImageRef>? refs}) {
     if (ids != null && refs != null) {
       assert(ids.length == refs.length, 'ids and refs must have same length');
     }
@@ -62,9 +53,7 @@ class ImageSet {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-          other is ImageSet &&
-              runtimeType == other.runtimeType &&
-              _idsEq.equals(_ids, other._ids);
+      other is ImageSet && runtimeType == other.runtimeType && _idsEq.equals(_ids, other._ids);
 
   @override
   int get hashCode => _idsEq.hash(_ids);
