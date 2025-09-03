@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../services/contracts/temporary_file_service_interface.dart';
 import '../../../shared/widgets/edit_entity_scaffold.dart';
 import '../../../shared/widgets/image_manager_input.dart';
 import '../../../shared/forms/decoration.dart';
@@ -34,32 +35,39 @@ class _EditRoomPageState extends State<EditRoomPage> {
 
   @override
   Widget build(BuildContext context) {
-    final vm = context.watch<EditRoomViewModel>();
+    final vm = context.read<EditRoomViewModel>();
+    final isInitialised = context.select<EditRoomViewModel, bool>((m) => m.isInitialised);
+    final initialLoadError = context.select<EditRoomViewModel, Object?>((m) => m.initialLoadError);
 
     // 1) Loading (before init completes)
-    if (!vm.isInitialised && vm.initialLoadError == null) {
+    if (!isInitialised && initialLoadError == null) {
       return const LoadingScaffold(title: 'Edit Room');
     }
 
     // 2) Error (init failed)
-    if (vm.initialLoadError != null) {
+    if (initialLoadError != null) {
       return InitialLoadErrorPanel(
         title: 'Edit Room',
         message: 'Could not load room.',
-        details: vm.initialLoadError.toString(),
+        details: initialLoadError.toString(),
         onRetry: (roomId == null) ? null : () => vm.retryInitForEdit(roomId!),
         onClose: () => Navigator.of(context).maybePop(),
       );
     }
 
-    final isBusy = vm.isSaving;
+    // VM will have been initialised by now. Can
+    final isSaving = context.select<EditRoomViewModel, bool>((m) => m.isSaving);
+    final isNewRoom = context.select<EditRoomViewModel, bool>((m) => m.isNewRoom);
+    final hasUnsavedChanges = context.select<EditRoomViewModel, bool>((m) => m.hasUnsavedChanges);
+
+    final isBusy = isSaving;
 
     return EditEntityScaffold(
-      title: vm.isNewRoom ? 'Add Room' : 'Edit Room',
-      isCreate: vm.isNewRoom,
+      title: isNewRoom ? 'Add Room' : 'Edit Room',
+      isCreate: isNewRoom,
       isBusy: isBusy,
-      hasUnsavedChanges: vm.hasUnsavedChanges,
-      onDelete: (vm.isNewRoom) ? null : vm.deleteRoom,
+      hasUnsavedChanges: hasUnsavedChanges,
+      onDelete: (isNewRoom) ? null : vm.deleteRoom,
       onSave: vm.saveState,
       body: _EditForm(vm: vm),
     );
@@ -74,7 +82,7 @@ class _EditForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final disabled = vm.isSaving;
+    final disabled = context.select<EditRoomViewModel, bool>((m) => m.isSaving);
 
     return Form(
       key: vm.formKey,
@@ -101,22 +109,51 @@ class _EditForm extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           // Image picker grid (uses the same component you use in Locations)
-          if (vm.hasTempSession)
-            ImageManagerInput(
-              key: const Key('room_image_manager'),
-              session: vm.tempSession!,
-              images: vm.currentState.images,
-              onRemoveAt: vm.onRemoveAt,
-              onImagePicked: vm.onImagePicked,
-              tileSize: 92,
-              spacing: 8,
-              placeholderAsset: 'assets/images/location_placeholder.jpg',
-            )
-          else
-            const SizedBox(
-              height: 90,
-              child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-            ),
+          Selector<EditRoomViewModel, (bool, TempSession?, int)>(
+            selector: (_, m) => (m.hasTempSession, m.tempSession, m.imageListRevision),
+            builder: (context, s, _) {
+              final hasSession = s.$1;
+              final session = s.$2;
+
+              if (!hasSession || session == null) {
+                return const SizedBox(
+                  height: 96,
+                  child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                );
+              }
+
+              final images = vm.currentState.images;
+
+              return ImageManagerInput(
+                key: ValueKey(s.$3),
+                session: session,
+                images: images,
+                onRemoveAt: vm.onRemoveAt,
+                onImagePicked: vm.onImagePicked,
+                tileSize: 92,
+                spacing: 8,
+                // Todo: create actual asset placeholder for room image picker
+                placeholderAsset: 'assets/images/location_placeholder.jpg',
+              );
+            },
+          ),
+
+          // if (vm.hasTempSession)
+          //   ImageManagerInput(
+          //     key: const Key('room_image_manager'),
+          //     session: vm.tempSession!,
+          //     images: vm.currentState.images,
+          //     onRemoveAt: vm.onRemoveAt,
+          //     onImagePicked: vm.onImagePicked,
+          //     tileSize: 92,
+          //     spacing: 8,
+          //     placeholderAsset: 'assets/images/location_placeholder.jpg',
+          //   )
+          // else
+          //   const SizedBox(
+          //     height: 90,
+          //     child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+          //   ),
         ],
       ),
     );

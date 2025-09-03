@@ -54,6 +54,8 @@ class EditLocationViewModel extends ChangeNotifier
             required List<ImageIdentifier> imageIds,
             bool notify = true,
           }) {
+            _imageListRevision++;
+
             updateState(
               (s) => s.copyWith(images: images, imageIds: imageIds),
               notify: notify,
@@ -103,6 +105,10 @@ class EditLocationViewModel extends ChangeNotifier
 
   late bool _isNewLocation;
   bool get isNewLocation => _isNewLocation;
+
+  // Image list revision counter (cheap O(1) change signal)
+  int _imageListRevision = 0;
+  int get imageListRevision => _imageListRevision;
 
   // ----- Lifecycle ----------------------------------------------------------
 
@@ -233,6 +239,7 @@ class EditLocationViewModel extends ChangeNotifier
     final newIds = guids
         .map<ImageIdentifier>((g) => PersistedImageIdentifier(g))
         .toList(growable: false);
+    _imageListRevision++;
     updateState((st) => st.copyWith(imageIds: newIds), notify: false);
   }
 

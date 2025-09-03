@@ -6,6 +6,7 @@ import 'package:mockito/mockito.dart';
 import 'package:stuff/features/location/pages/edit_location_page.dart';
 import 'package:stuff/domain/models/location_model.dart';
 import 'package:stuff/features/location/viewmodels/edit_location_view_model.dart';
+import 'package:stuff/shared/widgets/image_manager_input.dart';
 
 import '../../../utils/mocks.dart';
 import '../../../utils/dummies.dart';
@@ -51,7 +52,7 @@ void main() {
       expect(find.byKey(const Key('use_current_location_btn')), findsOneWidget);
 
       // Image manager appears once the temp session is available
-      expect(find.byKey(const Key('image_manager')), findsOneWidget);
+      expect(find.byType(ImageManagerInput), findsOneWidget);
     });
 
     testWidgets('EDIT mode: pre-populates fields from dataService.getLocationById', (tester) async {
@@ -97,7 +98,7 @@ void main() {
       expect(addrField.controller?.text, equals('123 Main St'));
 
       // Image manager present in edit mode as well (session started)
-      expect(find.byKey(const Key('image_manager')), findsOneWidget);
+      expect(find.byType(ImageManagerInput), findsOneWidget);
 
       // Sanity: GPS button still present
       expect(find.byKey(const Key('use_current_location_btn')), findsOneWidget);

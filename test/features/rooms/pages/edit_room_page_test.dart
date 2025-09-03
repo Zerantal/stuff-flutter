@@ -7,6 +7,7 @@ import 'package:stuff/app/routing/app_routes.dart';
 import 'package:stuff/domain/models/room_model.dart';
 
 import 'package:stuff/features/room/pages/edit_room_page.dart';
+import 'package:stuff/shared/widgets/image_manager_input.dart';
 
 import '../../../utils/mocks.dart';
 import '../../../utils/ui_runner_helper.dart';
@@ -48,7 +49,7 @@ void main() {
       expect(find.byKey(const Key('room_description')), findsOneWidget);
 
       // Image manager appears when temp session is available
-      expect(find.byKey(const Key('room_image_manager')), findsOneWidget);
+      expect(find.byType(ImageManagerInput), findsOneWidget);
 
       // Save FAB exists
       expect(find.byKey(const Key('save_entity_fab')), findsOneWidget);

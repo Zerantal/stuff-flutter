@@ -41,6 +41,8 @@ class EditRoomViewModel extends ChangeNotifier
             required List<ImageIdentifier> imageIds,
             bool notify = true,
           }) {
+            _imageListRevision++;
+
             updateState(
               (s) => s.copyWith(images: images, imageIds: imageIds),
               notify: notify,
@@ -94,6 +96,10 @@ class EditRoomViewModel extends ChangeNotifier
 
   late bool _isNewRoom;
   bool get isNewRoom => _isNewRoom;
+
+  // Image list revision counter (cheap O(1) change signal)
+  int _imageListRevision = 0;
+  int get imageListRevision => _imageListRevision;
 
   // ----- Lifecycle ----------------------------------------------------------
 
@@ -218,6 +224,7 @@ class EditRoomViewModel extends ChangeNotifier
     final newIds = guids
         .map<ImageIdentifier>((g) => PersistedImageIdentifier(g))
         .toList(growable: false);
+    _imageListRevision++;
     updateState((st) => st.copyWith(imageIds: newIds), notify: false);
   }
 }
