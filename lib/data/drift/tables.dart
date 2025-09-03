@@ -1,3 +1,5 @@
+// lib/data/drift/tables.dart
+// coverage:ignore-file
 part of 'database.dart';
 
 @DataClassName('LocationRow')

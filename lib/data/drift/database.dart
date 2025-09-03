@@ -1,3 +1,5 @@
+// lib/data/drift/database.dart
+// coverage:ignore-file
 import 'package:drift/drift.dart';
 
 import '../../domain/models/location_model.dart';

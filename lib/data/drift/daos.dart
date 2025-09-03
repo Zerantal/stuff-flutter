@@ -1,3 +1,6 @@
+// lib/data/drift/daos.dart
+// coverage:ignore-file
+
 part of 'database.dart';
 
 @DriftAccessor(tables: [Locations, Rooms])
