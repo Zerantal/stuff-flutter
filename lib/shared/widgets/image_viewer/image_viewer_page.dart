@@ -1,3 +1,4 @@
+// lib/shared/widgets/image_viewer/image_viewer_page.dart
 import 'dart:io' show File, HttpClient, Platform;
 
 import 'package:logging/logging.dart';
