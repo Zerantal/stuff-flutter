@@ -179,7 +179,7 @@ void main() {
 
     test('orphan cleanup deletes removed persisted images on save', () async {
       TestWidgetsFlutterBinding.ensureInitialized();
-      
+
       when(
         data.getLocationById('Lx'),
       ).thenAnswer((_) async => _loc(id: 'Lx', name: 'N', guids: ['a', 'b']));
