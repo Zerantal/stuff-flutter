@@ -6,28 +6,28 @@ import 'dart:io';
 abstract class ImageIdentifier {}
 
 // images that have been persisted to storage
-class GuidIdentifier implements ImageIdentifier {
+class PersistedImageIdentifier implements ImageIdentifier {
   final String guid; // "guid.ext" as returned by IImageDataService
-  GuidIdentifier(this.guid);
+  PersistedImageIdentifier(this.guid);
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is GuidIdentifier && runtimeType == other.runtimeType && guid == other.guid;
+      other is PersistedImageIdentifier && runtimeType == other.runtimeType && guid == other.guid;
 
   @override
   int get hashCode => guid.hashCode;
 }
 
 // images that have not yet been persisted to storage
-class TempFileIdentifier implements ImageIdentifier {
+class TempImageIdentifier implements ImageIdentifier {
   final File file; // Temporary file
-  TempFileIdentifier(this.file);
+  TempImageIdentifier(this.file);
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is TempFileIdentifier &&
+      other is TempImageIdentifier &&
           runtimeType == other.runtimeType &&
           file.path == other.file.path;
 

@@ -9,5 +9,6 @@ abstract class ILocationStore {
   Future<Location?> getLocationById(String id);
   Future<Location> addLocation(Location location);
   Future<Location> updateLocation(Location location);
+  Future<Location> upsertLocation(Location location);
   Future<void> deleteLocation(String id);
 }

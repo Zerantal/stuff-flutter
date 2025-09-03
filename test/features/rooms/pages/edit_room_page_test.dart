@@ -4,8 +4,10 @@ import 'package:mockito/mockito.dart';
 
 import 'package:stuff/app/routing/app_router.dart';
 import 'package:stuff/app/routing/app_routes.dart';
+import 'package:stuff/domain/models/room_model.dart';
 
 import 'package:stuff/features/room/pages/edit_room_page.dart';
+import 'package:stuff/shared/widgets/image_manager_input.dart';
 
 import '../../../utils/mocks.dart';
 import '../../../utils/ui_runner_helper.dart';
@@ -22,9 +24,8 @@ void main() {
     ) async {
       final router = AppRouter.buildRouter();
 
-      await pumpPageWithServices(
+      await pumpAppWithMocks(
         tester,
-        pageWidget: const SizedBox.shrink(),
         router: router,
         onMocksReady: (m) {
           when(
@@ -48,7 +49,7 @@ void main() {
       expect(find.byKey(const Key('room_description')), findsOneWidget);
 
       // Image manager appears when temp session is available
-      expect(find.byKey(const Key('room_image_manager')), findsOneWidget);
+      expect(find.byType(ImageManagerInput), findsOneWidget);
 
       // Save FAB exists
       expect(find.byKey(const Key('save_entity_fab')), findsOneWidget);
@@ -57,9 +58,8 @@ void main() {
     testWidgets('Save FAB validates name and allows save after entering text', (tester) async {
       final router = AppRouter.buildRouter();
 
-      await pumpPageWithServices(
+      await pumpAppWithMocks(
         tester,
-        pageWidget: const SizedBox.shrink(),
         router: router,
         onMocksReady: (m) {
           when(
@@ -87,14 +87,17 @@ void main() {
     testWidgets('Edit mode renders and still shows save FAB', (tester) async {
       final router = AppRouter.buildRouter();
 
-      await pumpPageWithServices(
+      await pumpAppWithMocks(
         tester,
-        pageWidget: const SizedBox.shrink(),
         router: router,
         onMocksReady: (m) {
           when(
             m.temporaryFileService.startSession(label: anyNamed('label')),
           ).thenAnswer((_) async => MockTempSession());
+
+          when(m.dataService.getRoomById('R1')).thenAnswer(
+            (_) async => Room(id: 'R1', locationId: 'L1', name: 'Room 1', imageGuids: const []),
+          );
         },
       );
 

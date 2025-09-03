@@ -2,52 +2,34 @@
 //
 // Immutable state for the Edit Room screen.
 
-import '../../../shared/image/image_ref.dart';
+import '../../shared/state/image_set.dart';
 
 class EditRoomState {
   final String name;
-  final String? description;
+  final String description;
 
-  /// UI-agnostic images the page can render directly.
-  final List<ImageRef> images;
+  final ImageSet images;
 
-  final bool isNewRoom;
-  final bool isSaving;
-  final bool isPickingImage;
-  final bool hasUnsavedChanges;
-  final bool hasTempSession;
+  EditRoomState({this.name = '', this.description = '', ImageSet? images})
+    : images = images ?? ImageSet.empty();
 
-  const EditRoomState({
-    required this.name,
-    this.description,
-    this.images = const [],
-    required this.isNewRoom,
-    this.isSaving = false,
-    this.isPickingImage = false,
-    this.hasUnsavedChanges = false,
-    this.hasTempSession = false,
-  });
-
-  EditRoomState copyWith({
-    String? name,
-    String? description,
-    String? address,
-    List<ImageRef>? images,
-    bool? isNewRoom,
-    bool? isSaving,
-    bool? isPickingImage,
-    bool? hasUnsavedChanges,
-    bool? hasTempSession,
-  }) {
+  EditRoomState copyWith({String? name, String? description, ImageSet? images}) {
     return EditRoomState(
       name: name ?? this.name,
       description: description ?? this.description,
       images: images ?? this.images,
-      isNewRoom: isNewRoom ?? this.isNewRoom,
-      isSaving: isSaving ?? this.isSaving,
-      isPickingImage: isPickingImage ?? this.isPickingImage,
-      hasUnsavedChanges: hasUnsavedChanges ?? this.hasUnsavedChanges,
-      hasTempSession: hasTempSession ?? this.hasTempSession,
     );
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is EditRoomState &&
+          runtimeType == other.runtimeType &&
+          name == other.name &&
+          description == other.description &&
+          images == other.images;
+
+  @override
+  int get hashCode => Object.hash(name, description, images);
 }

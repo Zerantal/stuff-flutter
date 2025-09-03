@@ -1,17 +1,17 @@
 // lib/features/location/pages/edit_location_page.dart
+
 import 'package:flutter/material.dart';
 // import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
 
-import '../../../services/contracts/data_service_interface.dart';
-import '../../../services/contracts/image_data_service_interface.dart';
-import '../../../services/contracts/location_service_interface.dart';
 import '../../../services/contracts/temporary_file_service_interface.dart';
 import '../../../shared/widgets/edit_entity_scaffold.dart';
+import '../../../shared/widgets/initial_load_error_panel.dart';
+import '../../../shared/widgets/loading_scaffold.dart';
 import '../viewmodels/edit_location_view_model.dart';
 import '../../../shared/widgets/image_manager_input.dart';
 
-const _kLocationPlaceholderAsset = 'Assets/images/location_placeholder.jpg';
+const _kLocationPlaceholderAsset = 'assets/images/location_placeholder.jpg';
 // final _log = Logger('EditLocationPage');
 
 /// Accepts an optional [locationId]. If null => creating a new location.
@@ -35,47 +35,53 @@ class _EditLocationPageState extends State<EditLocationPage> {
 
   @override
   void dispose() {
-    // Always safe to cleanup (after Save the session should be empty).
-    // _session?.dispose(deleteContents: true);
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // If your DI already provides the VM, remove this provider and just return _EditLocationScaffold.
-    return ChangeNotifierProvider<EditLocationViewModel>(
-      create: (ctx) => EditLocationViewModel(
-        dataService: ctx.read<IDataService>(),
-        imageDataService: ctx.read<IImageDataService>(),
-        locationService: ctx.read<ILocationService>(),
-        tempFileService: ctx.read<ITemporaryFileService>(),
-        locationId: locationId,
-      )..init(),
-      child: const _EditLocationScaffold(),
+    final vm = context.read<EditLocationViewModel>();
+    final isInitialised = context.select<EditLocationViewModel, bool>((m) => m.isInitialised);
+    final initialLoadError = context.select<EditLocationViewModel, Object?>(
+      (m) => m.initialLoadError,
     );
-  }
-}
 
-/// Wraps app bar, body, and FAB; keeps build simple and declarative.
-class _EditLocationScaffold extends StatelessWidget {
-  const _EditLocationScaffold();
+    // 1) Loading (before init completes)
+    if (!isInitialised && initialLoadError == null) {
+      return const LoadingScaffold(title: 'Edit Room');
+    }
 
-  @override
-  Widget build(BuildContext context) {
-    final vm = context.watch<EditLocationViewModel>();
-    final isBusy = vm.isSaving || vm.isGettingLocation;
-    // final isLoading = vm.isInitialising;
+    // 2) Error (init failed)
+    if (initialLoadError != null) {
+      return InitialLoadErrorPanel(
+        title: 'Edit Room',
+        message: 'Could not load room.',
+        details: initialLoadError.toString(),
+        onRetry: (locationId == null) ? null : () => vm.retryInitForEdit(locationId!),
+        onClose: () => Navigator.of(context).maybePop(),
+      );
+    }
+
+    // VM will have been initialised by now. Can
+    final isSaving = context.select<EditLocationViewModel, bool>((m) => m.isSaving);
+    final isGettingLocation = context.select<EditLocationViewModel, bool>(
+      (m) => m.isGettingLocation,
+    );
+    final isNewLocation = context.select<EditLocationViewModel, bool>((m) => m.isNewLocation);
+    final hasUnsavedChanges = context.select<EditLocationViewModel, bool>(
+      (m) => m.hasUnsavedChanges,
+    );
+
+    final isBusy = isSaving || isGettingLocation;
 
     return EditEntityScaffold(
-      title: vm.isNewLocation ? 'Add Location' : 'Edit Location',
-      isCreate: vm.isNewLocation,
+      title: isNewLocation ? 'Add Location' : 'Edit Location',
+      isCreate: isNewLocation,
       isBusy: isBusy,
-      hasUnsavedChanges: vm.hasUnsavedChanges,
-      onDelete: (vm.isNewLocation) ? null : vm.deleteLocation,
-      onSave: vm.saveLocation,
-      body: vm.isInitialising
-          ? const Center(child: CircularProgressIndicator())
-          : _EditForm(vm: vm),
+      hasUnsavedChanges: hasUnsavedChanges,
+      onDelete: (isNewLocation) ? null : vm.deleteLocation,
+      onSave: vm.saveState,
+      body: _EditForm(vm: vm),
     );
   }
 }
@@ -87,7 +93,10 @@ class _EditForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final disabled = vm.isInitialising || vm.isSaving;
+    final disabled = context.select<EditLocationViewModel, bool>((m) => m.isSaving);
+    final isGettingLocation = context.select<EditLocationViewModel, bool>(
+      (m) => m.isGettingLocation,
+    );
 
     return Form(
       key: vm.formKey,
@@ -96,7 +105,7 @@ class _EditForm extends StatelessWidget {
         children: [
           TextFormField(
             key: const Key('loc_name'),
-            controller: vm.nameController,
+            controller: vm.nameController.raw,
             enabled: !disabled,
             decoration: const InputDecoration(
               labelText: 'Name',
@@ -114,7 +123,7 @@ class _EditForm extends StatelessWidget {
           const SizedBox(height: 12),
           TextFormField(
             key: const Key('loc_desc'),
-            controller: vm.descriptionController,
+            controller: vm.descriptionController.raw,
             enabled: !disabled,
             maxLines: 3,
             decoration: const InputDecoration(
@@ -131,7 +140,7 @@ class _EditForm extends StatelessWidget {
               Expanded(
                 child: TextFormField(
                   key: const Key('loc_address'),
-                  controller: vm.addressController,
+                  controller: vm.addressController.raw,
                   enabled: !disabled,
                   decoration: const InputDecoration(
                     labelText: 'Address',
@@ -145,11 +154,11 @@ class _EditForm extends StatelessWidget {
                 message: 'Use current location',
                 child: ElevatedButton.icon(
                   key: const Key('use_current_location_btn'),
-                  onPressed: vm.isGettingLocation
+                  onPressed: isGettingLocation
                       ? null
                       : () async {
                           final messenger = ScaffoldMessenger.of(context);
-                          final ok = await vm.getCurrentAddress();
+                          final ok = await vm.acquireCurrentAddress();
                           if (!context.mounted) return;
                           if (!ok) {
                             messenger.showSnackBar(
@@ -157,7 +166,7 @@ class _EditForm extends StatelessWidget {
                             );
                           }
                         },
-                  icon: vm.isGettingLocation
+                  icon: isGettingLocation
                       ? const SizedBox(
                           width: 16,
                           height: 16,
@@ -172,22 +181,34 @@ class _EditForm extends StatelessWidget {
           ),
           const SizedBox(height: 20),
 
-          if (vm.hasTempSession)
-            ImageManagerInput(
-              key: const Key('image_manager'),
-              session: vm.tempSession!,
-              images: vm.images,
-              onRemoveAt: vm.removeImage,
-              onImagePicked: vm.onImagePicked,
-              tileSize: 92,
-              spacing: 8,
-              placeholderAsset: _kLocationPlaceholderAsset,
-            )
-          else
-            const SizedBox(
-              height: 96,
-              child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-            ),
+          // Images block: only rebuild when session/images change.
+          Selector<EditLocationViewModel, (bool, TempSession?, int)>(
+            selector: (_, m) => (m.hasTempSession, m.tempSession, m.imageListRevision),
+            builder: (context, s, _) {
+              final hasSession = s.$1;
+              final session = s.$2;
+
+              if (!hasSession || session == null) {
+                return const SizedBox(
+                  height: 96,
+                  child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                );
+              }
+
+              final images = vm.currentState.images;
+
+              return ImageManagerInput(
+                key: ValueKey(s.$3),
+                session: session,
+                images: images.refs,
+                onRemoveAt: vm.onRemoveAt,
+                onImagePicked: vm.onImagePicked,
+                tileSize: 92,
+                spacing: 8,
+                placeholderAsset: _kLocationPlaceholderAsset,
+              );
+            },
+          ),
         ],
       ),
     );

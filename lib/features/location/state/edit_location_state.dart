@@ -2,63 +2,42 @@
 //
 // Immutable state for the Edit Location screen.
 
-import '../../../shared/image/image_ref.dart';
+import '../../shared/state/image_set.dart';
 
 class EditLocationState {
   final String name;
-  final String? description;
-  final String? address;
+  final String description;
+  final String address;
 
-  /// UI-agnostic images the page can render directly.
-  final List<ImageRef> images;
+  final ImageSet images;
 
-  final bool isNewLocation;
-  final bool isSaving;
-  final bool isPickingImage;
-  final bool isGettingLocation;
-  final bool deviceHasLocationService;
-  final bool hasUnsavedChanges;
-  final bool hasTempSession;
-
-  const EditLocationState({
-    required this.name,
-    this.description,
-    this.address,
-    this.images = const [],
-    required this.isNewLocation,
-    this.isSaving = false,
-    this.isPickingImage = false,
-    this.isGettingLocation = false,
-    this.deviceHasLocationService = true,
-    this.hasUnsavedChanges = false,
-    this.hasTempSession = false,
-  });
+  EditLocationState({this.name = '', this.description = '', this.address = '', ImageSet? images})
+    : images = images ?? ImageSet.empty();
 
   EditLocationState copyWith({
     String? name,
     String? description,
     String? address,
-    List<ImageRef>? images,
-    bool? isNewLocation,
-    bool? isSaving,
-    bool? isPickingImage,
-    bool? isGettingLocation,
-    bool? deviceHasLocationService,
-    bool? hasUnsavedChanges,
-    bool? hasTempSession,
+    ImageSet? images,
   }) {
     return EditLocationState(
       name: name ?? this.name,
       description: description ?? this.description,
       address: address ?? this.address,
       images: images ?? this.images,
-      isNewLocation: isNewLocation ?? this.isNewLocation,
-      isSaving: isSaving ?? this.isSaving,
-      isPickingImage: isPickingImage ?? this.isPickingImage,
-      isGettingLocation: isGettingLocation ?? this.isGettingLocation,
-      deviceHasLocationService: deviceHasLocationService ?? this.deviceHasLocationService,
-      hasUnsavedChanges: hasUnsavedChanges ?? this.hasUnsavedChanges,
-      hasTempSession: hasTempSession ?? this.hasTempSession,
     );
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is EditLocationState &&
+          runtimeType == other.runtimeType &&
+          name == other.name &&
+          description == other.description &&
+          address == other.address &&
+          images == other.images;
+
+  @override
+  int get hashCode => Object.hash(name, description, address, images);
 }

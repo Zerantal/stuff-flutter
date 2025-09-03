@@ -22,10 +22,10 @@ void main() {
 
     test('returns existing GUIDs unchanged and persists temp files (order preserved)', () async {
       // Arrange: mix of existing guid + temp files + existing guid
-      final id1 = GuidIdentifier('G1');
-      final temp1 = TempFileIdentifier(File('/tmp/a.png'));
-      final temp2 = TempFileIdentifier(File('/tmp/b.png'));
-      final id2 = GuidIdentifier('G2');
+      final id1 = PersistedImageIdentifier('G1');
+      final temp1 = TempImageIdentifier(File('/tmp/a.png'));
+      final temp2 = TempImageIdentifier(File('/tmp/b.png'));
+      final id2 = PersistedImageIdentifier('G2');
 
       int c = 0;
       when(
@@ -46,7 +46,7 @@ void main() {
     });
 
     test('no temp files → does not call saveImages', () async {
-      final ids = [GuidIdentifier('A'), GuidIdentifier('B')];
+      final ids = [PersistedImageIdentifier('A'), PersistedImageIdentifier('B')];
 
       final result = await persistTempImages(ids, store);
 
@@ -60,14 +60,14 @@ void main() {
       ).thenAnswer((_) async => 'X');
 
       final res1 = await persistTempImages([
-        TempFileIdentifier(File('/tmp/only.png')),
-        GuidIdentifier('Z'),
+        TempImageIdentifier(File('/tmp/only.png')),
+        PersistedImageIdentifier('Z'),
       ], store);
       expect(res1, ['X', 'Z']);
 
       final res2 = await persistTempImages([
-        GuidIdentifier('Z'),
-        TempFileIdentifier(File('/tmp/only.png')),
+        PersistedImageIdentifier('Z'),
+        TempImageIdentifier(File('/tmp/only.png')),
       ], store);
       expect(res2, ['Z', 'X']);
     });

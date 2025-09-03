@@ -172,7 +172,7 @@ class _AddTile extends StatelessWidget {
       }
 
       if (r is PickedTemp) {
-        final id = TempFileIdentifier(r.file);
+        final id = TempImageIdentifier(r.file);
         final ref = ImageRef.file(r.file.path);
         onPicked(id, ref);
         return;
@@ -186,7 +186,7 @@ class _AddTile extends StatelessWidget {
             ? const ImageRef.asset('assets/images/location_placeholder.jpg')
             : ImageRef.asset(placeholderAsset!);
 
-        onPicked(GuidIdentifier(r.guid), ref);
+        onPicked(PersistedImageIdentifier(r.guid), ref);
         return;
       }
     }

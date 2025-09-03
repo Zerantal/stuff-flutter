@@ -1,7 +1,9 @@
 // lib/features/location/viewmodels/locations_view_model.dart
 import 'dart:async';
 
+import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
+import 'package:provider/provider.dart';
 
 import '../../../services/ops/db_ops.dart';
 import '../../../shared/image/image_ref.dart';
@@ -35,6 +37,15 @@ class LocationsViewModel {
         });
 
     _log.fine('Subscribed to locations stream');
+  }
+
+  static LocationsViewModel create(BuildContext ctx) {
+    {
+      return LocationsViewModel(
+        dataService: ctx.read<IDataService>(),
+        imageDataService: ctx.read<IImageDataService>(),
+      );
+    }
   }
 
   final IDataService _data;

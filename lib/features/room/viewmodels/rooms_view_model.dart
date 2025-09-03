@@ -1,5 +1,7 @@
 // lib/features/room/viewmodels/rooms_view_model.dart
+import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
+import 'package:provider/provider.dart';
 
 import '../../../domain/models/room_model.dart';
 import '../../../services/contracts/image_data_service_interface.dart';
@@ -42,6 +44,16 @@ class RoomsViewModel {
         .handleError((e, s) => _log.severe('rooms stream error', e, s));
 
     _log.fine('Subscribed to rooms stream');
+  }
+
+  String? get locationName => null; // TODO: implement this?
+
+  static RoomsViewModel forLocation(BuildContext ctx, String locationId) {
+    return RoomsViewModel(
+      data: ctx.read<IDataService>(),
+      images: ctx.read<IImageDataService>(),
+      locationId: locationId,
+    );
   }
 
   Future<void> deleteRoom(String roomId) => _dbOps.deleteRoom(roomId);

@@ -49,14 +49,22 @@ class DriftDataService implements IDataService {
   @override
   Future<Location> addLocation(Location location) {
     _ensureReady();
-    return locations.upsert(location);
+    Location loc = location.withTouched();
+    return locations.upsert(loc);
   }
 
   @override
   Future<Location> updateLocation(Location location) {
     _ensureReady();
-    location.touch();
-    return locations.upsert(location);
+    Location loc = location.withTouched();
+    return locations.upsert(loc);
+  }
+
+  @override
+  Future<Location> upsertLocation(Location location) {
+    _ensureReady();
+    Location loc = location.withTouched();
+    return locations.upsert(loc);
   }
 
   @override
@@ -90,14 +98,22 @@ class DriftDataService implements IDataService {
   @override
   Future<Room> addRoom(Room room) {
     _ensureReady();
-    return rooms.upsert(room);
+    Room rm = room.withTouched();
+    return rooms.upsert(rm);
   }
 
   @override
   Future<Room> updateRoom(Room room) {
     _ensureReady();
-    room.touch();
-    return rooms.upsert(room);
+    Room rm = room.withTouched();
+    return rooms.upsert(rm);
+  }
+
+  @override
+  Future<Room> upsertRoom(Room room) {
+    _ensureReady();
+    Room rm = room.withTouched();
+    return rooms.upsert(rm);
   }
 
   @override

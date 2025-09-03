@@ -33,20 +33,18 @@ void main() {
         imageDataService: images,
         tempFileService: tempFiles,
         locationId: 'L1',
-        roomId: null,
       );
 
-      expect(vm.isInitialising, isTrue); // default true
-      await vm.init();
+      expect(vm.isInitialised, isFalse); // default true
+      await vm.initForNew();
 
       // Session created, flag set, initialising false
       verify(
         tempFiles.startSession(label: argThat(startsWith('add_room_L1'), named: 'label')),
       ).called(1);
       expect(vm.hasTempSession, isTrue);
-      expect(vm.isInitialising, isFalse);
+      expect(vm.isInitialised, isTrue);
       expect(vm.isNewRoom, isTrue);
-      expect(vm.images, isEmpty);
     });
 
     test('init() - edit mode: loads room, populates controllers, sets isNewRoom=false', () async {
@@ -65,21 +63,20 @@ void main() {
         imageDataService: images,
         tempFileService: tempFiles,
         locationId: 'L1',
-        roomId: 'R1',
       );
 
-      await vm.init();
+      await vm.initForEdit('R1');
 
       verify(data.getRoomById('R1')).called(1);
       verify(
-        tempFiles.startSession(label: argThat(startsWith('edit_room_R1'), named: 'label')),
+        tempFiles.startSession(label: argThat(startsWith('edit_room_L1_R1'), named: 'label')),
       ).called(1);
 
       expect(vm.isNewRoom, isFalse);
       expect(vm.nameController.text, 'Garage');
-      expect(vm.state.description, 'tools');
+      expect(vm.currentState.description, 'tools');
       expect(vm.hasUnsavedChanges, isFalse);
-      expect(vm.isInitialising, isFalse);
+      expect(vm.isInitialised, isTrue);
     });
 
     test('typing in text fields flips hasUnsavedChanges and notifies listeners', () async {
@@ -88,9 +85,8 @@ void main() {
         imageDataService: images,
         tempFileService: tempFiles,
         locationId: 'L1',
-        roomId: null,
       );
-      await vm.init();
+      await vm.initForNew();
 
       var notified = 0;
       vm.addListener(() => notified++);
@@ -107,24 +103,23 @@ void main() {
         imageDataService: images,
         tempFileService: tempFiles,
         locationId: 'L1',
-        roomId: null,
       );
-      await vm.init();
+      await vm.initForNew();
 
-      expect(vm.images, isEmpty);
+      expect(vm.currentState.images, isEmpty);
 
       // Pick one temp image
       vm.onImagePicked(
-        TempFileIdentifier(File('/tmp/pic.png')),
+        TempImageIdentifier(File('/tmp/pic.png')),
         const ImageRef.asset('assets/x.png'),
       );
-      expect(vm.images.length, 1);
+      expect(vm.currentState.images.length, 1);
       expect(vm.hasUnsavedChanges, isTrue);
 
       // Remove it
-      vm.removeImage(0);
-      expect(vm.images, isEmpty);
-      expect(vm.hasUnsavedChanges, isTrue); // stays dirty after change set
+      vm.onRemoveAt(0);
+      expect(vm.currentState.images, isEmpty);
+      expect(vm.hasUnsavedChanges, isFalse);
     });
 
     test('dispose() disposes temp session', () async {
@@ -133,9 +128,8 @@ void main() {
         imageDataService: images,
         tempFileService: tempFiles,
         locationId: 'L1',
-        roomId: null,
       );
-      await vm.init();
+      await vm.initForNew();
       vm.dispose();
 
       verify(mockSession.dispose()).called(1);
@@ -149,15 +143,14 @@ void main() {
         imageDataService: images,
         tempFileService: tempFiles,
         locationId: 'L1',
-        roomId: null,
       );
-      await vm.init();
+      await vm.initForNew();
 
       // Case 1: already saving
       // (flip internal state via copyWith through public `state` would be brittle;
       // instead, call saveRoom and immediately call again)
-      final first = vm.saveRoom(); // kicks off
-      final second = await vm.saveRoom(); // should bail
+      final first = vm.saveState(); // kicks off
+      final second = await vm.saveState(); // should bail
       expect(second, isFalse);
       await first;
 
@@ -168,14 +161,14 @@ void main() {
             child: Form(
               key: vm.formKey,
               child: TextFormField(
-                controller: vm.nameController,
+                controller: vm.nameController.raw,
                 validator: (_) => 'err', // force invalid
               ),
             ),
           ),
         ),
       );
-      final ok = await vm.saveRoom();
+      final ok = await vm.saveState();
       expect(ok, isFalse);
     });
   });

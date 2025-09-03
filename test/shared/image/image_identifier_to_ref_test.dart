@@ -28,7 +28,7 @@ void main() {
       final expected = const ImageRef.file('/path/from/store');
       when(store.refForGuid('G1')).thenReturn(expected);
 
-      final ref = toImageRefSync(GuidIdentifier('G1'), store);
+      final ref = toImageRefSync(PersistedImageIdentifier('G1'), store);
 
       expect(ref, same(expected));
       verify(store.refForGuid('G1')).called(1);
@@ -36,7 +36,7 @@ void main() {
 
     test('TempFileIdentifier → ImageRef.file', () {
       final file = File('/tmp/a.png');
-      final ref = toImageRefSync(TempFileIdentifier(file), store);
+      final ref = toImageRefSync(TempImageIdentifier(file), store);
 
       expect(ref, isNotNull);
     });
@@ -44,7 +44,7 @@ void main() {
     test('toImageRefs returns one ref per input (verifyExists: false)', () async {
       when(store.refForGuid(any)).thenReturn(const ImageRef.file('/from/store'));
 
-      final list = [GuidIdentifier('G'), TempFileIdentifier(File('/tmp/x.png'))];
+      final list = [PersistedImageIdentifier('G'), TempImageIdentifier(File('/tmp/x.png'))];
 
       final refs = await toImageRefs(list, store, verifyExists: false);
 

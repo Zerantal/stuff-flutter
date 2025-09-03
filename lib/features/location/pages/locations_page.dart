@@ -21,34 +21,14 @@ import '../viewmodels/locations_view_model.dart';
 
 final Logger _log = Logger('LocationsPage');
 
-class LocationsPage extends StatefulWidget {
+class LocationsPage extends StatelessWidget {
   const LocationsPage({super.key});
-
-  @override
-  State<LocationsPage> createState() => _LocationsPageState();
-}
-
-class _LocationsPageState extends State<LocationsPage> {
-  late final LocationsViewModel vm;
-
-  @override
-  void initState() {
-    super.initState();
-    vm = LocationsViewModel(
-      dataService: context.read<IDataService>(),
-      imageDataService: context.read<IImageDataService>(),
-    );
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
     final useExtendedFab = width >= 720; // wide screens get an extended FAB
+    final vm = context.read<LocationsViewModel>();
 
     return Scaffold(
       appBar: AppBar(

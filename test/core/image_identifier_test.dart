@@ -19,14 +19,14 @@ void main() {
   group('GuidIdentifier', () {
     test('Constructor should initialize guid correctly', () {
       const testGuid = 'test_guid.jpg';
-      final identifier = GuidIdentifier(testGuid);
+      final identifier = PersistedImageIdentifier(testGuid);
       expect(identifier.guid, equals(testGuid));
     });
 
     group('Equality (==)', () {
-      final identifier1 = GuidIdentifier('guid1.jpg');
-      final identifier1Copy = GuidIdentifier('guid1.jpg');
-      final identifier2 = GuidIdentifier('guid2.png');
+      final identifier1 = PersistedImageIdentifier('guid1.jpg');
+      final identifier1Copy = PersistedImageIdentifier('guid1.jpg');
+      final identifier2 = PersistedImageIdentifier('guid2.png');
 
       test('should be equal to itself', () {
         expect(identifier1 == identifier1, isTrue);
@@ -48,8 +48,8 @@ void main() {
 
     group('hashCode', () {
       test('should return the same hashCode for equal objects', () {
-        final identifier1 = GuidIdentifier('guid1.jpg');
-        final identifier1Copy = GuidIdentifier('guid1.jpg');
+        final identifier1 = PersistedImageIdentifier('guid1.jpg');
+        final identifier1Copy = PersistedImageIdentifier('guid1.jpg');
         expect(identifier1.hashCode, equals(identifier1Copy.hashCode));
       });
 
@@ -58,8 +58,8 @@ void main() {
         () {
           // This is not a strict requirement of hashCode but good for hash map performance.
           // It's mainly testing that it's derived from the guid.
-          final identifier1 = GuidIdentifier('guid1.jpg');
-          final identifier2 = GuidIdentifier('guid2.png');
+          final identifier1 = PersistedImageIdentifier('guid1.jpg');
+          final identifier2 = PersistedImageIdentifier('guid2.png');
           if (identifier1.guid.hashCode != identifier2.guid.hashCode) {
             // Check if underlying hash codes are different
             expect(identifier1.hashCode, isNot(equals(identifier2.hashCode)));
@@ -69,7 +69,7 @@ void main() {
 
       test('hashCode should be based on guid', () {
         const guid = 'my_guid.png';
-        final identifier = GuidIdentifier(guid);
+        final identifier = PersistedImageIdentifier(guid);
         expect(identifier.hashCode, equals(guid.hashCode));
       });
     });
@@ -93,32 +93,32 @@ void main() {
     });
 
     test('Constructor should initialize file correctly', () {
-      final identifier = TempFileIdentifier(mockFile1);
+      final identifier = TempImageIdentifier(mockFile1);
       expect(identifier.file, equals(mockFile1));
     });
 
     group('Equality (==)', () {
       test('should be equal to itself', () {
-        final identifier = TempFileIdentifier(mockFile1);
+        final identifier = TempImageIdentifier(mockFile1);
         expect(identifier == identifier, isTrue);
       });
 
       test('should be equal to another instance with a file having the same path', () {
-        final identifier1 = TempFileIdentifier(mockFile1);
-        final identifier1PathCopy = TempFileIdentifier(mockFile1DuplicatePath);
+        final identifier1 = TempImageIdentifier(mockFile1);
+        final identifier1PathCopy = TempImageIdentifier(mockFile1DuplicatePath);
         // Note: They are equal because their file.path is the same,
         // even if mockFile1 and mockFile1DuplicatePath are different MockFile instances.
         expect(identifier1 == identifier1PathCopy, isTrue);
       });
 
       test('should not be equal to an instance with a file having a different path', () {
-        final identifier1 = TempFileIdentifier(mockFile1);
-        final identifier2 = TempFileIdentifier(mockFile2);
+        final identifier1 = TempImageIdentifier(mockFile1);
+        final identifier2 = TempImageIdentifier(mockFile2);
         expect(identifier1 == identifier2, isFalse);
       });
 
       test('should not be equal to an object of a different type', () {
-        final identifier = TempFileIdentifier(mockFile1);
+        final identifier = TempImageIdentifier(mockFile1);
         // ignore: unrelated_type_equality_checks
         expect(identifier == mockFile1, isFalse);
       });
@@ -126,16 +126,16 @@ void main() {
 
     group('hashCode', () {
       test('should return the same hashCode for objects with files having the same path', () {
-        final identifier1 = TempFileIdentifier(mockFile1);
-        final identifier1PathCopy = TempFileIdentifier(mockFile1DuplicatePath);
+        final identifier1 = TempImageIdentifier(mockFile1);
+        final identifier1PathCopy = TempImageIdentifier(mockFile1DuplicatePath);
         expect(identifier1.hashCode, equals(identifier1PathCopy.hashCode));
       });
 
       test(
         'should ideally return different hashCodes for objects with files having different paths',
         () {
-          final identifier1 = TempFileIdentifier(mockFile1);
-          final identifier2 = TempFileIdentifier(mockFile2);
+          final identifier1 = TempImageIdentifier(mockFile1);
+          final identifier2 = TempImageIdentifier(mockFile2);
           if (mockFile1.path.hashCode != mockFile2.path.hashCode) {
             expect(identifier1.hashCode, isNot(equals(identifier2.hashCode)));
           }
@@ -145,7 +145,7 @@ void main() {
       test('hashCode should be based on file.path', () {
         final path = '/fake/path/image.tmp';
         mockFile1.setMockPath(path);
-        final identifier = TempFileIdentifier(mockFile1);
+        final identifier = TempImageIdentifier(mockFile1);
         expect(identifier.hashCode, equals(path.hashCode));
       });
     });

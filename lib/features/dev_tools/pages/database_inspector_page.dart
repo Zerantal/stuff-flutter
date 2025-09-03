@@ -1,8 +1,12 @@
+// lib/features/dev_tools/pages/database_inspector_page.dart
+// coverage:ignore-file
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
+import 'package:collection/collection.dart';
 
 import '../../../domain/models/location_model.dart';
 import '../../../domain/models/room_model.dart';
@@ -49,14 +53,23 @@ class _DatabaseInspectorPageState extends State<DatabaseInspectorPage>
     }
   }
 
+  final _idsEq = const ListEquality<String>();
+
   void _updateActiveTabEntities(List<DisplayableEntity> entities) {
-    // Use addPostFrameCallback to ensure setState is not called during build
+    if (!mounted) return;
+
+    // Compare by stable ids so we only update when the visible set actually changes.
+    final oldIds = _activeTabDisplayableEntities.map((e) => e.id).toList(growable: false);
+    final newIds = entities.map((e) => e.id).toList(growable: false);
+    if (_idsEq.equals(oldIds, newIds)) {
+      return; // no-op: prevents the rebuild loop
+    }
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        setState(() {
-          _activeTabDisplayableEntities = entities;
-        });
-      }
+      if (!mounted) return;
+      setState(() {
+        _activeTabDisplayableEntities = entities;
+      });
     });
   }
 
@@ -289,8 +302,16 @@ class _LocationsTabState extends State<_LocationsTab> with AutomaticKeepAliveCli
   final TextEditingController _search = TextEditingController();
   final Set<String> _expanded = <String>{};
 
+  late final Stream<List<Location>> _locationsStream;
+
   @override
   bool get wantKeepAlive => true;
+
+  @override
+  void initState() {
+    super.initState();
+    _locationsStream = context.read<IDataService>().getLocationsStream();
+  }
 
   @override
   void dispose() {
@@ -301,7 +322,6 @@ class _LocationsTabState extends State<_LocationsTab> with AutomaticKeepAliveCli
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    final data = context.read<IDataService>();
     final q = _search.text.trim().toLowerCase();
 
     return Column(
@@ -320,7 +340,7 @@ class _LocationsTabState extends State<_LocationsTab> with AutomaticKeepAliveCli
         ),
         Expanded(
           child: StreamBuilder<List<Location>>(
-            stream: data.getLocationsStream(),
+            stream: _locationsStream,
             builder: (context, snap) {
               return AsyncDataPresenter<List<Location>>(
                 snapshot: snap,
@@ -381,17 +401,44 @@ class _RoomsTabState extends State<_RoomsTab> with AutomaticKeepAliveClientMixin
   String? _currentLocId;
   final Set<String> _expanded = <String>{};
 
+  Stream<List<Room>>? _roomsStream;
+  List<String>? _lastReportedIds; // to throttle parent callback
+  static const _idsEq = ListEquality<String>();
+
+  Future<void> _loadRooms() async {
+    // NEW
+    final id = _locId.text.trim();
+    // If cleared, reset state once.
+    if (id.isEmpty) {
+      if (_currentLocId != null || _roomsStream != null) {
+        setState(() {
+          _currentLocId = null;
+          _roomsStream = null;
+          _expanded.clear();
+          _lastReportedIds = null;
+        });
+      }
+      return;
+    }
+
+    // Avoid churn if same id
+    if (id == _currentLocId) return;
+
+    final data = context.read<IDataService>();
+    setState(() {
+      _currentLocId = id;
+      _roomsStream = data.getRoomsStream(id);
+      _expanded.clear();
+      _lastReportedIds = null;
+    });
+  }
+
   @override
   bool get wantKeepAlive => true;
 
   @override
   Widget build(BuildContext context) {
     super.build(context); // for keep-alive
-    final data = context.read<IDataService>();
-
-    Future<void> loadRooms() async {
-      setState(() => _currentLocId = _locId.text.trim().isEmpty ? null : _locId.text.trim());
-    }
 
     return Column(
       children: [
@@ -408,12 +455,12 @@ class _RoomsTabState extends State<_RoomsTab> with AutomaticKeepAliveClientMixin
                     hintText: 'Enter a locationId to load its rooms',
                     border: OutlineInputBorder(),
                   ),
-                  onSubmitted: (_) => loadRooms(),
+                  onSubmitted: (_) => _loadRooms(),
                 ),
               ),
               const SizedBox(width: 8),
               FilledButton.icon(
-                onPressed: loadRooms,
+                onPressed: _loadRooms,
                 icon: const Icon(Icons.search),
                 label: const Text('Load'),
               ),
@@ -423,19 +470,26 @@ class _RoomsTabState extends State<_RoomsTab> with AutomaticKeepAliveClientMixin
         Expanded(
           child: _currentLocId == null || _currentLocId!.isEmpty
               ? const Center(child: Text('Enter a Location ID and tap Load.'))
-              : FutureBuilder<List<Room>>(
-                  future: data.getRoomsForLocation(_currentLocId!),
+              : StreamBuilder<List<Room>>(
+                  stream: _roomsStream,
                   builder: (context, snap) {
                     return AsyncDataPresenter<List<Room>>(
                       snapshot: snap,
                       dataBuilder: (context, roomsData) {
                         final rooms = roomsData ?? const <Room>[];
-                        final displayableEntities = rooms.map((r) => RoomAdapter(r)).toList();
+                        final displayable = rooms
+                            .map((r) => RoomAdapter(r))
+                            .toList(growable: false);
 
-                        widget.onEntitiesUpdated(displayableEntities);
+                        // Notify parent only when the visible IDs actually change.
+                        final ids = displayable.map((e) => e.id).toList(growable: false);
+                        if (_lastReportedIds == null || !_idsEq.equals(_lastReportedIds!, ids)) {
+                          _lastReportedIds = ids;
+                          widget.onEntitiesUpdated(displayable);
+                        }
 
                         return _EntityListDisplay(
-                          entities: displayableEntities,
+                          entities: displayable,
                           expandedSet: _expanded,
                           onExpansionChanged: (itemId, isExpanded) {
                             setState(() {

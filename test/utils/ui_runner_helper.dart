@@ -1,3 +1,4 @@
+// test/utils/ui_runner_helper.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -12,14 +13,16 @@ import 'package:stuff/services/contracts/temporary_file_service_interface.dart';
 
 import 'mocks.dart';
 
-class ProvidedMockServices {
+// -------- Mocks bundle -------------------------------------------------------
+
+class TestAppMocks {
   final MockIDataService dataService;
   final MockIImageDataService imageDataService;
   final MockILocationService locationService;
   final MockITemporaryFileService temporaryFileService;
   final MockIImagePickerService imagePickerService;
 
-  ProvidedMockServices()
+  TestAppMocks()
     : dataService = MockIDataService(),
       imageDataService = MockIImageDataService(),
       locationService = MockILocationService(),
@@ -35,59 +38,175 @@ class ProvidedMockServices {
   ];
 }
 
-/// Pumps a widget tree with providers, optionally a router, and an optional
-/// mock ViewModel of type T (ChangeNotifier).
-Future<void> pumpPageWithProviders<T extends ChangeNotifier>(
+// Typedefs to make intent obvious
+typedef NotifierVmFactory<T extends ChangeNotifier> = T Function(TestAppMocks m);
+typedef PlainVmFactory<T> = T Function(TestAppMocks m);
+typedef AfterInit<T> = Future<void> Function(T vm, TestAppMocks m);
+
+// -------- Core pump (router-aware, provider-scoped) --------------------------
+
+/// Pumps an app that injects [providers] inside the MaterialApp( .router ) builder,
+/// so everything the Navigator/Router renders can read them.
+///
+/// - If [router] is null, [home] is used as the page under test.
+/// - If [router] is provided, [home] is ignored; Router decides the page.
+Future<void> pumpApp(
   WidgetTester tester, {
-  required Widget pageWidget,
+  Widget? home, // now optional
   List<SingleChildWidget> providers = const [],
-  T? mockViewModel,
   MediaQueryData? mediaQueryData,
   List<NavigatorObserver> navigatorObservers = const [],
   GoRouter? router,
 }) async {
-  final allProviders = List<SingleChildWidget>.from(providers);
+  Widget wrap(Widget? child) {
+    // Always give the tree a MediaQuery
+    final inner = MediaQuery(
+      data: mediaQueryData ?? const MediaQueryData(),
+      child: child ?? const SizedBox.shrink(),
+    );
 
-  if (mockViewModel != null) {
-    allProviders.insert(0, ChangeNotifierProvider<T>.value(value: mockViewModel));
+    // Only wrap with MultiProvider when we actually have providers
+    if (providers.isEmpty) return inner;
+
+    return MultiProvider(providers: providers, child: inner);
   }
 
-  final Widget app = router == null
-      ? MaterialApp(
-          home: MediaQuery(data: mediaQueryData ?? const MediaQueryData(), child: pageWidget),
-          navigatorObservers: navigatorObservers,
-        )
-      : MaterialApp.router(
-          routerConfig: router,
-          builder: (context, child) => MediaQuery(
-            data: mediaQueryData ?? const MediaQueryData(),
-            child: child ?? const SizedBox.shrink(),
-          ),
-        );
-
-  await tester.pumpWidget(MultiProvider(providers: allProviders, child: app));
+  if (router == null) {
+    assert(home != null, 'pumpApp: `home` is required when `router` is null.');
+    await tester.pumpWidget(
+      MaterialApp(
+        navigatorObservers: navigatorObservers,
+        home: home!, // safe due to assert
+        builder: (context, child) => wrap(child),
+      ),
+    );
+  } else {
+    await tester.pumpWidget(
+      MaterialApp.router(routerConfig: router, builder: (context, child) => wrap(child)),
+    );
+  }
 }
 
-/// Convenience: creates common mock services, injects them, returns the mocks.
-Future<ProvidedMockServices> pumpPageWithServices<T extends ChangeNotifier>(
+// -------- Convenience: mocks only -------------------------------------------
+
+/// Creates the common mocks, stubs them via [onMocksReady], then pumps an app
+/// with those mocks provided. Returns the mocks for further use in the test.
+Future<TestAppMocks> pumpAppWithMocks(
   WidgetTester tester, {
-  required Widget pageWidget,
-  T? mockViewModel,
+  Widget? home,
   MediaQueryData? mediaQueryData,
   List<NavigatorObserver> navigatorObservers = const [],
   GoRouter? router,
-  void Function(ProvidedMockServices m)? onMocksReady,
+  void Function(TestAppMocks m)? onMocksReady,
+  List<SingleChildWidget> additionalProviders = const [],
 }) async {
-  final mocks = ProvidedMockServices();
+  final mocks = TestAppMocks();
   onMocksReady?.call(mocks);
-  await pumpPageWithProviders<T>(
+
+  await pumpApp(
     tester,
-    pageWidget: pageWidget,
-    providers: mocks.providers,
-    mockViewModel: mockViewModel,
+    home: home,
+    providers: [...mocks.providers, ...additionalProviders],
     mediaQueryData: mediaQueryData,
     navigatorObservers: navigatorObservers,
     router: router,
   );
   return mocks;
+}
+
+// -------- ChangeNotifier VM helper ------------------------------------------
+
+class PumpedNotifierVm<T extends ChangeNotifier> {
+  final T vm;
+  final TestAppMocks mocks;
+  const PumpedNotifierVm({required this.vm, required this.mocks});
+}
+
+/// Builds a real ChangeNotifier VM from mocks, provides it, pumps the app,
+/// and optionally runs [afterInit] AFTER the provider is mounted.
+Future<PumpedNotifierVm<T>> pumpWithNotifierVm<T extends ChangeNotifier>(
+  WidgetTester tester, {
+  required Widget home,
+  required NotifierVmFactory<T> vmFactory,
+  MediaQueryData? mediaQueryData,
+  List<NavigatorObserver> navigatorObservers = const [],
+  GoRouter? router,
+  void Function(TestAppMocks m)? onMocksReady,
+  AfterInit<T>? afterInit,
+  List<SingleChildWidget> additionalProviders = const [],
+}) async {
+  final mocks = TestAppMocks();
+  onMocksReady?.call(mocks);
+
+  final vm = vmFactory(mocks);
+
+  await pumpApp(
+    tester,
+    home: home,
+    providers: [
+      ...mocks.providers,
+      ...additionalProviders,
+      ChangeNotifierProvider<T>.value(value: vm),
+    ],
+    mediaQueryData: mediaQueryData,
+    navigatorObservers: navigatorObservers,
+    router: router,
+  );
+
+  if (afterInit != null) {
+    await afterInit(vm, mocks);
+    await tester.pump();
+    await tester.pumpAndSettle();
+  }
+
+  return PumpedNotifierVm(vm: vm, mocks: mocks);
+}
+
+// -------- Plain (non-ChangeNotifier) VM helper -------------------------------
+
+class PumpedPlainVm<T> {
+  final T vm;
+  final TestAppMocks mocks;
+  const PumpedPlainVm({required this.vm, required this.mocks});
+}
+
+/// Builds a real plain VM from mocks, provides it (with optional dispose hook),
+/// pumps the app, and optionally runs [afterInit] AFTER mount.
+Future<PumpedPlainVm<T>> pumpWithPlainVm<T>(
+  WidgetTester tester, {
+  required Widget home,
+  required PlainVmFactory<T> vmFactory,
+  MediaQueryData? mediaQueryData,
+  List<NavigatorObserver> navigatorObservers = const [],
+  GoRouter? router,
+  void Function(TestAppMocks m)? onMocksReady,
+  AfterInit<T>? afterInit,
+  void Function(T vm)? onDispose,
+  List<SingleChildWidget> additionalProviders = const [],
+}) async {
+  final mocks = TestAppMocks();
+  onMocksReady?.call(mocks);
+
+  final vm = vmFactory(mocks);
+
+  await pumpApp(
+    tester,
+    home: home,
+    providers: [
+      ...mocks.providers,
+      ...additionalProviders,
+      Provider<T>(create: (_) => vm, dispose: (_, v) => onDispose?.call(v)),
+    ],
+    mediaQueryData: mediaQueryData,
+    navigatorObservers: navigatorObservers,
+    router: router,
+  );
+
+  if (afterInit != null) {
+    await afterInit(vm, mocks);
+    await tester.pump();
+    await tester.pumpAndSettle();
+  }
+
+  return PumpedPlainVm(vm: vm, mocks: mocks);
 }

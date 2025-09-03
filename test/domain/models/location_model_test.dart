@@ -10,8 +10,8 @@ void main() {
         // Arrange
         final imageGuids = ['guid1.jpg', 'guid2.jpg'];
         const testId = 'test_id_provided';
-        final specificCreatedAt = DateTime(2023, 1, 1, 10, 0, 0);
-        final specificUpdatedAt = DateTime(2023, 1, 1, 12, 0, 0);
+        final specificCreatedAt = DateTime.utc(2023, 1, 1, 10, 0, 0);
+        final specificUpdatedAt = DateTime.utc(2023, 1, 1, 12, 0, 0);
 
         // Act
         final location = Location(
@@ -60,15 +60,15 @@ void main() {
             expect(location.createdAt, isA<DateTime>());
             expect(location.updatedAt, isNotNull);
             expect(location.updatedAt, isA<DateTime>());
-            expect(location.createdAt, clock.now());
-            expect(location.updatedAt, clock.now());
+            expect(location.createdAt, clock.now().toUtc());
+            expect(location.updatedAt, clock.now().toUtc());
           });
         },
       );
 
-      test('imageGuids should default to an empty list if null is passed to constructor', () {
+      test('imageGuids should default to an empty list if no list passed', () {
         // Act
-        final location = Location(name: 'No Images Location', imageGuids: null);
+        final location = Location(name: 'No Images Location');
 
         // Assert
         expect(location.imageGuids, isNotNull);

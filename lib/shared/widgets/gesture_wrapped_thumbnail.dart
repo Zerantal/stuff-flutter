@@ -83,7 +83,7 @@ class GestureWrappedThumbnail extends StatelessWidget {
               );
             },
       child: Hero(
-        tag: tags.isNotEmpty ? tags[0] : 'baseTag_empty',
+        tag: tags.isNotEmpty ? tags[0] : 'baseTag_empty$generatedUuid',
         child: ImageThumb(
           key: Key('thumb_${entityId ?? generatedUuid}'),
           image: preview, // null => placeholder shown

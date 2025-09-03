@@ -3,10 +3,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mockito/mockito.dart';
 
 import 'package:stuff/features/location/pages/locations_page.dart';
 import 'package:stuff/domain/models/location_model.dart';
+import 'package:stuff/features/location/viewmodels/locations_view_model.dart';
 import 'package:stuff/shared/widgets/empty_list_state.dart';
 import 'package:stuff/shared/widgets/entity_item.dart';
 
@@ -32,23 +34,28 @@ void main() {
     logs.stopCapture();
   });
 
-  Future<ProvidedMockServices> pump(
+  Future<TestAppMocks> pump(
     WidgetTester tester, {
     Size size = const Size(600, 800),
     List<NavigatorObserver> observers = const <NavigatorObserver>[],
+    GoRouter? router,
   }) async {
-    return pumpPageWithServices(
+    final res = await pumpWithPlainVm(
       tester,
-      pageWidget: const LocationsPage(),
+      home: const LocationsPage(),
       mediaQueryData: MediaQueryData(size: size),
-      navigatorObservers: observers,
+      vmFactory: (m) =>
+          LocationsViewModel(dataService: m.dataService, imageDataService: m.imageDataService),
+      router: router,
       onMocksReady: (m) {
         when(m.dataService.getLocationsStream()).thenAnswer((_) => controller.stream);
       },
     );
+
+    return res.mocks;
   }
 
-  group('LocationsView + Mockito', () {
+  group('LocationsView', () {
     testWidgets('loading → empty state', (tester) async {
       await pump(tester);
       await tester.pump(); // initial frame: skeleton list
@@ -159,15 +166,7 @@ void main() {
         final observer = MockNavigatorObserver();
         final router = makeTestRouter(home: const LocationsPage(), observers: [observer]);
 
-        await pumpPageWithServices(
-          tester,
-          pageWidget: const LocationsPage(),
-          navigatorObservers: [observer],
-          router: router,
-          onMocksReady: (m) {
-            when(m.dataService.getLocationsStream()).thenAnswer((_) => controller.stream);
-          },
-        );
+        await pump(tester, observers: [observer], router: router);
 
         controller.add(const <Location>[]);
         await tester.pumpAndSettle();
@@ -186,15 +185,7 @@ void main() {
         final observer = MockNavigatorObserver();
         final router = makeTestRouter(home: const LocationsPage(), observers: [observer]);
 
-        await pumpPageWithServices(
-          tester,
-          pageWidget: const LocationsPage(),
-          navigatorObservers: [observer],
-          router: router,
-          onMocksReady: (m) {
-            when(m.dataService.getLocationsStream()).thenAnswer((_) => controller.stream);
-          },
-        );
+        await pump(tester, observers: [observer], router: router);
 
         await tester.pumpAndSettle();
         controller.add([loc]);
@@ -214,15 +205,7 @@ void main() {
         final observer = MockNavigatorObserver();
         final router = makeTestRouter(home: const LocationsPage(), observers: [observer]);
 
-        await pumpPageWithServices(
-          tester,
-          pageWidget: const LocationsPage(),
-          navigatorObservers: [observer],
-          router: router,
-          onMocksReady: (m) {
-            when(m.dataService.getLocationsStream()).thenAnswer((_) => controller.stream);
-          },
-        );
+        await pump(tester, observers: [observer], router: router);
 
         controller.add([loc]);
         await tester.pumpAndSettle();

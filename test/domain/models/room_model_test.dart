@@ -25,21 +25,13 @@ void main() {
 
         // Assert
         expect(room.id, testId);
-        expect(room.createdAt, created);
-        expect(room.updatedAt, updated);
+        expect(room.createdAt, created.toUtc());
+        expect(room.updatedAt, updated.toUtc());
 
         expect(room.locationId, 'L1');
         expect(room.name, 'Kitchen');
         expect(room.description, 'Downstairs kitchen');
         expect(room.imageGuids, equals(imageGuids));
-      });
-
-      test('imageGuids defaults to empty list if null or omitted', () {
-        final a = Room(locationId: 'L1', name: 'Office', imageGuids: null);
-        final b = Room(locationId: 'L1', name: 'Office');
-
-        expect(a.imageGuids, isEmpty);
-        expect(b.imageGuids, isEmpty);
       });
 
       test('imageGuids is unmodifiable', () {

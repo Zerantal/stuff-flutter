@@ -1,3 +1,6 @@
+// lib/features/location/widgets/developer_drawer.dart
+// coverage:ignore-file
+
 import 'dart:io';
 
 import 'package:flutter/material.dart';

@@ -3,8 +3,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:stuff/core/models/base_model.dart';
 
 /// Simple concrete subclass so we can instantiate BaseModel in tests.
-class _TestModel extends BaseModel {
+class _TestModel extends BaseModel<_TestModel> {
   _TestModel({super.id, super.createdAt, super.updatedAt});
+
+  @override
+  _TestModel copyWithUpdatedAt(DateTime updatedAt) {
+    return _TestModel(id: id, createdAt: createdAt, updatedAt: updatedAt);
+  }
 }
 
 void main() {
@@ -42,9 +47,9 @@ void main() {
 
       // Give the clock a tiny nudge to avoid same-moment equality on fast machines.
       await Future<void>.delayed(const Duration(milliseconds: 1));
-      m.touch();
+      final m2 = m.withTouched();
 
-      expect(m.updatedAt.isAfter(before), isTrue);
+      expect(m2.updatedAt.isAfter(before), isTrue);
     });
 
     test('generates unique ids per instance', () {
