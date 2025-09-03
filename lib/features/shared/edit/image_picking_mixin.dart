@@ -16,11 +16,11 @@ import '../../../services/contracts/temporary_file_service_interface.dart';
 import '../../../services/contracts/image_data_service_interface.dart';
 import '../../../services/utils/image_data_service_extensions.dart';
 import '../../../shared/image/image_identifier_persistence.dart' as persist;
+import '../state/image_set.dart';
 
 typedef UpdateImagesCallback =
     void Function({
-      required List<ImageRef> images,
-      required List<ImageIdentifier> imageIds,
+      required ImageSet images,
       bool notify,
     });
 
@@ -34,12 +34,9 @@ mixin ImageEditingMixin on ChangeNotifier {
   TempSession? get tempSession => _session;
   bool get hasTempSession => _session != null;
 
-  // Internal lists kept index-aligned
-  final List<ImageRef> _imageRefs = <ImageRef>[];
-  final List<ImageIdentifier> _imageIds = <ImageIdentifier>[];
+  ImageSet _imageSet = ImageSet.empty();
+  ImageSet get images => _imageSet;
 
-  UnmodifiableListView<ImageRef> get imageRefs => UnmodifiableListView(_imageRefs);
-  UnmodifiableListView<ImageIdentifier> get imageIds => UnmodifiableListView(_imageIds);
 
   late UpdateImagesCallback _updateImages;
 
@@ -79,33 +76,32 @@ mixin ImageEditingMixin on ChangeNotifier {
 
   /// Seed from existing persisted GUIDs (UI order).
   @protected
-  void seedExistingImages(List<String> guids, {bool notify = true}) {
-    _imageIds
-      ..clear()
-      ..addAll(guids.map((g) => PersistedImageIdentifier(g)));
-    _imageRefs
-      ..clear()
-      ..addAll(_imageStore.refsForGuids(guids));
+  void seedExistingImages(ImageSet images, {bool notify = true}) {
+    _imageSet = images;
 
-    _updateImages(images: _imageRefs, imageIds: _imageIds, notify: notify);
+    _updateImages(images: _imageSet!, notify: notify);
   }
 
   // ---- UI handlers ----
 
   /// Wire to ImageManagerInput.onImagePicked
   void onImagePicked(ImageIdentifier id, ImageRef ref) {
-    _imageIds.add(id);
-    _imageRefs.add(ref);
-    _updateImages(images: List.unmodifiable(_imageRefs), imageIds: List.unmodifiable(_imageIds));
+    _imageSet = _imageSet.copyWith(
+        ids: List<ImageIdentifier>.from(_imageSet.ids) + [id],
+        refs: List<ImageRef>.from(_imageSet.refs) + [ref]);
+
+    _updateImages(images: _imageSet, notify: true);
   }
 
   /// Wire to ImageManagerInput.onRemoveAt
-  /// Wire to ImageManagerInput.onRemoveAt
   void onRemoveAt(int index, {bool notify = true}) {
-    if (index < 0 || index >= _imageRefs.length) return;
-    _imageRefs.removeAt(index);
-    if (index < _imageIds.length) _imageIds.removeAt(index);
-    _updateImages(images: List.unmodifiable(_imageRefs), imageIds: List.unmodifiable(_imageIds));
+    if (index < 0 || index >= _imageSet.ids.length) return;
+    _imageSet = _imageSet.copyWith(
+      ids: [..._imageSet.ids]..removeAt(index),
+      refs: [..._imageSet.refs]..removeAt(index),
+    );
+
+    _updateImages(images: _imageSet, notify: notify);
   }
 
   // ----- Persistence -----
@@ -113,20 +109,20 @@ mixin ImageEditingMixin on ChangeNotifier {
   /// Convert any TempFileIdentifier -> GUID, preserving order.
   /// Also updates `_imageIds` in-place to GuidIdentifier for temps.
   @protected
-  Future<List<String>> persistImageGuids({bool deleteTempOnSuccess = true}) async {
+  Future<List<String>> persistImageGuids({
+    bool deleteTempOnSuccess = true,
+    bool notify = false,
+  }) async {
     final guids = await persist.persistTempImages(
-      _imageIds,
+      _imageSet.ids,
       _imageStore,
       deleteTempOnSuccess: deleteTempOnSuccess,
     );
-    for (var i = 0; i < _imageIds.length; i++) {
-      final id = _imageIds[i];
-      if (id is TempImageIdentifier) {
-        final g = guids[i];
-        if (g.isNotEmpty) _imageIds[i] = PersistedImageIdentifier(g);
-      }
-    }
-    // no notify here; VM will typically call applyImagesToState after save if needed
+
+    _imageSet = ImageSet.fromGuids(_imageStore, guids);
+
+    _updateImages(images: _imageSet, notify: notify);
+
     return guids;
   }
 }

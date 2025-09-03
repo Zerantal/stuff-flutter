@@ -1,4 +1,6 @@
 // lib/shared/widgets/initial_load_error_panel.dart
+// coverage:ignore-file
+
 import 'package:flutter/material.dart';
 
 class InitialLoadErrorPanel extends StatelessWidget {

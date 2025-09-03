@@ -6,41 +6,34 @@ import 'package:collection/collection.dart';
 
 import '../../../core/image_identifier.dart';
 import '../../../shared/image/image_ref.dart';
+import '../../shared/state/image_set.dart';
 
 class EditLocationState {
   final String name;
   final String description;
   final String address;
 
-  /// UI-agnostic images the page can render directly.
-  final List<ImageRef> images;
-
-  /// Identity of each image (persisted or temp).
-  /// Used only for equality/dirty tracking.
-  final List<ImageIdentifier> imageIds;
+  final ImageSet images;
 
   EditLocationState({
     this.name = '',
     this.description = '',
     this.address = '',
-    List<ImageRef> images = const [],
-    List<ImageIdentifier> imageIds = const [],
-  }) : images = List<ImageRef>.unmodifiable(List<ImageRef>.from(images)),
-       imageIds = List<ImageIdentifier>.unmodifiable(List<ImageIdentifier>.from(imageIds));
+    ImageSet? images,
+  }) : images = images ?? ImageSet.empty();
+
 
   EditLocationState copyWith({
     String? name,
     String? description,
     String? address,
-    List<ImageRef>? images,
-    List<ImageIdentifier>? imageIds,
+    ImageSet? images,
   }) {
     return EditLocationState(
       name: name ?? this.name,
       description: description ?? this.description,
       address: address ?? this.address,
       images: images ?? this.images,
-      imageIds: imageIds ?? this.imageIds,
     );
   }
 
@@ -54,8 +47,8 @@ class EditLocationState {
           name == other.name &&
           description == other.description &&
           address == other.address &&
-          _idsEq.equals(imageIds, other.imageIds);
+          images == other.images;
 
   @override
-  int get hashCode => Object.hash(name, description, address, _idsEq.hash(imageIds));
+  int get hashCode => Object.hash(name, description, address, images);
 }

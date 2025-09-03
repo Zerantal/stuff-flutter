@@ -1,5 +1,8 @@
 // services/util/sample_data_populator.dart
+// coverage:ignore-file
+
 import 'dart:io';
+
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:logging/logging.dart';
 import 'package:path_provider/path_provider.dart';

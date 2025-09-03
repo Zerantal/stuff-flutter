@@ -18,6 +18,7 @@ import '../../../shared/forms/suppressible_text_editing_controller.dart';
 import '../../../shared/image/image_ref.dart';
 import '../../shared/edit/image_picking_mixin.dart';
 import '../../shared/edit/state_management_mixin.dart';
+import '../../shared/state/image_set.dart';
 import '../state/edit_room_state.dart';
 
 // final _log = Logger('EditRoomViewModel');
@@ -37,14 +38,13 @@ class EditRoomViewModel extends ChangeNotifier
       tempFiles: tempFileService,
       updateImages:
           ({
-            required List<ImageRef> images,
-            required List<ImageIdentifier> imageIds,
+            required ImageSet images,
             bool notify = true,
           }) {
             _imageListRevision++;
 
             updateState(
-              (s) => s.copyWith(images: images, imageIds: imageIds),
+                  (s) => s.copyWith(images: images),
               notify: notify,
             );
           },
@@ -116,10 +116,7 @@ class EditRoomViewModel extends ChangeNotifier
         return EditRoomState(
           name: _loadedRoom!.name,
           description: _loadedRoom!.description ?? '',
-          images: _imageStore.refsForGuids(_loadedRoom!.imageGuids),
-          imageIds: _loadedRoom!.imageGuids
-              .map<ImageIdentifier>((g) => PersistedImageIdentifier(g))
-              .toList(growable: false),
+          images: ImageSet.fromGuids(_imageStore, _loadedRoom!.imageGuids),
         );
       }
       throw Exception('Room not found');
@@ -130,7 +127,7 @@ class EditRoomViewModel extends ChangeNotifier
     // create session for storing temp files
     final String sessionLabel = concatenateFirstTenChars(['edit_room', locationId, roomId]);
     await startImageSession(sessionLabel);
-    seedExistingImages(_loadedRoom?.imageGuids ?? const <String>[], notify: true);
+    seedExistingImages(currentState.images, notify: true);
 
     initTextControllers();
   }
@@ -192,7 +189,7 @@ class EditRoomViewModel extends ChangeNotifier
   @override
   Future<void> onSaveState(EditRoomState data) async {
     // A) Compute the baseline set of GUIDs (from the original state before edits)
-    final prevGuids = originalState.imageIds
+    final prevGuids = originalState.images.ids
         .whereType<PersistedImageIdentifier>()
         .map((g) => g.guid)
         .toSet();
@@ -218,13 +215,5 @@ class EditRoomViewModel extends ChangeNotifier
     if (removed.isNotEmpty) {
       await _imageStore.deleteImages(removed);
     }
-
-    // F) Normalize VM state so current == persisted:
-    //    update imageIds to all GUID-backed identifiers; keep images list as-is.
-    final newIds = guids
-        .map<ImageIdentifier>((g) => PersistedImageIdentifier(g))
-        .toList(growable: false);
-    _imageListRevision++;
-    updateState((st) => st.copyWith(imageIds: newIds), notify: false);
   }
 }

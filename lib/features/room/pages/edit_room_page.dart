@@ -127,7 +127,7 @@ class _EditForm extends StatelessWidget {
               return ImageManagerInput(
                 key: ValueKey(s.$3),
                 session: session,
-                images: images,
+                images: images.refs,
                 onRemoveAt: vm.onRemoveAt,
                 onImagePicked: vm.onImagePicked,
                 tileSize: 92,

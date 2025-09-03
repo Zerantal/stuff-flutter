@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:stuff/features/shared/edit/image_picking_mixin.dart';
+import 'package:stuff/features/shared/state/image_set.dart';
 import 'package:stuff/shared/image/image_ref.dart';
 import 'package:stuff/core/image_identifier.dart';
 import 'package:stuff/services/contracts/image_data_service_interface.dart';
@@ -98,17 +99,15 @@ class _FakeImageDataService implements IImageDataService {
 
 class _HarnessVm extends ChangeNotifier with ImageEditingMixin {
   int updates = 0;
-  List<ImageRef> lastImages = const [];
-  List<ImageIdentifier> lastIds = const [];
+  ImageSet? lastImageSet;
 
   void configure({required IImageDataService store, required ITemporaryFileService temps}) {
     configureImageEditing(
       imageStore: store,
       tempFiles: temps,
-      updateImages: ({required images, required imageIds, bool notify = true}) {
+      updateImages: ({required images, bool notify = true}) {
         updates++;
-        lastImages = images;
-        lastIds = imageIds;
+        lastImageSet = images;
         if (notify) notifyListeners();
       },
     );
@@ -170,21 +169,24 @@ void main() {
       vm.configure(store: store, temps: files);
 
       final guids = ['a', 'b', 'c'];
-      vm.seedExistingImages(guids);
+      ImageSet imageSet = ImageSet.fromGuids(store, guids);
+      vm.seedExistingImages(imageSet);
 
+      expect(vm.lastImageSet, isNotNull);
       expect(vm.updates, 1);
-      expect(vm.lastImages.length, 3);
-      expect(vm.lastIds.length, 3);
+      expect(vm.lastImageSet!.refs.length, 3);
+      expect(vm.lastImageSet!.ids.length, 3);
 
       // Types: persisted ids for all
-      for (final id in vm.lastIds) {
+      for (final id in vm.lastImageSet!.ids) {
         expect(id, isA<PersistedImageIdentifier>());
       }
 
       // Refs are created via refForGuid
-      expect((vm.lastImages[0] as AssetImageRef).assetName, 'assets/a.png');
-      expect((vm.lastImages[1] as AssetImageRef).assetName, 'assets/b.png');
-      expect((vm.lastImages[2] as AssetImageRef).assetName, 'assets/c.png');
+      final refs = vm.lastImageSet!.refs;
+      expect((refs[0] as AssetImageRef).assetName, 'assets/a.png');
+      expect((refs[1] as AssetImageRef).assetName, 'assets/b.png');
+      expect((refs[2] as AssetImageRef).assetName, 'assets/c.png');
     });
 
     test('onImagePicked appends and update lists are unmodifiable to callers', () {
@@ -200,12 +202,12 @@ void main() {
       vm.onImagePicked(tmpId, ref);
 
       expect(vm.updates, 1);
-      expect(vm.lastIds.single, same(tmpId));
-      expect(vm.lastImages.single, same(ref));
+      expect(vm.lastImageSet!.ids.single, same(tmpId));
+      expect(vm.lastImageSet!.refs.single, same(ref));
 
       // The lists passed to the callback are unmodifiable
-      expect(() => vm.lastImages.add(ref), throwsUnsupportedError);
-      expect(() => vm.lastIds.add(tmpId), throwsUnsupportedError);
+      expect(() => vm.lastImageSet!.refs.add(ref), throwsUnsupportedError);
+      expect(() => vm.lastImageSet!.ids.add(tmpId), throwsUnsupportedError);
     });
 
     test('onRemoveAt removes aligned entries; OOB is no-op', () {
@@ -215,15 +217,17 @@ void main() {
       vm.configure(store: store, temps: files);
 
       // Seed three persisted images
-      vm.seedExistingImages(['g1', 'g2', 'g3']);
+      ImageSet imageSet = ImageSet.fromGuids(store, ['g1', 'g2', 'g3']);
+      vm.seedExistingImages(imageSet);
       final beforeUpdates = vm.updates;
 
       // Remove middle one
       vm.onRemoveAt(1);
       expect(vm.updates, beforeUpdates + 1);
-      expect(vm.lastIds.length, 2);
-      expect((vm.lastIds[0] as PersistedImageIdentifier).guid, 'g1');
-      expect((vm.lastIds[1] as PersistedImageIdentifier).guid, 'g3');
+      final lastIds = vm.lastImageSet!.ids;
+      expect(lastIds.length, 2);
+      expect((lastIds[0] as PersistedImageIdentifier).guid, 'g1');
+      expect((lastIds[1] as PersistedImageIdentifier).guid, 'g3');
 
       // OOB (no crash, no update)
       vm.onRemoveAt(99);
@@ -237,7 +241,8 @@ void main() {
       vm.configure(store: store, temps: files);
 
       // Start with one persisted
-      vm.seedExistingImages(['keep_me']);
+      ImageSet imageSet = ImageSet.fromGuids(store, ['keep_me']);
+      vm.seedExistingImages(imageSet);
 
       // Add two temps via onImagePicked
       final f1 = File('${Directory.systemTemp.path}/t1.jpg');
@@ -262,9 +267,10 @@ void main() {
       expect(guids[2], startsWith('guid_'));
 
       // Internal ids converted to PersistedImageIdentifier where needed
-      expect((vm.imageIds[0] as PersistedImageIdentifier).guid, 'keep_me');
-      expect(vm.imageIds[1], isA<PersistedImageIdentifier>());
-      expect(vm.imageIds[2], isA<PersistedImageIdentifier>());
+      final imageIds = vm.images.ids;
+      expect((imageIds[0] as PersistedImageIdentifier).guid, 'keep_me');
+      expect(imageIds[1], isA<PersistedImageIdentifier>());
+      expect(imageIds[2], isA<PersistedImageIdentifier>());
 
       // Image store called for the two temp files
       expect(store.savedFiles.length, 2);

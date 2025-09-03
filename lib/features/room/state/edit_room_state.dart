@@ -6,37 +6,30 @@ import 'package:collection/collection.dart';
 
 import '../../../core/image_identifier.dart';
 import '../../../shared/image/image_ref.dart';
+import '../../shared/state/image_set.dart';
 
 class EditRoomState {
   final String name;
   final String description;
 
-  /// UI-agnostic images the page can render directly.
-  final List<ImageRef> images;
-
-  /// Identity of each image (persisted or temp).
-  /// Used only for equality/dirty tracking.
-  final List<ImageIdentifier> imageIds;
+  final ImageSet images;
 
   EditRoomState({
     this.name = '',
     this.description = '',
-    List<ImageRef> images = const [],
-    List<ImageIdentifier> imageIds = const [],
-  }) : images = List<ImageRef>.unmodifiable(List<ImageRef>.from(images)),
-       imageIds = List<ImageIdentifier>.unmodifiable(List<ImageIdentifier>.from(imageIds));
+    ImageSet? images,
+  }) : images = images ?? ImageSet.empty();
+
 
   EditRoomState copyWith({
     String? name,
     String? description,
-    List<ImageRef>? images,
-    List<ImageIdentifier>? imageIds,
+    ImageSet? images,
   }) {
     return EditRoomState(
       name: name ?? this.name,
       description: description ?? this.description,
       images: images ?? this.images,
-      imageIds: imageIds ?? this.imageIds,
     );
   }
 
@@ -49,8 +42,8 @@ class EditRoomState {
           runtimeType == other.runtimeType &&
           name == other.name &&
           description == other.description &&
-          _idsEq.equals(imageIds, other.imageIds);
+          images == other.images;
 
   @override
-  int get hashCode => Object.hash(name, description, _idsEq.hash(imageIds));
+  int get hashCode => Object.hash(name, description, images);
 }

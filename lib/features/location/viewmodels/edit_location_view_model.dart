@@ -21,6 +21,7 @@ import '../../../services/ops/db_ops.dart';
 import '../../shared/edit/geolocate_mixin.dart';
 import '../../shared/edit/image_picking_mixin.dart';
 import '../../shared/edit/state_management_mixin.dart';
+import '../../shared/state/image_set.dart';
 import '../state/edit_location_state.dart';
 
 // final Logger _log = Logger('EditLocationViewModel');
@@ -50,14 +51,13 @@ class EditLocationViewModel extends ChangeNotifier
       tempFiles: tempFileService,
       updateImages:
           ({
-            required List<ImageRef> images,
-            required List<ImageIdentifier> imageIds,
+            required ImageSet images,
             bool notify = true,
           }) {
             _imageListRevision++;
 
             updateState(
-              (s) => s.copyWith(images: images, imageIds: imageIds),
+              (s) => s.copyWith(images: images),
               notify: notify,
             );
           },
@@ -127,19 +127,18 @@ class EditLocationViewModel extends ChangeNotifier
           name: _loadedLocation!.name,
           description: _loadedLocation!.description ?? '',
           address: _loadedLocation!.address ?? '',
-          images: _imageStore.refsForGuids(_loadedLocation!.imageGuids),
-          imageIds: _loadedLocation!.imageGuids
-              .map<ImageIdentifier>((g) => PersistedImageIdentifier(g))
-              .toList(growable: false),
+          images: ImageSet.fromGuids(_imageStore, _loadedLocation!.imageGuids),
         );
       }
       throw Exception('Location not found');
     });
 
+    if (!isInitialised) return;
+
     // create session for storing temp files
-    final String sessionLabel = concatenateFirstTenChars(['edit_location', locationId]);
+    final String sessionLabel = concatenateFirstTenChars(['edit_loc', locationId]);
     await startImageSession(sessionLabel);
-    seedExistingImages(_loadedLocation?.imageGuids ?? const <String>[], notify: true);
+    seedExistingImages(currentState.images, notify: false);
 
     initTextControllers();
   }
@@ -155,7 +154,7 @@ class EditLocationViewModel extends ChangeNotifier
     initialiseState(EditLocationState());
 
     // create session for storing temp files
-    final String sessionLabel = concatenateFirstTenChars(['add_location', (uuid.v4())]);
+    final String sessionLabel = concatenateFirstTenChars(['add_loc', (uuid.v4())]);
     await startImageSession(sessionLabel);
 
     initTextControllers();
@@ -207,7 +206,7 @@ class EditLocationViewModel extends ChangeNotifier
   @override
   Future<void> onSaveState(EditLocationState data) async {
     // A) Compute the baseline set of GUIDs (from the original state before edits)
-    final prevGuids = originalState.imageIds
+    final prevGuids = originalState.images.ids
         .whereType<PersistedImageIdentifier>()
         .map((g) => g.guid)
         .toSet();
@@ -233,14 +232,6 @@ class EditLocationViewModel extends ChangeNotifier
     if (removed.isNotEmpty) {
       await _imageStore.deleteImages(removed);
     }
-
-    // F) Normalize VM state so current == persisted:
-    //    update imageIds to all GUID-backed identifiers; keep images list as-is.
-    final newIds = guids
-        .map<ImageIdentifier>((g) => PersistedImageIdentifier(g))
-        .toList(growable: false);
-    _imageListRevision++;
-    updateState((st) => st.copyWith(imageIds: newIds), notify: false);
   }
 
   // ----- GeolocateMixin overrides --------------------------------------------------
