@@ -1,4 +1,5 @@
 // lib/services/exceptions/os_service_exceptions.dart
+// coverage:ignore-file
 
 class OSServiceDisabledException implements Exception {
   final String serviceName; // e.g., "Location", "Bluetooth", "Wi-Fi"

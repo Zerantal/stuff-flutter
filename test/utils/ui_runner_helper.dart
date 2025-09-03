@@ -52,7 +52,7 @@ typedef AfterInit<T> = Future<void> Function(T vm, TestAppMocks m);
 /// - If [router] is provided, [home] is ignored; Router decides the page.
 Future<void> pumpApp(
   WidgetTester tester, {
-  Widget? home, // now optional
+  Widget? home,
   List<SingleChildWidget> providers = const [],
   MediaQueryData? mediaQueryData,
   List<NavigatorObserver> navigatorObservers = const [],
