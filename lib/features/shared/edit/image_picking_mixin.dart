@@ -7,14 +7,12 @@
 // Requires you to provide a few tiny closures to read/write your state.
 // Works alongside your EditEntityMixin<T> (for hasUnsavedChanges & saving).
 
-import 'dart:collection';
 import 'package:flutter/foundation.dart';
 
 import '../../../core/image_identifier.dart';
 import '../../../shared/image/image_ref.dart';
 import '../../../services/contracts/temporary_file_service_interface.dart';
 import '../../../services/contracts/image_data_service_interface.dart';
-import '../../../services/utils/image_data_service_extensions.dart';
 import '../../../shared/image/image_identifier_persistence.dart' as persist;
 import '../state/image_set.dart';
 
@@ -74,7 +72,7 @@ mixin ImageEditingMixin on ChangeNotifier {
   void seedExistingImages(ImageSet images, {bool notify = true}) {
     _imageSet = images;
 
-    _updateImages(images: _imageSet!, notify: notify);
+    _updateImages(images: _imageSet, notify: notify);
   }
 
   // ---- UI handlers ----

@@ -11,7 +11,6 @@ import '../../../core/image_identifier.dart';
 import '../../../core/util/string_util.dart';
 import '../../../services/contracts/temporary_file_service_interface.dart';
 import '../../../shared/forms/suppressible_text_editing_controller.dart';
-import '../../../shared/image/image_ref.dart';
 import '../../../domain/models/location_model.dart';
 import '../../../services/contracts/data_service_interface.dart';
 import '../../../services/contracts/location_service_interface.dart';

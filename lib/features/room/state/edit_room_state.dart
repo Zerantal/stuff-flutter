@@ -2,10 +2,6 @@
 //
 // Immutable state for the Edit Room screen.
 
-import 'package:collection/collection.dart';
-
-import '../../../core/image_identifier.dart';
-import '../../../shared/image/image_ref.dart';
 import '../../shared/state/image_set.dart';
 
 class EditRoomState {
@@ -24,8 +20,6 @@ class EditRoomState {
       images: images ?? this.images,
     );
   }
-
-  static const _idsEq = ListEquality<ImageIdentifier>();
 
   @override
   bool operator ==(Object other) =>

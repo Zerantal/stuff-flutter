@@ -15,7 +15,6 @@ import '../../../services/contracts/temporary_file_service_interface.dart';
 import '../../../services/utils/image_data_service_extensions.dart';
 import '../../../services/ops/db_ops.dart';
 import '../../../shared/forms/suppressible_text_editing_controller.dart';
-import '../../../shared/image/image_ref.dart';
 import '../../shared/edit/image_picking_mixin.dart';
 import '../../shared/edit/state_management_mixin.dart';
 import '../../shared/state/image_set.dart';

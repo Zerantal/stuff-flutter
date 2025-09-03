@@ -43,8 +43,8 @@ class ImageSet {
       assert(ids.length == refs.length, 'ids and refs must have same length');
     }
     return ImageSet._(
-      List<ImageIdentifier>.unmodifiable(ids ?? this._ids),
-      List<ImageRef>.unmodifiable(refs ?? this._refs),
+      List<ImageIdentifier>.unmodifiable(ids ?? _ids),
+      List<ImageRef>.unmodifiable(refs ?? _refs),
     );
   }
 
