@@ -17,7 +17,7 @@ void main() {
     registerCommonDummies();
   });
 
-  Future<PumpedPlainVm<ContentsViewModel>> _pump(
+  Future<PumpedPlainVm<ContentsViewModel>> pump(
     WidgetTester tester, {
     required Stream<List<dm.Container>> containers,
     required Stream<List<dm.Item>> items,
@@ -39,7 +39,7 @@ void main() {
   }
 
   testWidgets('shows empty state when no containers or items', (tester) async {
-    await _pump(tester, containers: Stream.value([]), items: Stream.value([]));
+    await pump(tester, containers: Stream.value([]), items: Stream.value([]));
     await tester.pumpAndSettle();
 
     expect(find.byType(EmptyListState), findsOneWidget);
@@ -47,7 +47,7 @@ void main() {
 
   testWidgets('renders containers section when containers exist', (tester) async {
     final container = dm.Container(id: 'C1', roomId: 'R1', name: 'Crate', imageGuids: ['g1']);
-    await _pump(tester, containers: Stream.value([container]), items: Stream.value([]));
+    await pump(tester, containers: Stream.value([container]), items: Stream.value([]));
     await tester.pumpAndSettle();
 
     expect(find.text('Containers'), findsOneWidget);
@@ -62,7 +62,7 @@ void main() {
       description: 'A tool',
       imageGuids: ['i1'],
     );
-    await _pump(tester, containers: Stream.value([]), items: Stream.value([item]));
+    await pump(tester, containers: Stream.value([]), items: Stream.value([item]));
     await tester.pumpAndSettle();
 
     expect(find.text('Items'), findsOneWidget);
@@ -86,7 +86,7 @@ void main() {
       imageGuids: [],
     );
 
-    await _pump(
+    await pump(
       tester,
       containers: Stream.value([]),
       items: Stream.value([itemWithSubtitle, itemWithoutSubtitle]),
