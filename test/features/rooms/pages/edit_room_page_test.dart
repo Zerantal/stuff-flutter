@@ -37,7 +37,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Navigate to "add room" page
-      router.goNamed(AppRoutes.roomsAdd.name, pathParameters: {'locationId': 'L1'});
+      router.goNamed(AppRoutes.roomAdd.name, pathParameters: {'locationId': 'L1'});
       await tester.pump(); // let page build its spinner first
       await tester.pumpAndSettle();
 
@@ -70,7 +70,7 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      router.goNamed(AppRoutes.roomsAdd.name, pathParameters: {'locationId': 'L1'});
+      router.goNamed(AppRoutes.roomAdd.name, pathParameters: {'locationId': 'L1'});
       await tester.pumpAndSettle();
 
       // Enter a valid name (most validators require non-empty)
@@ -103,10 +103,7 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      router.goNamed(
-        AppRoutes.roomsEdit.name,
-        pathParameters: {'locationId': 'L1', 'roomId': 'R1'},
-      );
+      router.goNamed(AppRoutes.roomEdit.name, pathParameters: {'locationId': 'L1', 'roomId': 'R1'});
       await tester.pumpAndSettle();
 
       expect(find.byType(EditRoomPage), findsOneWidget);

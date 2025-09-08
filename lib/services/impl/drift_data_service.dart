@@ -1,14 +1,26 @@
+// lib/services/impl/drift_data_service.dart
+
+import 'package:clock/clock.dart';
+
 import '../../domain/models/location_model.dart';
 import '../../domain/models/room_model.dart';
-import '../contracts/data_service_interface.dart';
+import '../../domain/models/container_model.dart';
+import '../../domain/models/item_model.dart';
 import '../../data/drift/database.dart';
+import '../contracts/data_service_interface.dart';
 
 class DriftDataService implements IDataService {
-  DriftDataService(this.db) : locations = LocationDao(db), rooms = RoomDao(db);
+  DriftDataService(this.db)
+    : locations = LocationDao(db),
+      rooms = RoomDao(db),
+      containers = ContainerDao(db),
+      items = ItemDao(db);
 
   final AppDatabase db;
   final LocationDao locations;
   final RoomDao rooms;
+  final ContainerDao containers;
+  final ItemDao items;
 
   bool _disposed = false;
   void _ensureReady() {
@@ -29,7 +41,7 @@ class DriftDataService implements IDataService {
 
   // ------- Locations -------
   @override
-  Stream<List<Location>> getLocationsStream() {
+  Stream<List<Location>> watchLocations() {
     _ensureReady();
     return locations.watchAll();
   }
@@ -78,7 +90,7 @@ class DriftDataService implements IDataService {
 
   // ------- Rooms -------
   @override
-  Stream<List<Room>> getRoomsStream(String locationId) {
+  Stream<List<Room>> watchRooms(String locationId) {
     _ensureReady();
     return rooms.watchFor(locationId);
   }
@@ -129,5 +141,166 @@ class DriftDataService implements IDataService {
       await db.delete(db.rooms).go();
       await db.delete(db.locations).go();
     });
+  }
+
+  // --------------------- Containers ---------------------
+
+  @override
+  Stream<List<Container>> watchRoomContainers(String roomId) {
+    _ensureReady();
+    return containers.watchTopLevelByRoom(roomId);
+  }
+
+  @override
+  Stream<List<Container>> watchChildContainers(String parentContainerId) {
+    _ensureReady();
+    return containers.watchChildren(parentContainerId);
+  }
+
+  @override
+  Stream<List<Container>> watchLocationContainers(String locationId) {
+    _ensureReady();
+    return containers.watchTopLevelByLocation(locationId);
+  }
+
+  @override
+  Stream<List<Container>> watchAllContainers() {
+    _ensureReady();
+    return containers.watchAllContainers();
+  }
+
+  @override
+  Future<List<Container>> getRoomContainers(String roomId) {
+    _ensureReady();
+    return watchRoomContainers(roomId).first;
+  }
+
+  @override
+  Future<List<Container>> getChildContainers(String parentContainerId) {
+    _ensureReady();
+    return watchChildContainers(parentContainerId).first;
+  }
+
+  @override
+  Future<List<Container>> getLocationContainers(String locationId) {
+    _ensureReady();
+    return watchLocationContainers(locationId).first;
+  }
+
+  @override
+  Future<List<Container>> getAllContainers() {
+    _ensureReady();
+    return watchAllContainers().first;
+  }
+
+  @override
+  Future<Container?> getContainerById(String id) {
+    _ensureReady();
+    return containers.getById(id);
+  }
+
+  @override
+  Future<Container> addContainer(Container container) {
+    _ensureReady();
+    final touched = container.withTouched();
+    return containers.upsert(touched);
+  }
+
+  @override
+  Future<Container> updateContainer(Container container) {
+    _ensureReady();
+    final touched = container.withTouched();
+    return containers.upsert(touched);
+  }
+
+  @override
+  Future<Container> upsertContainer(Container container) {
+    _ensureReady();
+    final touched = container.withTouched();
+    return containers.upsert(touched);
+  }
+
+  @override
+  Future<void> deleteContainer(String id) {
+    _ensureReady();
+    return containers.deleteById(id);
+  }
+
+  // ----------------------- Items -----------------------
+
+  @override
+  Stream<List<Item>> watchRoomItems(String roomId) {
+    _ensureReady();
+    return items.watchInRoom(roomId);
+  }
+
+  @override
+  Stream<List<Item>> watchContainerItems(String containerId) {
+    _ensureReady();
+    return items.watchInContainer(containerId);
+  }
+
+  // Items in location (room-level only)
+  @override
+  Stream<List<Item>> watchLocationItems(String locationId) {
+    _ensureReady();
+    return items.watchInLocation(locationId);
+  }
+
+  @override
+  Stream<List<Item>> watchAllItems() {
+    _ensureReady();
+    return items.watchAllItems();
+  }
+
+  @override
+  Future<List<Item>> getItemsInRoom(String roomId) {
+    _ensureReady();
+    return watchRoomItems(roomId).first;
+  }
+
+  @override
+  Future<List<Item>> getItemsInContainer(String containerId) {
+    _ensureReady();
+    return watchContainerItems(containerId).first;
+  }
+
+  @override
+  Future<Item?> getItemById(String id) {
+    _ensureReady();
+    return items.getById(id);
+  }
+
+  @override
+  Future<Item> addItem(Item item) {
+    _ensureReady();
+    final touched = item.withTouched();
+    return items.upsert(touched);
+  }
+
+  @override
+  Future<Item> updateItem(Item item) {
+    _ensureReady();
+    final touched = item.withTouched();
+    return items.upsert(touched);
+  }
+
+  @override
+  Future<Item> upsertItem(Item item) {
+    _ensureReady();
+    final touched = item.withTouched();
+    return items.upsert(touched);
+  }
+
+  @override
+  Future<void> deleteItem(String id) {
+    _ensureReady();
+    return items.deleteById(id);
+  }
+
+  @override
+  Future<void> setItemArchived(String id, bool archived) async {
+    _ensureReady();
+    await items.setArchived(id, archived, updatedAt: clock.now());
   }
 }

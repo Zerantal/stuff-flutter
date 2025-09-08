@@ -10,6 +10,7 @@ import 'package:share_plus/share_plus.dart';
 // Desktop-only import (not used on mobile)
 import 'package:file_selector/file_selector.dart' as fs;
 
+import 'image_viewer_utils.dart';
 import '../../image/image_ref.dart';
 import '../../image/mobile_saver.dart'; // Android MediaStore via MethodChannel
 // Conditional web saver (no-ops off web)
@@ -74,17 +75,7 @@ class _ImageViewerPageState extends State<ImageViewerPage> {
   ImageRef get _current => widget.images[_index];
 
   String _defaultNameFor(int i) {
-    // Build a nice default name for saving/sharing.
-    final base = widget.suggestedBaseName?.trim();
-    if (base != null && base.isNotEmpty) return '${base}_$i.jpg';
-    // Try to infer from ref
-    final ref = widget.images[i];
-    return switch (ref) {
-      FileImageRef(:final path) => _nameFromPath(path) ?? 'image_$i.jpg',
-      NetworkImageRef(:final url) => _nameFromUrl(url) ?? 'image_$i.jpg',
-      AssetImageRef(:final assetName) => _nameFromPath(assetName) ?? 'image_$i.jpg',
-      MemoryImageRef() => 'image_$i.jpg',
-    };
+    return defaultNameForRef(widget.images[i], i, baseName: widget.suggestedBaseName);
   }
 
   @override

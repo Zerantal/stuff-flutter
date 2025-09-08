@@ -39,14 +39,17 @@ class _EditRoomPageState extends State<EditRoomPage> {
     final isInitialised = context.select<EditRoomViewModel, bool>((m) => m.isInitialised);
     final initialLoadError = context.select<EditRoomViewModel, Object?>((m) => m.initialLoadError);
 
+    const pageKey = ValueKey('EditRoomPage');
+
     // 1) Loading (before init completes)
     if (!isInitialised && initialLoadError == null) {
-      return const LoadingScaffold(title: 'Edit Room');
+      return const LoadingScaffold(key: pageKey, title: 'Edit Room');
     }
 
     // 2) Error (init failed)
     if (initialLoadError != null) {
       return InitialLoadErrorPanel(
+        key: pageKey,
         title: 'Edit Room',
         message: 'Could not load room.',
         details: initialLoadError.toString(),
@@ -63,6 +66,7 @@ class _EditRoomPageState extends State<EditRoomPage> {
     final isBusy = isSaving;
 
     return EditEntityScaffold(
+      key: pageKey,
       title: isNewRoom ? 'Add Room' : 'Edit Room',
       isCreate: isNewRoom,
       isBusy: isBusy,

@@ -6,20 +6,18 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:logging/logging.dart';
+import 'package:provider/provider.dart';
 
 import '../../../app/routing/app_routes.dart';
 import '../../../app/routing/app_routes_ext.dart';
+import '../../../services/contracts/data_service_interface.dart';
+import '../../../services/contracts/image_data_service_interface.dart';
+import '../../../services/utils/sample_data_populator.dart';
 
 final Logger _log = Logger('DeveloperDrawer');
 
 class DeveloperDrawer extends StatefulWidget {
-  const DeveloperDrawer({super.key, required this.onPopulateSampleData, this.onPopulated});
-
-  /// Perform the actual sample data population (provided by the page).
-  final Future<void> Function() onPopulateSampleData;
-
-  /// Optional callback after population completes (page can wire vm.refresh()).
-  final VoidCallback? onPopulated;
+  const DeveloperDrawer({super.key});
 
   @override
   State<DeveloperDrawer> createState() => _DeveloperDrawerState();
@@ -35,16 +33,42 @@ class _DeveloperDrawerState extends State<DeveloperDrawer> {
     final messenger = ScaffoldMessenger.of(context);
 
     try {
-      await widget.onPopulateSampleData();
+      final data = context.read<IDataService>();
+      IImageDataService? images;
+      try {
+        images = context.read<IImageDataService>();
+      } catch (_) {
+        images = null; // allowed: seeding works without images
+      }
+
+      final populator = SampleDataPopulator(
+        dataService: data,
+        imageDataService: images,
+        // default SampleOptions() – clears DB, includes base seeds, some extras
+      );
+      await populator.populate();
+
+      if (!mounted) return;
       messenger.showSnackBar(const SnackBar(content: Text('Sample data loaded')));
       _log.info('Sample data loaded');
-      widget.onPopulated?.call();
     } catch (e, s) {
+      if (!mounted) return;
       messenger.showSnackBar(const SnackBar(content: Text('Sample data failed')));
       _log.severe('Failed to load sample data', e, s);
     } finally {
       if (mounted) setState(() => _busyPopulating = false);
     }
+  }
+
+  Future<void> _handlePopulateRandom() async {
+    if (_busyPopulating) return;
+    StatefulNavigationShell.of(context).goBranch(1);
+    Navigator.pop(context);
+    AppRoutes.debugSampleDbRandomiser.go(context);
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Random data loaded')));
   }
 
   Future<void> _handleDumpWidgetTree() async {
@@ -116,6 +140,14 @@ class _DeveloperDrawerState extends State<DeveloperDrawer> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : null,
+            ),
+            const Divider(height: 1),
+            ListTile(
+              key: const ValueKey('dev_populate_random_btn'),
+              leading: const Icon(Icons.auto_fix_high_outlined),
+              title: const Text('Reset with Random Data…'),
+              subtitle: const Text('Choose counts/seed, then populate'),
+              onTap: _handlePopulateRandom,
             ),
             const Divider(height: 1),
             ListTile(

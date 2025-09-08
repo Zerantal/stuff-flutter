@@ -3,20 +3,14 @@
 import 'package:flutter/material.dart';
 
 class EditContainerPage extends StatelessWidget {
-  final String locationId;
-  final String roomId;
+  final String? roomId;
   final String? containerId;
 
-  const EditContainerPage({
-    super.key,
-    required this.locationId,
-    required this.roomId,
-    this.containerId,
-  });
+  const EditContainerPage({super.key, this.roomId, this.containerId});
 
   @override
   Widget build(BuildContext context) {
     // TODO: implement build
-    throw UnimplementedError();
+    return Container(key: const ValueKey('EditContainerPage'));
   }
 }

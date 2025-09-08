@@ -30,7 +30,7 @@ class LocationsViewModel {
        _dbOps = DbOps(dataService, imageDataService) {
     // Map the domain stream to UI-ready items without doing any I/O verification.
     locations = _data
-        .getLocationsStream()
+        .watchLocations()
         .map((list) => list.map(_toListItem).toList(growable: false))
         .handleError((e, s) {
           _log.severe('locations stream error', e, s);

@@ -1,41 +1,64 @@
 // lib/app/routing/app_routes.dart
 
 enum AppRoutes {
+  // ────────────────────────── Locations ──────────────────────────
   locations('/locations'),
-  locationsAdd('/locations/add'),
-  locationsEdit('/locations/:locationId/edit'),
+  locationAdd('/locations/add'),
+  locationEdit('/locations/:locationId/edit'),
 
-  rooms('/locations/:locationId/rooms'),
-  roomsAdd('/locations/:locationId/rooms/add'),
-  roomsEdit('/locations/:locationId/rooms/:roomId/edit'),
+  // ──────────────────────────── Rooms ────────────────────────────
+  roomsForLocation('/locations/:locationId/rooms'), // list rooms under location
+  roomAdd('/locations/:locationId/rooms/add'),
+  roomEdit('/locations/:locationId/rooms/:roomId/edit'),
 
-  containersAdd('/locations/:locationId/rooms/:roomId/containers/add'),
-  containersEdit('/locations/:locationId/rooms/:roomId/containers/:containerId/edit'),
+  // ───────────────────────── Containers ──────────────────────────
+  // canonical container routes
+  containerAddToRoom('/rooms/:roomId/containers/add'),
+  containerAddToContainer('/containers/:containerId/containers/add'),
+  containerEdit('/containers/:containerId/edit'),
 
-  itemsAddToContainer('/locations/:locationId/rooms/:roomId/containers/:containerId/items/add'),
-  itemsAddToRoom('/locations/:locationId/rooms/:roomId/items/add'),
-  itemViewInRoom('/locations/:locationId/rooms/:roomId/items/:itemId'), // alias
-  itemEditInRoom('/locations/:locationId/rooms/:roomId/items/:itemId/edit'), // alias
-  itemViewInContainer(
+  //aliases
+  containerAddToRoomAlias('/locations/:locationId/rooms/:roomId/containers/add'),
+  containerAddToContainerAlias(
+    '/locations/:locationId/rooms/:roomId/containers/:parentContainerId/containers/add',
+  ),
+  containerEditInRoomAlias('/locations/:locationId/rooms/:roomId/containers/:containerId/edit'),
+  containerEditInContainerAlias(
+    '/locations/:locationId/rooms/:roomId/containers/:parentContainerId/containers/:containerId/edit',
+  ),
+
+  // ──────────────────────────── Items ────────────────────────────
+  // Canonical item routes
+  itemView('/items/:itemId'),
+  itemEdit('/items/:itemId/edit'),
+  itemAddToRoom('/rooms/:roomId/items/add'),
+  itemAddToContainer('/containers/:containerId/items/add'),
+
+  // Aliases (keep for UX/back-compat)
+  itemViewInRoomAlias('/locations/:locationId/rooms/:roomId/items/:itemId'),
+  itemEditInRoomAlias('/locations/:locationId/rooms/:roomId/items/:itemId/edit'),
+  itemViewInContainerAlias(
     '/locations/:locationId/rooms/:roomId/containers/:containerId/items/:itemId',
-  ), //alias
-  itemEditInContainer(
+  ),
+  itemEditInContainerAlias(
     '/locations/:locationId/rooms/:roomId/containers/:containerId/items/:itemId/edit',
-  ), //alias
-  itemView('/items/:itemId'), // Canonical route
-  itemEdit('/items/:itemId/edit'), // Canonical route
+  ),
 
+  // ────────────────────────── Contents ───────────────────────────
+  // Canonical contents routes
   allContents('/contents'),
   locationContents('/locations/:locationId/contents'),
-  roomContents('/locations/:locationId/rooms/:roomId/contents'),
-  containerContents('/locations/:locationId/rooms/:roomId/containers/:containerId/contents'),
+  roomContents('/rooms/:roomId/contents'),
+  containerContents('/containers/:containerId/contents'),
 
-  // debug routes
-  debugDbInspector('/debug/db_inspector');
+  // Aliases (nested readability / back-compat)
+  roomContentsAlias('/locations/:locationId/rooms/:roomId/contents'),
+  containerContentsAlias('/locations/:locationId/rooms/:roomId/containers/:containerId/contents'),
 
-  /// The actual path string for the route.
+  // ─────────────────────────── Debug ────────────────────────────
+  debugDbInspector('/debug/db_inspector'),
+  debugSampleDbRandomiser('/debug/sample_db_randomiser');
+
   final String path;
-
-  /// Constant constructor for the enum.
   const AppRoutes(this.path);
 }

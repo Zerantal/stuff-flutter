@@ -2,290 +2,336 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:stuff/shared/widgets/responsive_entity_sliver.dart';
 import 'package:stuff/shared/widgets/responsive_entity_list.dart';
-import 'package:stuff/shared/widgets/entity_item.dart';
 
-Widget _app(Widget child) => MaterialApp(home: Scaffold(body: child));
-
-Future<void> _setSurfaceSize(WidgetTester tester, Size size) async {
+Widget _wrapWidget(WidgetTester tester, Widget child, Size size) {
   tester.view.devicePixelRatio = 1.0;
   tester.view.physicalSize = size;
+
   addTearDown(() {
     tester.view.resetPhysicalSize();
     tester.view.resetDevicePixelRatio();
   });
+
+  return MaterialApp(
+    home: MediaQuery(
+      data: MediaQueryData(size: size),
+      child: Scaffold(body: child),
+    ),
+  );
 }
 
 void main() {
-  group('ResponsiveEntityList', () {
-    testWidgets('renders LIST when width < breakpoint', (tester) async {
-      await _setSurfaceSize(tester, const Size(600, 800));
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  group('ResponsiveEntitySliver & ResponsiveEntityList', () {
+    testWidgets('switches to List when width < gridBreakpoint', (tester) async {
+      final items = List<int>.generate(4, (i) => i);
+
+      final widget = _wrapWidget(
+        tester,
+        CustomScrollView(
+          slivers: [
+            ResponsiveEntitySliver<int>(
+              items: items,
+              gridBreakpoint: 720.0, // default; just explicit
+              headerBuilder: (ctx, i) => Container(key: ValueKey('h-$i')),
+              bodyBuilder: (ctx, i) => Text('Item $i', key: ValueKey('b-$i')),
+            ),
+          ],
+        ),
+        const Size(600, 800), // narrower than breakpoint
+      );
+
+      await tester.pumpWidget(widget);
+
+      await tester.pumpAndSettle();
+
+      // Should be using SliverList, not SliverGrid
+      expect(find.byType(SliverList), findsOneWidget);
+      expect(find.byType(SliverGrid), findsNothing);
+      // All item texts are present
+      for (final i in items) {
+        expect(find.text('Item $i'), findsOneWidget);
+      }
+    });
+
+    testWidgets('switches to Grid when width >= gridBreakpoint', (tester) async {
+      final items = List<int>.generate(4, (i) => i);
+
+      final widget = _wrapWidget(
+        tester,
+        CustomScrollView(
+          slivers: [
+            ResponsiveEntitySliver<int>(
+              items: items,
+              gridBreakpoint: 720.0,
+              headerBuilder: (ctx, i) => Container(key: ValueKey('h-$i')),
+              bodyBuilder: (ctx, i) => Text('Item $i', key: ValueKey('b-$i')),
+            ),
+          ],
+        ),
+        const Size(1000, 800), // wider than breakpoint
+      );
+
+      await tester.pumpWidget(widget);
+
+      await tester.pumpAndSettle();
+
+      // Should be using SliverGrid
+      expect(find.byType(SliverGrid), findsOneWidget);
+      expect(find.byType(SliverList), findsNothing);
+      for (final i in items) {
+        expect(find.text('Item $i'), findsOneWidget);
+      }
+    });
+
+    testWidgets('grid: snaps tile width to gridTileWidth (left aligned)', (tester) async {
+      // Using defaults: gridPadding: left/right=12; crossSpacing=12; gridTileWidth=240
+      // width=1000 => innerBase = 1000 - 24 = 976
+      // columns = floor((976+12) / (240+12)) = floor(988/252)=3; desiredInner=744; extra=232
+      // SnapAlign.left => left padding ~12; grid tile width should be ~240
+      final items = List<int>.generate(5, (i) => i);
+
+      final widget = _wrapWidget(
+        tester,
+        CustomScrollView(
+          slivers: [
+            ResponsiveEntitySliver<int>(
+              items: items,
+              headerBuilder: (ctx, i) => Container(color: Colors.red),
+              bodyBuilder: (ctx, i) => const SizedBox.shrink(),
+            ),
+          ],
+        ),
+        const Size(1000, 800),
+      );
+
+      await tester.pumpWidget(widget);
+
+      await tester.pumpAndSettle();
+
+      final firstTile = find.byType(Card).first;
+      final size = tester.getSize(firstTile);
+
+      // Expect roughly the configured gridTileWidth (default 240)
+      expect(
+        (size.width - 240.0).abs() < 1.0,
+        isTrue,
+        reason: 'Grid cell width should snap to ~240px',
+      );
+      // Left alignment => first tile left should be very close to left padding (12)
+      final left = tester.getTopLeft(firstTile).dx;
+      expect(
+        (left - 12.0).abs() < 1.0,
+        isTrue,
+        reason: 'First column should start at left padding ~12px',
+      );
+    });
+
+    testWidgets('grid: center snap shifts first column right', (tester) async {
+      final items = List<int>.generate(3, (i) => i);
+
+      final widget = _wrapWidget(
+        tester,
+        CustomScrollView(
+          slivers: [
+            ResponsiveEntitySliver<int>(
+              items: items,
+              snapAlign: SnapAlign.center,
+              headerBuilder: (ctx, i) => Container(color: Colors.blue),
+              bodyBuilder: (ctx, i) => const SizedBox.shrink(),
+            ),
+          ],
+        ),
+        const Size(1000, 800),
+      );
+
+      await tester.pumpWidget(widget);
+
+      await tester.pumpAndSettle();
+
+      final firstTile = find.byType(Card).first;
+      final left = tester.getTopLeft(firstTile).dx;
+      expect(
+        left,
+        greaterThan(12.0),
+        reason: 'Center snap should add extra padding on the left beyond the base 12px',
+      );
+    });
+
+    testWidgets('grid: trailing height defaults when trailingBuilder is present', (tester) async {
       final items = [1, 2, 3];
 
-      await tester.pumpWidget(
-        _app(
-          ResponsiveEntityList<int>(
-            items: items,
-            gridBreakpoint: 720,
-            thumbnailBuilder: (c, i) => Text('thumb $i'),
-            descriptionBuilder: (c, i) => Text('desc $i'),
-          ),
+      // Configure explicit heights (so we can assert exact tile height):
+      // header=100, body=60, gap=10, vpad=20. With trailing present but height unspecified,
+      // effective trailing height = 40 (default).
+      // tileHeight = 20 + 100 + (10 + 10) + 40 + 60 = 240
+      final widget = _wrapWidget(
+        tester,
+        CustomScrollView(
+          slivers: [
+            ResponsiveEntitySliver<int>(
+              items: items,
+              gridHeaderHeight: 100,
+              gridBodyTargetHeight: 60,
+              gridSectionGap: 10,
+              gridTileVerticalPadding: 20,
+              // Not providing gridTrailingHeight -> triggers default 40 when trailingBuilder != null
+              trailingBuilder: (ctx, i) => const SizedBox(width: 16, height: 1),
+              headerBuilder: (ctx, i) => Container(color: Colors.green),
+              bodyBuilder: (ctx, i) => const SizedBox.shrink(),
+            ),
+          ],
         ),
+        const Size(1000, 800),
       );
 
-      expect(find.byType(ListView), findsOneWidget);
-      expect(find.byType(EntityListItem), findsNWidgets(3));
-      expect(find.text('desc 1'), findsOneWidget);
-      // default separators (N-1)
-      expect(find.byType(Divider), findsNWidgets(2));
-      // list item keyed by ValueKey(item)
-      expect(find.byKey(const ValueKey(2)), findsOneWidget);
+      await tester.pumpWidget(widget);
+
+      await tester.pumpAndSettle();
+
+      final h = tester.getSize(find.byType(Card).first).height;
+      expect(
+        (h - 240.0).abs() < 1.0,
+        isTrue,
+        reason: 'Tile height should include default trailing area (≈240px)',
+      );
     });
 
-    testWidgets('renders GRID when width >= breakpoint', (tester) async {
-      await _setSurfaceSize(tester, const Size(1000, 800));
+    testWidgets('grid: smaller tile height without trailingBuilder', (tester) async {
       final items = [1, 2, 3];
 
-      await tester.pumpWidget(
-        _app(
-          ResponsiveEntityList<int>(
-            items: items,
-            gridBreakpoint: 720,
-            thumbnailBuilder: (c, i) => Text('listThumb $i'),
-            descriptionBuilder: (c, i) => Text('listDesc $i'),
-          ),
+      // Same explicit config as above but with NO trailingBuilder.
+      // tileHeight = 20 + 100 + (10) + 0 + 60 = 190
+      final widget = _wrapWidget(
+        tester,
+        CustomScrollView(
+          slivers: [
+            ResponsiveEntitySliver<int>(
+              items: items,
+              gridHeaderHeight: 100,
+              gridBodyTargetHeight: 60,
+              gridSectionGap: 10,
+              gridTileVerticalPadding: 20,
+              headerBuilder: (ctx, i) => Container(color: Colors.green),
+              bodyBuilder: (ctx, i) => const SizedBox.shrink(),
+            ),
+          ],
         ),
+        const Size(1000, 800),
       );
 
-      expect(find.byType(GridView), findsOneWidget);
-      expect(find.byType(EntityGridItem), findsNWidgets(3));
-      expect(find.byType(Divider), findsNothing);
+      await tester.pumpWidget(widget);
+
+      await tester.pumpAndSettle();
+
+      final h = tester.getSize(find.byType(Card).first).height;
+      expect(
+        (h - 190.0).abs() < 1.0,
+        isTrue,
+        reason: 'Tile height should be smaller when no trailing area is reserved',
+      );
     });
 
-    testWidgets('grid uses grid overrides and falls back for others', (tester) async {
-      await _setSurfaceSize(tester, const Size(1000, 800));
-      final items = [1];
+    testWidgets('list: uses separator builder and handles taps', (tester) async {
+      final items = List<int>.generate(4, (i) => i);
+      int taps = 0;
 
-      await tester.pumpWidget(
-        _app(
-          ResponsiveEntityList<int>(
-            items: items,
-            gridBreakpoint: 720,
-            thumbnailBuilder: (c, i) => Text('listThumb $i'),
-            descriptionBuilder: (c, i) => Text('listDesc $i'),
-            // Only override the grid thumbnail; others fall back to list builders.
-            gridThumbnailBuilder: (c, i) => Text('gridThumb $i'),
-          ),
+      final widget = _wrapWidget(
+        tester,
+        CustomScrollView(
+          slivers: [
+            ResponsiveEntitySliver<int>(
+              items: items,
+              gridBreakpoint: 720.0,
+              listSeparatorBuilder: (ctx, _) =>
+                  const Divider(key: ValueKey('sep'), height: 1, thickness: 0.6),
+              headerBuilder: (ctx, i) => SizedBox(key: ValueKey('h-$i'), width: 72, height: 72),
+              bodyBuilder: (ctx, i) => Text('Row $i', key: ValueKey('r-$i')),
+              onTap: (_) => taps++,
+            ),
+          ],
         ),
+        const Size(600, 800), // forces list mode
       );
 
-      expect(find.text('gridThumb 1'), findsOneWidget);
-      expect(find.text('listThumb 1'), findsNothing);
-      expect(find.text('listDesc 1'), findsOneWidget);
-    });
+      await tester.pumpWidget(widget);
 
-    testWidgets('custom listSeparatorBuilder is used', (tester) async {
-      await _setSurfaceSize(tester, const Size(600, 800));
-      final items = [1, 2, 3];
+      await tester.pumpAndSettle();
 
-      await tester.pumpWidget(
-        _app(
-          ResponsiveEntityList<int>(
-            items: items,
-            gridBreakpoint: 720,
-            thumbnailBuilder: (c, i) => const SizedBox(),
-            descriptionBuilder: (c, i) => Text('row $i'),
-            listSeparatorBuilder: (c, i) => SizedBox(key: ValueKey('sep_$i'), height: 2),
-          ),
-        ),
-      );
+      // Should show (items.length - 1) separators
+      expect(find.byKey(const ValueKey('sep')), findsNWidgets(items.length - 1));
 
-      expect(find.byType(ListView), findsOneWidget);
-      expect(find.byType(Divider), findsNothing);
-      expect(find.byKey(const ValueKey('sep_0')), findsOneWidget);
-      expect(find.byKey(const ValueKey('sep_1')), findsOneWidget);
-    });
-
-    testWidgets('onTap fires for list and grid', (tester) async {
-      final items = [1];
-
-      // List
-      await _setSurfaceSize(tester, const Size(600, 800));
-      var taps = 0;
-      await tester.pumpWidget(
-        _app(
-          ResponsiveEntityList<int>(
-            items: items,
-            gridBreakpoint: 720,
-            thumbnailBuilder: (c, i) => const SizedBox(),
-            descriptionBuilder: (c, i) => const Text('tapme'),
-            onTap: (_) => taps++,
-          ),
-        ),
-      );
-      await tester.tap(find.byType(InkWell).first);
+      // Tap a row (InkWell is in the list tile)
+      await tester.tap(find.text('Row 1'));
       await tester.pumpAndSettle();
       expect(taps, 1);
-
-      // Grid
-      await _setSurfaceSize(tester, const Size(1000, 800));
-      await tester.pumpWidget(
-        _app(
-          ResponsiveEntityList<int>(
-            items: items,
-            gridBreakpoint: 720,
-            thumbnailBuilder: (c, i) => const SizedBox(),
-            descriptionBuilder: (c, i) => const Text('tapme-grid'),
-            onTap: (_) => taps++,
-          ),
-        ),
-      );
-      await tester.tap(find.byType(InkWell).first);
-      await tester.pumpAndSettle();
-      expect(taps, 2);
     });
 
-    testWidgets('respects custom paddings', (tester) async {
+    testWidgets('ResponsiveEntityList passes sliversBefore/After through', (tester) async {
       final items = [1, 2];
 
-      // List padding
-      await _setSurfaceSize(tester, const Size(600, 800));
-      const listPad = EdgeInsets.only(top: 5, bottom: 7, left: 3, right: 4);
-      await tester.pumpWidget(
-        _app(
-          ResponsiveEntityList<int>(
-            items: items,
-            gridBreakpoint: 720,
-            listPadding: listPad,
-            thumbnailBuilder: (c, i) => const SizedBox(),
-            descriptionBuilder: (c, i) => Text('row $i'),
-          ),
+      final widget = _wrapWidget(
+        tester,
+        ResponsiveEntityList<int>(
+          items: items,
+          headerBuilder: (ctx, i) => Container(key: ValueKey('top-$i')),
+          bodyBuilder: (ctx, i) => Text('Body $i', key: ValueKey('body-$i')),
+          sliversBefore: const [
+            SliverToBoxAdapter(
+              child: SizedBox(height: 10, child: Text('before', key: ValueKey('before'))),
+            ),
+          ],
+          sliversAfter: const [
+            SliverToBoxAdapter(
+              child: SizedBox(height: 10, child: Text('after', key: ValueKey('after'))),
+            ),
+          ],
         ),
+        const Size(1000, 800),
       );
-      final listView = tester.widget<ListView>(find.byType(ListView));
-      expect(listView.padding, listPad);
 
-      // Grid padding
-      await _setSurfaceSize(tester, const Size(1000, 800));
-      const gridPad = EdgeInsets.fromLTRB(1, 2, 3, 4);
-      await tester.pumpWidget(
-        _app(
-          ResponsiveEntityList<int>(
-            items: items,
-            gridBreakpoint: 720,
-            gridPadding: gridPad,
-            thumbnailBuilder: (c, i) => const SizedBox(),
-            descriptionBuilder: (c, i) => Text('row $i'),
-          ),
-        ),
-      );
-      final gridView = tester.widget<GridView>(find.byType(GridView));
-      expect(gridView.padding, gridPad);
-    });
-  });
+      await tester.pumpWidget(widget);
 
-  group('grid layout', () {
-    // Helper to build a grid with predictable conditions.
-    Future<void> pumpGrid({
-      required WidgetTester tester,
-      required Size surfaceSize,
-      required List<int> items,
-      double aspectRatio = 1.25,
-      double minTileWidth = 300,
-      double maxTileWidth = 340,
-    }) async {
-      await _setSurfaceSize(tester, surfaceSize);
-      await tester.pumpWidget(
-        _app(
-          ResponsiveEntityList<int>(
-            items: items,
-            gridBreakpoint: 720,
-            gridPadding: EdgeInsets.zero, // simplify width math in tests
-            aspectRatio: aspectRatio,
-            minTileWidth: minTileWidth,
-            maxTileWidth: maxTileWidth,
-            // simple children so they lay out quickly
-            thumbnailBuilder: (c, i) => const SizedBox(),
-            descriptionBuilder: (c, i) => Text('item $i'),
-          ),
-        ),
-      );
       await tester.pumpAndSettle();
-    }
 
-    testWidgets('picks 3 columns at 1000px with min=300, max=340', (tester) async {
-      // With width=1000, padding=0, spacing=12:
-      // c=3 -> w = (1000 - 12*(3-1)) / 3 = (1000 - 24)/3 ≈ 325.3 ∈ [300,340]  ✅
-      // c=2 -> w ≈ 494 > 340 ❌
-      // c=4 -> w ≈ 241 < 300 ❌
-      await pumpGrid(
-        tester: tester,
-        surfaceSize: const Size(1000, 800),
-        items: List.generate(8, (i) => i + 1),
-        minTileWidth: 300,
-        maxTileWidth: 340,
-        aspectRatio: 1.25,
-      );
-
-      final grid = tester.widget<GridView>(find.byType(GridView));
-      final delegate = grid.gridDelegate as SliverGridDelegateWithFixedCrossAxisCount;
-      expect(delegate.crossAxisCount, 3);
-      expect(delegate.childAspectRatio, 1.25);
-
-      // Verify a tile’s measured size respects aspect & bounds.
-      final firstTile = find.byType(EntityGridItem).first;
-      final size = tester.getSize(firstTile);
-      expect(size.width, inInclusiveRange(300, 340));
-      // Width / height ~= aspect ratio
-      expect((size.width / size.height), closeTo(1.25, 0.05));
+      expect(find.byKey(const ValueKey('before')), findsOneWidget);
+      expect(find.byKey(const ValueKey('after')), findsOneWidget);
+      // Items render too
+      expect(find.byKey(const ValueKey('body-1')), findsOneWidget);
+      expect(find.byKey(const ValueKey('body-2')), findsOneWidget);
     });
 
-    testWidgets('picks 4 columns at 1400px with min=300, max=360', (tester) async {
-      // With width=1400, padding=0, spacing=12:
-      // c=4 -> w = (1400 - 36) / 4 = 341 ∈ [300,360] ✅
-      // c=3 -> w ≈ 458 > 360 ❌
-      // c=5 -> w ≈ 270 < 300 ❌
-      await pumpGrid(
-        tester: tester,
-        surfaceSize: const Size(1400, 900),
-        items: List.generate(10, (i) => i + 1),
-        minTileWidth: 300,
-        maxTileWidth: 360,
-        aspectRatio: 1.25,
+    testWidgets('ResponsiveEntityList mirrors Sliver configuration (grid mode)', (tester) async {
+      final items = List<int>.generate(3, (i) => i);
+
+      final widget = _wrapWidget(
+        tester,
+        ResponsiveEntityList<int>(
+          items: items,
+          // force grid
+          gridBreakpoint: 480.0,
+          gridTileWidth: 200.0,
+          gridPadding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
+          gridCrossAxisSpacing: 8.0,
+          gridMainAxisSpacing: 8.0,
+          headerBuilder: (ctx, i) => Container(color: Colors.orange),
+          bodyBuilder: (ctx, i) => const SizedBox.shrink(),
+        ),
+        const Size(1000, 800),
       );
 
-      final grid = tester.widget<GridView>(find.byType(GridView));
-      final delegate = grid.gridDelegate as SliverGridDelegateWithFixedCrossAxisCount;
-      expect(delegate.crossAxisCount, 4);
-      expect(delegate.childAspectRatio, 1.25);
+      await tester.pumpWidget(widget);
 
-      final firstTile = find.byType(EntityGridItem).first;
-      final size = tester.getSize(firstTile);
-      expect(size.width, inInclusiveRange(300, 360));
-      expect((size.width / size.height), closeTo(1.25, 0.05));
-    });
+      await tester.pumpAndSettle();
+      expect(find.byType(SliverGrid), findsOneWidget);
 
-    testWidgets('enforces larger tiles (2 cols) at 1600px with min=700, max=820', (tester) async {
-      // With width=1600, padding=0, spacing=12:
-      // c=2 -> w = (1600 - 12) / 2 = 794 ∈ [700,820] ✅
-      // c=3 -> w ≈ 525 < 700 ❌
-      await pumpGrid(
-        tester: tester,
-        surfaceSize: const Size(1600, 900),
-        items: List.generate(6, (i) => i + 1),
-        minTileWidth: 700,
-        maxTileWidth: 820,
-        aspectRatio: 1.25,
-      );
-
-      final grid = tester.widget<GridView>(find.byType(GridView));
-      final delegate = grid.gridDelegate as SliverGridDelegateWithFixedCrossAxisCount;
-      expect(delegate.crossAxisCount, 2);
-
-      final firstTile = find.byType(EntityGridItem).first;
-      final size = tester.getSize(firstTile);
-      expect(size.width, inInclusiveRange(700, 820));
-      expect((size.width / size.height), closeTo(1.25, 0.05));
+      final tile = find.byType(Card).first;
+      final width = tester.getSize(tile).width;
+      // gridTileWidth is 200, so snapped width should be ~200
+      expect((width - 200.0).abs() < 1.0, isTrue);
     });
   });
 }

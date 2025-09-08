@@ -21,12 +21,12 @@ void main() {
     });
 
     test('throws when required path param is missing', () {
-      expect(() => AppRoutes.locationsEdit.toUrlString(), throwsA(isA<ArgumentError>()));
+      expect(() => AppRoutes.locationEdit.toUrlString(), throwsA(isA<ArgumentError>()));
     });
 
     test('URL-encodes path params', () {
       // space and slash must be encoded
-      final url = AppRoutes.rooms.toUrlString(pathParams: {'locationId': 'L 1/2'});
+      final url = AppRoutes.roomsForLocation.toUrlString(pathParams: {'locationId': 'L 1/2'});
       expect(url, '/locations/L%201%2F2/rooms');
     });
 
@@ -40,13 +40,13 @@ void main() {
 
     test('formats path params', () {
       expect(
-        AppRoutes.roomsEdit.toUrlString(pathParams: {'locationId': 'L1', 'roomId': 'R1'}),
+        AppRoutes.roomEdit.toUrlString(pathParams: {'locationId': 'L1', 'roomId': 'R1'}),
         '/locations/L1/rooms/R1/edit',
       );
     });
 
     test('adds query params', () {
-      final p = AppRoutes.rooms.toUrlString(
+      final p = AppRoutes.roomsForLocation.toUrlString(
         pathParams: {'locationId': 'L1'},
         queryParams: {'q': 'kitchen', 'sort': 'asc'},
       );
@@ -54,7 +54,7 @@ void main() {
     });
 
     test('throws when required param missing', () {
-      expect(() => AppRoutes.roomsEdit.toUrlString(), throwsA(isA<ArgumentError>()));
+      expect(() => AppRoutes.roomEdit.toUrlString(), throwsA(isA<ArgumentError>()));
     });
   });
 
@@ -72,10 +72,10 @@ void main() {
 
       // Use the extension to navigate
       final ctx = tester.element(find.byType(Scaffold));
-      AppRoutes.rooms.go(ctx, pathParams: {'locationId': 'L1'});
+      AppRoutes.roomsForLocation.go(ctx, pathParams: {'locationId': 'L1'});
       await tester.pumpAndSettle();
 
-      expect(find.byKey(const ValueKey('route_rooms')), findsOneWidget);
+      expect(find.byKey(const ValueKey('route_roomsForLocation')), findsOneWidget);
     });
 
     testWidgets('push navigates to named route with params', (tester) async {
@@ -84,10 +84,10 @@ void main() {
       await tester.pumpAndSettle();
 
       final ctx = tester.element(find.byType(Scaffold));
-      AppRoutes.roomsAdd.push(ctx, pathParams: {'locationId': 'L1'});
+      AppRoutes.roomAdd.push(ctx, pathParams: {'locationId': 'L1'});
       await tester.pumpAndSettle();
 
-      expect(find.byKey(const ValueKey('route_roomsAdd')), findsOneWidget);
+      expect(find.byKey(const ValueKey('route_roomAdd')), findsOneWidget);
     });
 
     testWidgets('location(BuildContext) builds a namedLocation string', (tester) async {
@@ -96,7 +96,7 @@ void main() {
       await tester.pumpAndSettle();
 
       final ctx = tester.element(find.byType(Scaffold));
-      final loc = AppRoutes.rooms.location(ctx, pathParams: {'locationId': 'L1'});
+      final loc = AppRoutes.roomsForLocation.location(ctx, pathParams: {'locationId': 'L1'});
       expect(loc, '/locations/L1/rooms');
     });
 
@@ -119,7 +119,7 @@ void main() {
 
       // Use the LocationsPage's context (Element implements BuildContext)
       final BuildContext ctx = tester.element(find.byType(LocationsPage));
-      AppRoutes.locationsAdd.push(ctx);
+      AppRoutes.locationAdd.push(ctx);
       await tester.pumpAndSettle();
 
       expect(find.byType(EditLocationPage), findsOneWidget);
@@ -144,7 +144,7 @@ void main() {
       expect(find.byType(LocationsPage), findsOneWidget);
 
       // Push /locations/add (EditLocationPage)
-      router.pushNamed(AppRoutes.locationsAdd.name);
+      router.pushNamed(AppRoutes.locationAdd.name);
       await tester.pumpAndSettle();
       expect(find.byType(EditLocationPage), findsOneWidget);
 
@@ -189,7 +189,7 @@ void main() {
       expect(find.byType(LocationsPage), findsOneWidget);
 
       // Push edit
-      router.pushNamed(AppRoutes.locationsAdd.name);
+      router.pushNamed(AppRoutes.locationAdd.name);
       await tester.pumpAndSettle();
       expect(find.byType(EditLocationPage), findsOneWidget);
 

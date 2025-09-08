@@ -10,7 +10,6 @@ import 'package:stuff/features/location/pages/locations_page.dart';
 import 'package:stuff/domain/models/location_model.dart';
 import 'package:stuff/features/location/viewmodels/locations_view_model.dart';
 import 'package:stuff/shared/widgets/empty_list_state.dart';
-import 'package:stuff/shared/widgets/entity_item.dart';
 
 import '../../../utils/test_logger_manager.dart';
 import '../../../utils/test_router.dart';
@@ -40,6 +39,9 @@ void main() {
     List<NavigatorObserver> observers = const <NavigatorObserver>[],
     GoRouter? router,
   }) async {
+    tester.view.devicePixelRatio = 1.0;
+    tester.view.physicalSize = size;
+
     final res = await pumpWithPlainVm(
       tester,
       home: const LocationsPage(),
@@ -48,7 +50,7 @@ void main() {
           LocationsViewModel(dataService: m.dataService, imageDataService: m.imageDataService),
       router: router,
       onMocksReady: (m) {
-        when(m.dataService.getLocationsStream()).thenAnswer((_) => controller.stream);
+        when(m.dataService.watchLocations()).thenAnswer((_) => controller.stream);
       },
     );
 
@@ -56,7 +58,7 @@ void main() {
   }
 
   group('LocationsView', () {
-    testWidgets('loading → empty state', (tester) async {
+    testWidgets('loading - empty state', (tester) async {
       await pump(tester);
       await tester.pump(); // initial frame: skeleton list
       expect(find.byType(ListView), findsOneWidget);
@@ -75,10 +77,12 @@ void main() {
         Location(id: 'L2', name: 'Office', imageGuids: const []),
       ]);
       await tester.pumpAndSettle();
+
       expect(find.text('Home'), findsOneWidget);
       expect(find.text('Office'), findsOneWidget);
-      expect(find.byType(EntityListItem), findsNWidgets(2));
-      expect(find.byType(EntityGridItem), findsNothing);
+      expect(find.byType(CustomScrollView), findsOneWidget);
+      expect(find.byType(SliverList), findsOneWidget);
+      expect(find.byType(SliverGrid), findsNothing);
 
       // Wide grid
       await pump(tester, size: const Size(1000, 800));
@@ -87,10 +91,14 @@ void main() {
         Location(id: 'L2', name: 'Office', imageGuids: const []),
       ]);
       await tester.pumpAndSettle();
+
       expect(find.text('Home'), findsOneWidget);
       expect(find.text('Office'), findsOneWidget);
-      expect(find.byType(EntityListItem), findsNothing);
-      expect(find.byType(EntityGridItem), findsNWidgets(2));
+      expect(find.byType(CustomScrollView), findsOneWidget);
+      expect(find.byType(SliverGrid), findsOneWidget);
+      expect(find.byType(SliverList), findsNothing);
+
+      expect(find.byType(Card), findsNWidgets(2));
     });
 
     testWidgets('FAB switches extended by width', (tester) async {
@@ -121,7 +129,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(EmptyListState), findsNothing);
-      expect(find.byType(EntityListItem), findsOneWidget);
+      expect(find.text('Office'), findsOneWidget);
 
       await tester.tap(find.byKey(const ValueKey('context_action_menu')));
       await tester.pumpAndSettle();
@@ -177,7 +185,7 @@ void main() {
 
         verify(observer.didPush(any, any)).called(1);
 
-        expect(find.byKey(const ValueKey('route_locationsAdd')), findsOneWidget);
+        expect(find.byKey(const ValueKey('route_locationAdd')), findsOneWidget);
       });
 
       testWidgets('tapping a card pushes rooms route', (tester) async {
@@ -197,7 +205,7 @@ void main() {
 
         verify(observer.didPush(any, any)).called(1);
 
-        expect(find.byKey(const ValueKey('route_rooms')), findsOneWidget);
+        expect(find.byKey(const ValueKey('route_roomsForLocation')), findsOneWidget);
       });
 
       testWidgets('overflow - Edit pushes edit route', (tester) async {
@@ -218,7 +226,7 @@ void main() {
 
         verify(observer.didPush(any, any)).called(1);
 
-        expect(find.byKey(const ValueKey('route_locationsEdit')), findsOneWidget);
+        expect(find.byKey(const ValueKey('route_locationEdit')), findsOneWidget);
       });
     });
   });
