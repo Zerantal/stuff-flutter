@@ -1,3 +1,4 @@
+// lib/shared/widgets/entity_tile_theme.dart
 import 'package:flutter/material.dart';
 
 /// Density presets for entity tiles.
