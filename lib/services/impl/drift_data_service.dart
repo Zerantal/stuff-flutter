@@ -166,7 +166,7 @@ class DriftDataService implements IDataService {
   @override
   Stream<List<Container>> watchAllContainers() {
     _ensureReady();
-    return watchAllContainers();
+    return containers.watchAllContainers();
   }
 
   @override
@@ -250,7 +250,7 @@ class DriftDataService implements IDataService {
   @override
   Stream<List<Item>> watchAllItems() {
     _ensureReady();
-    return watchAllItems();
+    return items.watchAllItems();
   }
 
   @override

@@ -8,8 +8,8 @@ import 'package:stuff/services/contracts/data_service_interface.dart';
 
 import 'package:stuff/domain/models/location_model.dart';
 import 'package:stuff/domain/models/room_model.dart';
-import 'package:stuff/domain/models/container_model.dart';
-import 'package:stuff/domain/models/item_model.dart';
+import 'package:stuff/domain/models/container_model.dart' as dm;
+import 'package:stuff/domain/models/item_model.dart' as dm;
 
 void main() {
   late AppDatabase db;
@@ -24,122 +24,6 @@ void main() {
     await svc.dispose();
   });
 
-  test('locations: add/get and stream emits', () async {
-    final expectStream = expectLater(
-      svc.watchLocations(),
-      emitsInOrder([
-        isA<List<Location>>().having((l) => l.map((e) => e.id).toList(), 'after L1', ['L1']),
-        isA<List<Location>>().having((l) => l.map((e) => e.id).toList(), 'after L2', ['L1', 'L2']),
-      ]),
-    );
-
-    await svc.addLocation(Location(id: 'L1', name: 'Home'));
-    await svc.addLocation(Location(id: 'L2', name: 'Office'));
-
-    final all = await svc.getAllLocations();
-    expect(all.map((e) => e.id), ['L1', 'L2']);
-
-    await expectStream;
-  });
-
-  test('rooms: watch per-location and basic CRUD', () async {
-    await svc.addLocation(Location(id: 'L1', name: 'Home'));
-
-    // Watch for L1; expect initial empty, then 1 room
-    final expectRoomsL1 = expectLater(
-      svc.watchRooms('L1'),
-      emitsInOrder([isA<List<Room>>().having((l) => l.single.id, 'after add', 'R1')]),
-    );
-
-    await svc.addRoom(Room(id: 'R1', locationId: 'L1', name: 'Kitchen'));
-    final r = await svc.getRoomById('R1');
-    expect(r?.name, 'Kitchen');
-    expect(r?.locationId, 'L1');
-
-    final list = await svc.getRoomsForLocation('L1');
-    expect(list.map((e) => e.id), ['R1']);
-
-    await expectRoomsL1;
-  });
-
-  test('deleteLocation cascades rooms via FK', () async {
-    await svc.addLocation(Location(id: 'L1', name: 'Home'));
-    await svc.addRoom(Room(id: 'R1', locationId: 'L1', name: 'Kitchen'));
-    await svc.addRoom(Room(id: 'R2', locationId: 'L1', name: 'Lounge'));
-
-    // Sanity
-    expect((await svc.getRoomsForLocation('L1')).length, 2);
-
-    await svc.deleteLocation('L1');
-
-    // Location gone, rooms gone
-    expect(await svc.getLocationById('L1'), isNull);
-    expect(await svc.getRoomsForLocation('L1'), isEmpty);
-    expect(await svc.getRoomById('R1'), isNull);
-    expect(await svc.getRoomById('R2'), isNull);
-  });
-
-  test('updateRoom can move between locations and streams update both sides', () async {
-    await svc.addLocation(Location(id: 'L1', name: 'Home'));
-    await svc.addLocation(Location(id: 'L2', name: 'Office'));
-    await svc.addRoom(Room(id: 'R1', locationId: 'L1', name: 'Spare'));
-
-    // Watch both locations
-    final expectL1 = expectLater(
-      svc.watchRooms('L1'),
-      emitsInOrder([
-        isA<List<Room>>().having((l) => l.length, 'initial after add', 1),
-        isA<List<Room>>().having((l) => l.length, 'after move away', 0),
-      ]),
-    );
-
-    final expectL2 = expectLater(
-      svc.watchRooms('L2'),
-      emitsInOrder([
-        isA<List<Room>>().having((l) => l.length, 'initial empty', 0),
-        isA<List<Room>>().having((l) => l.single.id, 'after move in', 'R1'),
-      ]),
-    );
-
-    // Move room R1 from L1 -> L2
-    final moved = Room(id: 'R1', locationId: 'L2', name: 'Spare');
-    await svc.updateRoom(moved);
-
-    // Assert lookup reflects new parent
-    final l1Rooms = await svc.getRoomsForLocation('L1');
-    final l2Rooms = await svc.getRoomsForLocation('L2');
-    expect(l1Rooms, isEmpty);
-    expect(l2Rooms.map((e) => e.id), ['R1']);
-
-    await expectL1;
-    await expectL2;
-  });
-
-  test('clearAllData wipes tables and streams emit empty', () async {
-    await svc.addLocation(Location(id: 'L1', name: 'Home'));
-    await svc.addLocation(Location(id: 'L2', name: 'Office'));
-    await svc.addRoom(Room(id: 'R1', locationId: 'L1', name: 'Kitchen'));
-
-    // Expect locations stream to eventually emit empty after clear
-    final expectLocs = expectLater(
-      svc.watchLocations(),
-      emitsThrough(isA<List<Location>>().having((l) => l.length, 'after clear', 0)),
-    );
-    // Rooms stream for L1 should also emit empty after clear
-    final expectRooms = expectLater(
-      svc.watchRooms('L1'),
-      emitsThrough(isA<List<Room>>().having((l) => l.length, 'after clear', 0)),
-    );
-
-    await svc.clearAllData();
-
-    expect(await svc.getAllLocations(), isEmpty);
-    expect(await svc.getRoomsForLocation('L1'), isEmpty);
-
-    await expectLocs;
-    await expectRooms;
-  });
-
   // ---------------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------------
@@ -149,7 +33,7 @@ void main() {
     await svc.addRoom(Room(id: roomId, locationId: locationId, name: 'Room'));
   }
 
-  Container container({
+  dm.Container makeContainer({
     required String id,
     String roomId = 'R1',
     String? parentId,
@@ -158,7 +42,7 @@ void main() {
     int? pos,
     String? desc,
   }) {
-    return Container(
+    return dm.Container(
       id: id,
       roomId: roomId,
       parentContainerId: parentId,
@@ -169,7 +53,7 @@ void main() {
     );
   }
 
-  Item item0({
+  dm.Item makeItem({
     required String id,
     String roomId = 'R1',
     String? containerId,
@@ -180,7 +64,7 @@ void main() {
     int? pos,
     bool archived = false,
   }) {
-    return Item(
+    return dm.Item(
       id: id,
       roomId: roomId,
       containerId: containerId,
@@ -193,299 +77,339 @@ void main() {
     );
   }
 
+  Future<Location> insertLocation(String id) async {
+    final loc = Location(id: id, name: 'Loc $id');
+    await svc.upsertLocation(loc);
+    return loc;
+  }
+
+  Future<Room> insertRoom(String id, String locId) async {
+    final room = Room(id: id, locationId: locId, name: 'Room $id');
+    await svc.upsertRoom(room);
+    return room;
+  }
+
+  Future<dm.Container> insertContainer(String id, String roomId) async {
+    final c = dm.Container(id: id, roomId: roomId, name: 'Cont $id');
+    await svc.upsertContainer(c);
+    return c;
+  }
+
+  Future<dm.Item> insertItem(String id, String roomId, {String? containerId}) async {
+    final it = dm.Item(id: id, roomId: roomId, containerId: containerId, name: 'Item $id');
+    await svc.upsertItem(it);
+    return it;
+  }
+
+  Matcher hasIds(Iterable<String> expected) =>
+      isA<List>().having((l) => l.map((e) => e.id).toList(), 'ids', expected);
+
+  // ---------------------------------------------------------------------------
+  // Locations
+  // ---------------------------------------------------------------------------
+  group('locations', () {
+    test('add/get and stream emits', () async {
+      final expectStream = expectLater(
+        svc.watchLocations(),
+        emitsInOrder([
+          hasIds(['L1']),
+          hasIds(['L1', 'L2']),
+        ]),
+      );
+
+      await svc.addLocation(Location(id: 'L1', name: 'Home'));
+      await svc.addLocation(Location(id: 'L2', name: 'Office'));
+
+      expect(await svc.getAllLocations(), hasIds(['L1', 'L2']));
+
+      await expectStream;
+    });
+
+    test('deleteLocation cascades rooms via FK', () async {
+      await svc.addLocation(Location(id: 'L1', name: 'Home'));
+      await svc.addRoom(Room(id: 'R1', locationId: 'L1', name: 'Kitchen'));
+      await svc.addRoom(Room(id: 'R2', locationId: 'L1', name: 'Lounge'));
+
+      await svc.deleteLocation('L1');
+
+      expect(await svc.getLocationById('L1'), isNull);
+      expect(await svc.getRoomsForLocation('L1'), isEmpty);
+      expect(await svc.getRoomById('R1'), isNull);
+      expect(await svc.getRoomById('R2'), isNull);
+    });
+
+    test('clearAllData wipes tables and streams emit empty', () async {
+      await seedLocationRoom();
+
+      final expectLocs = expectLater(svc.watchLocations(), emitsThrough(hasIds([])));
+      final expectRooms = expectLater(svc.watchRooms('L1'), emitsThrough(hasIds([])));
+
+      await svc.clearAllData();
+
+      expect(await svc.getAllLocations(), isEmpty);
+      expect(await svc.getRoomsForLocation('L1'), isEmpty);
+
+      await expectLocs;
+      await expectRooms;
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Rooms
+  // ---------------------------------------------------------------------------
+  group('rooms', () {
+    test('watch per-location and basic CRUD', () async {
+      await svc.addLocation(Location(id: 'L1', name: 'Home'));
+
+      final expectRooms = expectLater(
+        svc.watchRooms('L1'),
+        emitsInOrder([
+          hasIds(['R1']),
+        ]),
+      );
+
+      await svc.addRoom(Room(id: 'R1', locationId: 'L1', name: 'Kitchen'));
+      expect(await svc.getRoomById('R1'), isNotNull);
+      expect(await svc.getRoomsForLocation('L1'), hasIds(['R1']));
+
+      await expectRooms;
+    });
+
+    test('updateRoom can move between locations and streams update both sides', () async {
+      await svc.addLocation(Location(id: 'L1', name: 'Home'));
+      await svc.addLocation(Location(id: 'L2', name: 'Office'));
+      await svc.addRoom(Room(id: 'R1', locationId: 'L1', name: 'Spare'));
+
+      final expectL1 = expectLater(
+        svc.watchRooms('L1'),
+        emitsInOrder([
+          hasIds(['R1']),
+          hasIds([]),
+        ]),
+      );
+      final expectL2 = expectLater(
+        svc.watchRooms('L2'),
+        emitsInOrder([
+          hasIds([]),
+          hasIds(['R1']),
+        ]),
+      );
+
+      await svc.updateRoom(Room(id: 'R1', locationId: 'L2', name: 'Spare'));
+
+      expect(await svc.getRoomsForLocation('L1'), isEmpty);
+      expect(await svc.getRoomsForLocation('L2'), hasIds(['R1']));
+
+      await expectL1;
+      await expectL2;
+    });
+
+    test('deleteRoom cascades containers and items', () async {
+      await seedLocationRoom();
+      await svc.addContainer(makeContainer(id: 'C1'));
+      await svc.addItem(makeItem(id: 'I1', name: 'RoomItem'));
+      await svc.addItem(makeItem(id: 'I2', containerId: 'C1', name: 'InContainer'));
+
+      await svc.deleteRoom('R1');
+
+      expect(await svc.getRoomContainers('R1'), isEmpty);
+      expect(await svc.getItemsInRoom('R1'), isEmpty);
+      expect(await svc.getItemById('I1'), isNull);
+      expect(await svc.getItemById('I2'), isNull);
+    });
+  });
+
   // ---------------------------------------------------------------------------
   // Containers
   // ---------------------------------------------------------------------------
+  group('containers', () {
+    test('top-level stream and CRUD', () async {
+      await seedLocationRoom();
 
-  test('containers: top-level stream and CRUD', () async {
-    await seedLocationRoom();
+      final expectStream = expectLater(svc.watchRoomContainers('R1'), emitsThrough(hasIds(['C1'])));
 
-    final streamExpectation = expectLater(
-      svc.watchRoomContainers('R1'),
-      emitsThrough(
-        isA<List<Container>>().having((l) => l.map((c) => c.id).toList(), 'ids', ['C1', 'C2']),
-      ),
-    );
+      await svc.addContainer(makeContainer(id: 'C1', name: 'Crate'));
+      expect(await svc.getRoomContainers('R1'), hasIds(['C1']));
 
-    await svc.addContainer(container(id: 'C1', name: 'Crate'));
-    await svc.addContainer(container(id: 'C2', name: 'Bin'));
+      await svc.upsertContainer(makeContainer(id: 'C1', name: 'Renamed'));
+      expect((await svc.getContainerById('C1'))?.name, 'Renamed');
 
-    final list = await svc.getRoomContainers('R1');
-    expect(list.map((c) => c.id).toList(), ['C1', 'C2']);
+      await expectStream;
+    });
 
-    // update via upsert
-    await svc.upsertContainer(container(id: 'C1', name: 'Crate (renamed)'));
-    final c1 = await svc.getContainerById('C1');
-    expect(c1?.name, 'Crate (renamed)');
+    test('child containers stream + cascade delete', () async {
+      await seedLocationRoom();
+      await svc.addContainer(makeContainer(id: 'P', name: 'Parent'));
 
-    await streamExpectation;
-  });
+      final expectChildren = expectLater(
+        svc.watchChildContainers('P'),
+        emitsThrough(hasIds(['C1', 'C2'])),
+      );
 
-  test('containers: child containers stream + cascade delete', () async {
-    await seedLocationRoom();
+      await svc.addContainer(makeContainer(id: 'C1', parentId: 'P'));
+      await svc.addContainer(makeContainer(id: 'C2', parentId: 'P'));
+      expect(await svc.getChildContainers('P'), hasIds(['C1', 'C2']));
 
-    // Parent + 2 children
-    await svc.addContainer(container(id: 'P', name: 'Parent'));
-    final expectChildren = expectLater(
-      svc.watchChildContainers('P'),
-      emitsThrough(isA<List<Container>>().having((l) => l.length, 'children length', 2)),
-    );
+      await svc.deleteContainer('P');
+      expect(await svc.getChildContainers('P'), isEmpty);
 
-    await svc.addContainer(container(id: 'C1', parentId: 'P', name: 'Child1'));
-    await svc.addContainer(container(id: 'C2', parentId: 'P', name: 'Child2'));
+      await expectChildren;
+    });
 
-    var kids = await svc.getChildContainers('P');
-    expect(kids.map((e) => e.id).toList(), ['C1', 'C2']);
+    test('deleteContainer cascades to descendant containers and their items', () async {
+      await seedLocationRoom();
+      final c1 = await svc.addContainer(makeContainer(id: 'C1'));
+      final c1a = await svc.addContainer(makeContainer(id: 'C1a', parentId: c1.id));
+      final c1a1 = await svc.addContainer(makeContainer(id: 'C1a1', parentId: c1a.id));
+      final c1b = await svc.addContainer(makeContainer(id: 'C1b', parentId: c1.id));
+      final c2 = await svc.addContainer(makeContainer(id: 'C2')); // survivor
 
-    // Delete parent -> children should cascade (gone)
-    await svc.deleteContainer('P');
-    kids = await svc.getChildContainers('P');
-    expect(kids, isEmpty);
-    expect(await svc.getContainerById('C1'), isNull);
-    expect(await svc.getContainerById('C2'), isNull);
+      await svc.addItem(makeItem(id: 'IR', name: 'RoomItem'));
+      final iC1 = await svc.addItem(makeItem(id: 'IC1', containerId: c1.id, name: 'InC1'));
+      final iC1a = await svc.addItem(makeItem(id: 'IC1a', containerId: c1a.id, name: 'InC1a'));
+      await svc.addItem(makeItem(id: 'IC1a1', containerId: c1a1.id, name: 'InC1a1'));
+      await svc.addItem(makeItem(id: 'IC1b', containerId: c1b.id, name: 'InC1b'));
+      final iC2 = await svc.addItem(makeItem(id: 'IC2', containerId: c2.id, name: 'InC2'));
 
-    await expectChildren;
-  });
+      await svc.deleteContainer(c1.id);
 
-  test('deleteRoom cascades containers', () async {
-    await seedLocationRoom();
-    await svc.addContainer(container(id: 'C1'));
-    await svc.addContainer(container(id: 'C2'));
+      expect(await svc.getContainerById(c1.id), isNull);
+      expect(await svc.getItemById(iC1.id), isNull);
+      expect(await svc.getItemById(iC1a.id), isNull);
 
-    expect((await svc.getRoomContainers('R1')).length, 2);
+      expect(await svc.getContainerById(c2.id), isNotNull);
+      expect(await svc.getItemById(iC2.id), isNotNull);
+      expect(await svc.getItemById('IR'), isNotNull);
+    });
 
-    await svc.deleteRoom('R1');
+    test('watchLocationContainers/getLocationContainers return seeded containers', () async {
+      final loc = await insertLocation('L1');
+      final room = await insertRoom('R1', loc.id);
+      final c = await insertContainer('C1', room.id);
 
-    expect(await svc.getRoomContainers('R1'), isEmpty);
-    expect(await svc.getContainerById('C1'), isNull);
-    expect(await svc.getContainerById('C2'), isNull);
+      expect(await svc.watchLocationContainers(loc.id).first, hasIds([c.id]));
+      expect(await svc.getLocationContainers(loc.id), hasIds([c.id]));
+    });
+
+    test('watchAllContainers/getAllContainers return seeded containers', () async {
+      final loc = await insertLocation('L1');
+      final room = await insertRoom('R1', loc.id);
+      final c = await insertContainer('C1', room.id);
+
+      expect(await svc.watchAllContainers().first, hasIds([c.id]));
+      expect(await svc.getAllContainers(), hasIds([c.id]));
+    });
   });
 
   // ---------------------------------------------------------------------------
   // Items
   // ---------------------------------------------------------------------------
+  group('items', () {
+    test('watch items in room and in container', () async {
+      await seedLocationRoom();
+      await svc.addContainer(makeContainer(id: 'C1'));
 
-  test('items: watch items in room and in container', () async {
-    await seedLocationRoom();
-    await svc.addContainer(container(id: 'C1', name: 'Box'));
+      final expectRoom = expectLater(svc.watchRoomItems('R1'), emitsThrough(hasIds(['I1'])));
+      final expectCont = expectLater(svc.watchContainerItems('C1'), emitsThrough(hasIds(['I2'])));
 
-    final expectRoomItems = expectLater(
-      svc.watchRoomItems('R1'),
-      emitsThrough(
-        isA<List<Item>>().having((l) => l.map((i) => i.id).toList(), 'room items ids', ['I1']),
-      ),
-    );
-    final expectContainerItems = expectLater(
-      svc.watchContainerItems('C1'),
-      emitsThrough(
-        isA<List<Item>>().having((l) => l.map((i) => i.id).toList(), 'container items ids', ['I2']),
-      ),
-    );
+      await svc.addItem(makeItem(id: 'I1', name: 'Chair'));
+      await svc.addItem(makeItem(id: 'I2', containerId: 'C1', name: 'Lamp'));
 
-    await svc.addItem(item0(id: 'I1', name: 'Chair')); // room level
-    await svc.addItem(item0(id: 'I2', containerId: 'C1', name: 'Lamp')); // in container
+      expect(await svc.getItemsInRoom('R1'), hasIds(['I1']));
+      expect(await svc.getItemsInContainer('C1'), hasIds(['I2']));
 
-    final inRoom = await svc.getItemsInRoom('R1');
-    expect(inRoom.map((e) => e.id).toList(), contains('I1'));
+      await expectRoom;
+      await expectCont;
+    });
 
-    final inC1 = await svc.getItemsInContainer('C1');
-    expect(inC1.map((e) => e.id).toList(), ['I2']);
+    test('move between container and room via update', () async {
+      await seedLocationRoom();
+      await svc.addContainer(makeContainer(id: 'C1'));
+      await svc.addItem(makeItem(id: 'I1', containerId: 'C1', name: 'Thing'));
 
-    await expectRoomItems;
-    await expectContainerItems;
+      await svc.updateItem(makeItem(id: 'I1', containerId: null, name: 'Thing'));
+      expect(await svc.getItemsInRoom('R1'), hasIds(['I1']));
+
+      await svc.updateItem(makeItem(id: 'I1', containerId: 'C1', name: 'Thing'));
+      expect(await svc.getItemsInContainer('C1'), hasIds(['I1']));
+    });
+
+    test('archive/unarchive hides from streams but keeps record', () async {
+      await seedLocationRoom();
+      await svc.addItem(makeItem(id: 'I1', name: 'Archived Candidate'));
+
+      await svc.setItemArchived('I1', true);
+      expect(await svc.getItemsInRoom('R1'), isEmpty);
+      expect((await svc.getItemById('I1'))?.isArchived, isTrue);
+
+      await svc.setItemArchived('I1', false);
+      expect(await svc.getItemsInRoom('R1'), hasIds(['I1']));
+    });
+
+    test('upsert + description + attrs round-trip', () async {
+      await seedLocationRoom();
+      final item = makeItem(
+        id: 'I1',
+        name: 'Desk',
+        description: 'Oak desk',
+        attrs: {'color': 'brown'},
+        guids: ['g1'],
+      );
+
+      await svc.upsertItem(item);
+      var loaded = await svc.getItemById('I1');
+      expect(loaded?.description, 'Oak desk');
+      expect(loaded?.attrs['color'], 'brown');
+      expect(loaded?.imageGuids, ['g1']);
+
+      await svc.upsertItem(item.copyWith(description: 'Refinished', attrs: {'color': 'black'}));
+      loaded = await svc.getItemById('I1');
+      expect(loaded?.description, 'Refinished');
+      expect(loaded?.attrs['color'], 'black');
+    });
+
+    test('watchLocationItems/watchAllItems return seeded items', () async {
+      final loc = await insertLocation('L1');
+      final room = await insertRoom('R1', loc.id);
+      final it = await insertItem('I1', room.id);
+
+      expect(await svc.watchLocationItems(loc.id).first, hasIds([it.id]));
+      expect(await svc.watchAllItems().first, hasIds([it.id]));
+    });
+
+    test('deleteItem removes the item', () async {
+      final loc = await insertLocation('L1');
+      final room = await insertRoom('R1', loc.id);
+      final it = await insertItem('I1', room.id);
+
+      expect(await svc.watchAllItems().first, hasIds([it.id]));
+      await svc.deleteItem(it.id);
+      expect(await svc.watchAllItems().first, hasIds([]));
+    });
   });
 
-  test('items: move between container and room via update', () async {
-    await seedLocationRoom();
-    await svc.addContainer(container(id: 'C1'));
+  // ---------------------------------------------------------------------------
+  // Service lifecycle
+  // ---------------------------------------------------------------------------
+  group('service lifecycle', () {
+    test('dispose closes database and prevents further use', () async {
+      final db = AppDatabase(NativeDatabase.memory());
+      final svc = DriftDataService(db);
 
-    await svc.addItem(item0(id: 'I1', containerId: 'C1', name: 'Thing'));
+      await svc.dispose();
 
-    // Move out to room (null container)
-    final movedOut = item0(id: 'I1', containerId: null, name: 'Thing');
-    await svc.updateItem(movedOut);
+      // Further calls should throw StateError due to _ensureReady()
+      expect(() => svc.watchLocations(), throwsA(isA<StateError>()));
+      expect(() => svc.getAllLocations(), throwsA(isA<StateError>()));
+    });
 
-    final roomItems = await svc.getItemsInRoom('R1');
-    expect(roomItems.map((e) => e.id), contains('I1'));
-    expect(await svc.getItemsInContainer('C1'), isEmpty);
+    test('dispose is idempotent', () async {
+      final db = AppDatabase(NativeDatabase.memory());
+      final svc = DriftDataService(db);
 
-    // Move back into container
-    final movedIn = item0(id: 'I1', containerId: 'C1', name: 'Thing');
-    await svc.updateItem(movedIn);
-
-    expect((await svc.getItemsInContainer('C1')).map((e) => e.id), ['I1']);
-  });
-
-  test('items: archive/unarchive hides from streams but keeps record', () async {
-    await seedLocationRoom();
-    await svc.addItem(item0(id: 'I1', name: 'Archived Candidate'));
-
-    // Archive
-    await svc.setItemArchived('I1', true);
-
-    // Not visible in room stream/query
-    expect(await svc.getItemsInRoom('R1'), isEmpty);
-
-    // Still retrievable directly
-    final i = await svc.getItemById('I1');
-    expect(i, isNotNull);
-    expect(i!.isArchived, isTrue);
-
-    // Unarchive
-    await svc.setItemArchived('I1', false);
-    expect((await svc.getItemsInRoom('R1')).map((e) => e.id), ['I1']);
-  });
-
-  test('items: upsert + description + attrs round-trip', () async {
-    await seedLocationRoom();
-
-    final item = item0(
-      id: 'I1',
-      name: 'Desk',
-      description: 'Oak desk',
-      attrs: {'color': 'brown', 'w': 120, 'h': 75},
-      guids: ['g1', 'g2'],
-    );
-    await svc.upsertItem(item);
-
-    var loaded = await svc.getItemById('I1');
-    expect(loaded?.name, 'Desk');
-    expect(loaded?.description, 'Oak desk');
-    expect(loaded?.attrs['color'], 'brown');
-    expect(loaded?.imageGuids, ['g1', 'g2']);
-
-    // Update description and attrs
-    await svc.upsertItem(item.copyWith(description: 'Refinished', attrs: {'color': 'black'}));
-    loaded = await svc.getItemById('I1');
-    expect(loaded?.description, 'Refinished');
-    expect(loaded?.attrs['color'], 'black');
-  });
-
-  test('delete room cascades items; delete container sets item.containerId = null', () async {
-    await seedLocationRoom();
-    await svc.addContainer(container(id: 'C1'));
-
-    await svc.addItem(item0(id: 'IR', name: 'RoomItem')); // room
-    await svc.addItem(item0(id: 'IC', containerId: 'C1', name: 'Boxed')); // inside container
-
-    // Delete the container: IC should become top-level in room (containerId == null)
-    await svc.deleteContainer('C1');
-
-    final postRoomItems = await svc.getItemsInRoom('R1');
-    expect(postRoomItems.map((e) => e.id).toSet(), {'IR'});
-    expect(await svc.getItemsInContainer('C1'), isEmpty);
-
-    // Now delete the room: all items should be gone
-    await svc.deleteRoom('R1');
-    expect(await svc.getItemsInRoom('R1'), isEmpty);
-    expect(await svc.getItemById('IR'), isNull);
-    expect(await svc.getItemById('IC'), isNull);
-  });
-
-  test('clearAllData wipes containers and items (streams go empty)', () async {
-    await seedLocationRoom();
-    await svc.addContainer(container(id: 'C1'));
-    await svc.addItem(item0(id: 'I1', name: 'Container_I1'));
-    await svc.addItem(item0(id: 'I2', containerId: 'C1', name: 'Container_I2'));
-
-    final expectTopLevel = expectLater(
-      svc.watchRoomContainers('R1'),
-      emitsThrough(isA<List<Container>>().having((l) => l.length, 'after clear', 0)),
-    );
-    final expectItemsRoom = expectLater(
-      svc.watchRoomItems('R1'),
-      emitsThrough(isA<List<Item>>().having((l) => l.length, 'after clear', 0)),
-    );
-
-    await svc.clearAllData();
-
-    expect(await svc.getRoomContainers('R1'), isEmpty);
-    expect(await svc.getItemsInRoom('R1'), isEmpty);
-
-    await expectTopLevel;
-    await expectItemsRoom;
-  });
-
-  test('deleteContainer cascades to descendant containers and their items', () async {
-    // 1) Seed a location + room
-    await svc.addLocation(Location(id: 'L1', name: 'Home'));
-    final room = await svc.addRoom(Room(id: 'R1', locationId: 'L1', name: 'Garage'));
-
-    // 2) Build a container tree in R1:
-    //    C1 (top)
-    //      ├─ C1a
-    //      │    └─ C1a1
-    //      └─ C1b
-    //    C2 (another top-level, should survive)
-    final c1 = await svc.addContainer(Container(roomId: room.id, name: 'C1'));
-    final c1a = await svc.addContainer(
-      Container(roomId: room.id, parentContainerId: c1.id, name: 'C1a'),
-    );
-    final c1a1 = await svc.addContainer(
-      Container(roomId: room.id, parentContainerId: c1a.id, name: 'C1a1'),
-    );
-    final c1b = await svc.addContainer(
-      Container(roomId: room.id, parentContainerId: c1.id, name: 'C1b'),
-    );
-
-    final c2 = await svc.addContainer(Container(roomId: room.id, name: 'C2')); // survivor
-
-    // 3) Items: some in the C1 subtree, one in C2, and one room-level (should survive)
-    final roomItem = await svc.addItem(Item(roomId: room.id, name: 'Room-level item'));
-
-    final iC1 = await svc.addItem(Item(roomId: room.id, containerId: c1.id, name: 'In C1'));
-    final iC1a = await svc.addItem(Item(roomId: room.id, containerId: c1a.id, name: 'In C1a'));
-    final iC1a1 = await svc.addItem(Item(roomId: room.id, containerId: c1a1.id, name: 'In C1a1'));
-    final iC1b = await svc.addItem(Item(roomId: room.id, containerId: c1b.id, name: 'In C1b'));
-
-    final iC2 = await svc.addItem(
-      Item(roomId: room.id, containerId: c2.id, name: 'In C2'),
-    ); // survivor
-
-    // Sanity preconditions
-    expect(await svc.getContainerById(c1.id), isNotNull);
-    expect(await svc.getContainerById(c1a.id), isNotNull);
-    expect(await svc.getContainerById(c1a1.id), isNotNull);
-    expect(await svc.getContainerById(c1b.id), isNotNull);
-    expect(await svc.getContainerById(c2.id), isNotNull);
-
-    expect((await svc.getItemsInContainer(c1.id)).length, 1);
-    expect((await svc.getItemsInContainer(c1a.id)).length, 1);
-    expect((await svc.getItemsInContainer(c1a1.id)).length, 1);
-    expect((await svc.getItemsInContainer(c1b.id)).length, 1);
-    expect((await svc.getItemsInContainer(c2.id)).length, 1);
-
-    // 4) Delete C1 (top-level). Expect its entire subtree + their items to be gone.
-    await svc.deleteContainer(c1.id);
-
-    // Containers in C1 subtree are gone
-    expect(await svc.getContainerById(c1.id), isNull);
-    expect(await svc.getContainerById(c1a.id), isNull);
-    expect(await svc.getContainerById(c1a1.id), isNull);
-    expect(await svc.getContainerById(c1b.id), isNull);
-
-    // Items in C1 subtree are gone
-    expect(await svc.getItemById(iC1.id), isNull);
-    expect(await svc.getItemById(iC1a.id), isNull);
-    expect(await svc.getItemById(iC1a1.id), isNull);
-    expect(await svc.getItemById(iC1b.id), isNull);
-
-    // Unrelated container + its item survives
-    expect(await svc.getContainerById(c2.id), isNotNull);
-    expect(await svc.getItemById(iC2.id), isNotNull);
-
-    // Room-level item survives
-    expect(await svc.getItemById(roomItem.id), isNotNull);
-
-    // Top-level containers for the room should now only include C2
-    final tops = await svc.getRoomContainers(room.id);
-    expect(tops.map((t) => t.id), contains(c2.id));
-    expect(tops.any((t) => t.id == c1.id), isFalse);
-
-    // No items left in the deleted subtree (defensive checks)
-    expect(await svc.getItemsInContainer(c1.id), isEmpty);
-    expect(await svc.getItemsInContainer(c1a.id), isEmpty);
-    expect(await svc.getItemsInContainer(c1a1.id), isEmpty);
-    expect(await svc.getItemsInContainer(c1b.id), isEmpty);
+      await svc.dispose();
+      // Calling dispose again should not throw
+      await svc.dispose();
+    });
   });
 }
