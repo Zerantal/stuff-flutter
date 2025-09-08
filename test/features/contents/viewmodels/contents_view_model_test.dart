@@ -26,8 +26,6 @@ void main() {
     imageDataService = MockIImageDataService();
   });
 
-
-
   group('title/subtitle mapping', () {
     test('all scope', () {
       final vm = ContentsViewModel(
@@ -75,10 +73,8 @@ void main() {
       final c = dm.Container(id: 'C1', roomId: 'R1', name: 'Crate', imageGuids: ['g1']);
       final i = dm.Item(id: 'I1', roomId: 'R1', name: 'Item');
 
-      when(dataService.watchAllContainers())
-          .thenAnswer((_) => Stream.value([c]));
-      when(dataService.watchAllItems())
-          .thenAnswer((_) => Stream.value([i]));
+      when(dataService.watchAllContainers()).thenAnswer((_) => Stream.value([c]));
+      when(dataService.watchAllItems()).thenAnswer((_) => Stream.value([i]));
 
       final vm = ContentsViewModel(
         dataService: dataService,
@@ -96,10 +92,8 @@ void main() {
     });
 
     test('location scope uses watchLocationContainers/watchLocationItems', () async {
-      when(dataService.watchLocationContainers('L1'))
-          .thenAnswer((_) => Stream.value([]));
-      when(dataService.watchLocationItems('L1'))
-          .thenAnswer((_) => Stream.value([]));
+      when(dataService.watchLocationContainers('L1')).thenAnswer((_) => Stream.value([]));
+      when(dataService.watchLocationItems('L1')).thenAnswer((_) => Stream.value([]));
 
       final vm = ContentsViewModel(
         dataService: dataService,
@@ -112,10 +106,8 @@ void main() {
     });
 
     test('room scope uses watchRoomContainers/watchRoomItems', () async {
-      when(dataService.watchRoomContainers('R1'))
-          .thenAnswer((_) => Stream.value([]));
-      when(dataService.watchRoomItems('R1'))
-          .thenAnswer((_) => Stream.value([]));
+      when(dataService.watchRoomContainers('R1')).thenAnswer((_) => Stream.value([]));
+      when(dataService.watchRoomItems('R1')).thenAnswer((_) => Stream.value([]));
 
       final vm = ContentsViewModel(
         dataService: dataService,
@@ -128,10 +120,8 @@ void main() {
     });
 
     test('container scope uses watchChildContainers/watchContainerItems', () async {
-      when(dataService.watchChildContainers('C1'))
-          .thenAnswer((_) => Stream.value([]));
-      when(dataService.watchContainerItems('C1'))
-          .thenAnswer((_) => Stream.value([]));
+      when(dataService.watchChildContainers('C1')).thenAnswer((_) => Stream.value([]));
+      when(dataService.watchContainerItems('C1')).thenAnswer((_) => Stream.value([]));
 
       final vm = ContentsViewModel(
         dataService: dataService,
@@ -150,12 +140,9 @@ void main() {
       logger.startCapture();
 
       when(dataService.watchAllContainers()).thenAnswer((_) {
-        return Stream<List<dm.Container>>.fromFuture(
-          Future.error(Exception('boom containers')),
-        );
+        return Stream<List<dm.Container>>.fromFuture(Future.error(Exception('boom containers')));
       });
-      when(dataService.watchAllItems())
-          .thenAnswer((_) => Stream.value(<dm.Item>[]));
+      when(dataService.watchAllItems()).thenAnswer((_) => Stream.value(<dm.Item>[]));
 
       final vm = ContentsViewModel(
         dataService: dataService,
@@ -166,10 +153,7 @@ void main() {
       // drain should not throw; it will just consume the error
       await vm.containersStream.drain();
 
-      final log = logger.findLogWithMessage(
-        'containers stream error',
-        level: Level.SEVERE,
-      );
+      final log = logger.findLogWithMessage('containers stream error', level: Level.SEVERE);
       expect(log, isNotNull);
       expect(log!.error, isA<Exception>());
 
@@ -180,12 +164,9 @@ void main() {
       final logger = TestLoggerManager(loggerName: 'ContentsViewModel');
       logger.startCapture();
 
-      when(dataService.watchAllContainers())
-          .thenAnswer((_) => Stream.value(<dm.Container>[]));
+      when(dataService.watchAllContainers()).thenAnswer((_) => Stream.value(<dm.Container>[]));
       when(dataService.watchAllItems()).thenAnswer((_) {
-        return Stream<List<dm.Item>>.fromFuture(
-          Future.error(Exception('boom items')),
-        );
+        return Stream<List<dm.Item>>.fromFuture(Future.error(Exception('boom items')));
       });
 
       final vm = ContentsViewModel(
@@ -196,10 +177,7 @@ void main() {
 
       await vm.itemsStream.drain();
 
-      final log = logger.findLogWithMessage(
-        'items stream error',
-        level: Level.SEVERE,
-      );
+      final log = logger.findLogWithMessage('items stream error', level: Level.SEVERE);
       expect(log, isNotNull);
       expect(log!.error, isA<Exception>());
 
@@ -230,10 +208,7 @@ void main() {
           ],
           child: Builder(
             builder: (ctx) {
-              vm = ContentsVmFactory.fromContext(
-                ctx,
-                scope: const ContentsScope.all(),
-              );
+              vm = ContentsVmFactory.fromContext(ctx, scope: const ContentsScope.all());
               return const SizedBox.shrink();
             },
           ),

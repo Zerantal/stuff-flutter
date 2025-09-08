@@ -69,7 +69,7 @@ class _ContainerScope extends ContentsScope {
 }
 
 /// ViewModel that wires the correct pair of streams based on [scope].
-class ContentsViewModel extends ChangeNotifier {
+class ContentsViewModel {
   ContentsViewModel({
     required IDataService dataService,
     required IImageDataService imageDataService,

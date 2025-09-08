@@ -209,24 +209,22 @@ class AppRouter {
                 GoRoute(
                   name: AppRoutes.allContents.name,
                   path: AppRoutes.allContents.path,
-                  builder: (ctx, state) {
-                    return ChangeNotifierProvider(
-                      key: state.pageKey,
-                      create: (c) =>
-                          ContentsVmFactory.fromContext(c, scope: const ContentsScope.all()),
-                      child: const ContentsPage(),
-                    );
-                  },
+                  builder: (context, state) => Provider<ContentsViewModel>(
+                    key: state.pageKey, // recreate when params change
+                    create: (ctx) =>
+                        ContentsVmFactory.fromContext(ctx, scope: const ContentsScope.all()),
+                    child: const ContentsPage(),
+                  ),
                 ),
                 GoRoute(
                   name: AppRoutes.locationContents.name,
                   path: AppRoutes.locationContents.path,
-                  builder: (ctx, state) {
+                  builder: (context, state) {
                     final locationId = state.pathParameters['locationId']!;
-                    return ChangeNotifierProvider(
-                      key: state.pageKey,
-                      create: (c) => ContentsVmFactory.fromContext(
-                        c,
+                    return Provider<ContentsViewModel>(
+                      key: state.pageKey, // recreate when params change
+                      create: (ctx) => ContentsVmFactory.fromContext(
+                        ctx,
                         scope: ContentsScope.location(locationId),
                       ),
                       child: const ContentsPage(),
@@ -238,10 +236,10 @@ class AppRouter {
                   path: AppRoutes.roomContents.path,
                   builder: (context, state) {
                     final roomId = state.pathParameters['roomId']!;
-                    return ChangeNotifierProvider(
-                      key: state.pageKey,
-                      create: (c) =>
-                          ContentsVmFactory.fromContext(c, scope: ContentsScope.room(roomId)),
+                    return Provider<ContentsViewModel>(
+                      key: state.pageKey, // recreate when params change
+                      create: (ctx) =>
+                          ContentsVmFactory.fromContext(ctx, scope: ContentsScope.room(roomId)),
                       child: const ContentsPage(),
                     );
                   },
@@ -251,10 +249,10 @@ class AppRouter {
                   path: AppRoutes.containerContents.path,
                   builder: (context, state) {
                     final containerId = state.pathParameters['containerId']!;
-                    return ChangeNotifierProvider(
-                      key: state.pageKey,
-                      create: (c) => ContentsVmFactory.fromContext(
-                        c,
+                    return Provider<ContentsViewModel>(
+                      key: state.pageKey, // recreate when params change
+                      create: (ctx) => ContentsVmFactory.fromContext(
+                        ctx,
                         scope: ContentsScope.container(containerId),
                       ),
                       child: const ContentsPage(),
