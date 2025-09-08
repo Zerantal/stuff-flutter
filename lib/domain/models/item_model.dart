@@ -1,3 +1,4 @@
+// lib/domain/models/item_model.dart
 import 'package:meta/meta.dart';
 import '../../core/models/base_model.dart';
 
@@ -5,7 +6,7 @@ import '../../core/models/base_model.dart';
 class Item extends BaseModel<Item> {
   final String roomId;
   final String? containerId; // null => directly in room
-  final String? name;
+  final String name;
   final String? description; // requested
   final Map<String, dynamic> attrs;
   final List<String> imageGuids;
@@ -18,7 +19,7 @@ class Item extends BaseModel<Item> {
     super.updatedAt,
     required this.roomId,
     this.containerId,
-    this.name,
+    required this.name,
     this.description,
     this.attrs = const <String, dynamic>{},
     this.imageGuids = const <String>[],

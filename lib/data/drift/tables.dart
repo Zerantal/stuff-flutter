@@ -44,7 +44,6 @@ class Containers extends Table {
   /// Belongs to a room
   TextColumn get roomId => text().references(Rooms, #id, onDelete: KeyAction.cascade)();
 
-  /// Optional nesting
   TextColumn get parentContainerId =>
       text().nullable().references(Containers, #id, onDelete: KeyAction.cascade)();
 
@@ -72,9 +71,9 @@ class Items extends Table {
 
   /// Null => item is directly in the room
   TextColumn get containerId =>
-      text().nullable().references(Containers, #id, onDelete: KeyAction.setNull)();
+      text().nullable().references(Containers, #id, onDelete: KeyAction.cascade)();
 
-  TextColumn get name => text().nullable()();
+  TextColumn get name => text()();
   TextColumn get description => text().nullable()();
 
   /// User-defined fields as JSON object

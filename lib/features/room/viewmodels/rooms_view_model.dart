@@ -23,6 +23,7 @@ class RoomsViewModel {
   final IDataService _dataService;
   final IImageDataService _imageService;
   final String locationId;
+  final String? locationName;
   final DbOps _dbOps;
 
   late final Stream<List<RoomListItem>> rooms;
@@ -31,11 +32,12 @@ class RoomsViewModel {
     required IDataService data,
     required IImageDataService images,
     required this.locationId,
+    this.locationName,
   }) : _dataService = data,
        _imageService = images,
        _dbOps = DbOps(data, images) {
     rooms = _dataService
-        .getRoomsStream(locationId)
+        .watchRooms(locationId)
         .map(
           (list) => list
               .map((r) => RoomListItem(room: r, images: _imageService.refsForGuids(r.imageGuids)))
@@ -46,13 +48,12 @@ class RoomsViewModel {
     _log.fine('Subscribed to rooms stream');
   }
 
-  String? get locationName => null; // TODO: implement this?
-
-  static RoomsViewModel forLocation(BuildContext ctx, String locationId) {
+  static RoomsViewModel forLocation(BuildContext ctx, String locationId, String? locationName) {
     return RoomsViewModel(
       data: ctx.read<IDataService>(),
       images: ctx.read<IImageDataService>(),
       locationId: locationId,
+      locationName: locationName,
     );
   }
 

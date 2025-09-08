@@ -54,7 +54,7 @@ class RoomDao extends DatabaseAccessor<AppDatabase> with _$RoomDaoMixin {
   Future<void> deleteById(String id) => (delete(rooms)..where((t) => t.id.equals(id))).go();
 }
 
-@DriftAccessor(tables: [Containers])
+@DriftAccessor(tables: [Containers, Rooms])
 class ContainerDao extends DatabaseAccessor<AppDatabase> with _$ContainerDaoMixin {
   ContainerDao(super.db);
 
@@ -85,9 +85,34 @@ class ContainerDao extends DatabaseAccessor<AppDatabase> with _$ContainerDaoMixi
   }
 
   Future<void> deleteById(String id) => (delete(containers)..where((t) => t.id.equals(id))).go();
+
+  // Containers for an entire location (top-level only)
+  Stream<List<Container>> watchTopLevelByLocation(String locationId) {
+    final j = select(containers).join([innerJoin(rooms, rooms.id.equalsExp(containers.roomId))]);
+
+    j.where(rooms.locationId.equals(locationId) & containers.parentContainerId.isNull());
+
+    return j.watch().map((rows) {
+      return rows
+          .map((r) => r.readTable(containers))
+          .map((row) => row.toDomain()) // your mapper
+          .toList(growable: false);
+    });
+  }
+
+  Stream<List<Container>> watchAllContainers() {
+    final q = select(containers)
+      ..orderBy([
+        (t) => OrderingTerm(expression: t.updatedAt, mode: OrderingMode.desc),
+        (t) => OrderingTerm(expression: t.name, mode: OrderingMode.asc),
+      ]);
+    return q.watch().map((rows) {
+      return rows.map((row) => row.toDomain()).toList(growable: false);
+    });
+  }
 }
 
-@DriftAccessor(tables: [Items])
+@DriftAccessor(tables: [Items, Rooms])
 class ItemDao extends DatabaseAccessor<AppDatabase> with _$ItemDaoMixin {
   ItemDao(super.db);
 
@@ -126,5 +151,34 @@ class ItemDao extends DatabaseAccessor<AppDatabase> with _$ItemDaoMixin {
     return (update(items)..where((t) => t.id.equals(id))).write(
       ItemsCompanion(isArchived: Value(archived), updatedAt: Value(ts)),
     );
+  }
+
+  // Items in an entire location that are *directly in rooms* (not nested)
+  Stream<List<Item>> watchInLocation(String locationId) {
+    final j = select(items).join([innerJoin(rooms, rooms.id.equalsExp(items.roomId))]);
+
+    j.where(
+      rooms.locationId.equals(locationId) &
+          items.containerId.isNull() &
+          items.isArchived.equals(false),
+    );
+
+    return j.watch().map((rows) {
+      return rows
+          .map((r) => r.readTable(items))
+          .map((row) => row.toDomain())
+          .toList(growable: false);
+    });
+  }
+
+  Stream<List<Item>> watchAllItems() {
+    final q = select(items)
+      ..orderBy([
+        (t) => OrderingTerm(expression: t.updatedAt, mode: OrderingMode.desc),
+        (t) => OrderingTerm(expression: t.name, mode: OrderingMode.asc),
+      ]);
+    return q.watch().map((rows) {
+      return rows.map((row) => row.toDomain()).toList(growable: false);
+    });
   }
 }

@@ -1,3 +1,4 @@
+// lib/domain/models/container_model.dart
 import 'package:meta/meta.dart';
 import '../../core/models/base_model.dart';
 

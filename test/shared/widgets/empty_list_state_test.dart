@@ -42,4 +42,14 @@ void main() {
 
     expect(tapped, 1);
   });
+
+  testWidgets('Test absence of icon', (tester) async {
+    await tester.pumpWidget(
+      _wrap(EmptyListState(text: 'Empty', buttonText: 'Create', onAdd: () => {})),
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(find.byType(Icon), findsNothing);
+  });
 }

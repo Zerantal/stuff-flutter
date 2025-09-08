@@ -41,7 +41,7 @@ class DriftDataService implements IDataService {
 
   // ------- Locations -------
   @override
-  Stream<List<Location>> getLocationsStream() {
+  Stream<List<Location>> watchLocations() {
     _ensureReady();
     return locations.watchAll();
   }
@@ -90,7 +90,7 @@ class DriftDataService implements IDataService {
 
   // ------- Rooms -------
   @override
-  Stream<List<Room>> getRoomsStream(String locationId) {
+  Stream<List<Room>> watchRooms(String locationId) {
     _ensureReady();
     return rooms.watchFor(locationId);
   }
@@ -146,7 +146,7 @@ class DriftDataService implements IDataService {
   // --------------------- Containers ---------------------
 
   @override
-  Stream<List<Container>> watchTopLevelContainers(String roomId) {
+  Stream<List<Container>> watchRoomContainers(String roomId) {
     _ensureReady();
     return containers.watchTopLevelByRoom(roomId);
   }
@@ -158,15 +158,39 @@ class DriftDataService implements IDataService {
   }
 
   @override
-  Future<List<Container>> getTopLevelContainers(String roomId) {
+  Stream<List<Container>> watchLocationContainers(String locationId) {
     _ensureReady();
-    return watchTopLevelContainers(roomId).first;
+    return containers.watchTopLevelByLocation(locationId);
+  }
+
+  @override
+  Stream<List<Container>> watchAllContainers() {
+    _ensureReady();
+    return watchAllContainers();
+  }
+
+  @override
+  Future<List<Container>> getRoomContainers(String roomId) {
+    _ensureReady();
+    return watchRoomContainers(roomId).first;
   }
 
   @override
   Future<List<Container>> getChildContainers(String parentContainerId) {
     _ensureReady();
     return watchChildContainers(parentContainerId).first;
+  }
+
+  @override
+  Future<List<Container>> getLocationContainers(String locationId) {
+    _ensureReady();
+    return watchLocationContainers(locationId).first;
+  }
+
+  @override
+  Future<List<Container>> getAllContainers() {
+    _ensureReady();
+    return watchAllContainers().first;
   }
 
   @override
@@ -205,27 +229,40 @@ class DriftDataService implements IDataService {
   // ----------------------- Items -----------------------
 
   @override
-  Stream<List<Item>> watchItemsInRoom(String roomId) {
+  Stream<List<Item>> watchRoomItems(String roomId) {
     _ensureReady();
     return items.watchInRoom(roomId);
   }
 
   @override
-  Stream<List<Item>> watchItemsInContainer(String containerId) {
+  Stream<List<Item>> watchContainerItems(String containerId) {
     _ensureReady();
     return items.watchInContainer(containerId);
+  }
+
+  // Items in location (room-level only)
+  @override
+  Stream<List<Item>> watchLocationItems(String locationId) {
+    _ensureReady();
+    return items.watchInLocation(locationId);
+  }
+
+  @override
+  Stream<List<Item>> watchAllItems() {
+    _ensureReady();
+    return watchAllItems();
   }
 
   @override
   Future<List<Item>> getItemsInRoom(String roomId) {
     _ensureReady();
-    return watchItemsInRoom(roomId).first;
+    return watchRoomItems(roomId).first;
   }
 
   @override
   Future<List<Item>> getItemsInContainer(String containerId) {
     _ensureReady();
-    return watchItemsInContainer(containerId).first;
+    return watchContainerItems(containerId).first;
   }
 
   @override

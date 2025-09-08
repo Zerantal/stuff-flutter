@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../../../app/routing/app_routes_ext.dart';
 import '../../../app/routing/app_routes.dart';
+import '../../../shared/image/image_ref.dart';
 import '../../../shared/widgets/confirmation_dialog.dart';
 import '../../../shared/widgets/context_action_menu.dart';
 import '../../../shared/widgets/gesture_wrapped_thumbnail.dart';
@@ -26,6 +27,7 @@ class RoomsPage extends StatelessWidget {
     final vm = context.read<RoomsViewModel>();
 
     return Scaffold(
+      key: const ValueKey('RoomsPage'),
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -42,7 +44,7 @@ class RoomsPage extends StatelessWidget {
               key: const ValueKey('add_room_fab'),
               heroTag: 'roomsPageFAB',
               onPressed: () =>
-                  AppRoutes.roomsAdd.push(context, pathParams: {'locationId': vm.locationId}),
+                  AppRoutes.roomAdd.push(context, pathParams: {'locationId': vm.locationId}),
               icon: const Icon(Icons.add_outlined),
               label: const Text('Add Room'),
             )
@@ -50,7 +52,7 @@ class RoomsPage extends StatelessWidget {
               key: const ValueKey('add_room_fab'),
               heroTag: 'roomsPageFAB',
               onPressed: () =>
-                  AppRoutes.roomsAdd.push(context, pathParams: {'locationId': vm.locationId}),
+                  AppRoutes.roomAdd.push(context, pathParams: {'locationId': vm.locationId}),
               tooltip: 'Add Room',
               child: const Icon(Icons.add_outlined),
             ),
@@ -73,44 +75,41 @@ class RoomsPage extends StatelessWidget {
         final items = snapshot.data ?? const <RoomListItem>[];
         if (items.isEmpty) {
           return EmptyListState(
-            onAdd: () =>
-                AppRoutes.roomsAdd.push(context, pathParams: {'locationId': vm.locationId}),
+            onAdd: () => AppRoutes.roomAdd.push(context, pathParams: {'locationId': vm.locationId}),
             text: "No rooms yet\nAdd your first room for this location",
             buttonText: "Add room",
             buttonIcon: const Icon(Icons.add_outlined),
           );
         }
 
+        GestureWrappedThumbnail thumbnailBuilder(
+          BuildContext context,
+          RoomListItem item, {
+          BoxFit fit = BoxFit.cover,
+        }) => GestureWrappedThumbnail(
+          images: item.images,
+          entityId: item.room.id,
+          entityName: item.room.name,
+          size: 80,
+          fit: fit,
+          placeholder: const ImageRef.asset('assets/images/image_placeholder.png'),
+        );
+
         return ResponsiveEntityList<RoomListItem>(
           items: items,
-          onTap: (it) => AppRoutes.roomContents.push(
+          onTap: (it) => AppRoutes.roomContentsAlias.push(
             context,
             pathParams: {'locationId': vm.locationId, 'roomId': it.room.id},
           ),
-          thumbnailBuilder: (ctx, it) => it.images.isNotEmpty
-              ? GestureWrappedThumbnail(
-                  images: it.images,
-                  entityId: it.room.id,
-                  entityName: it.room.name,
-                  size: 80,
-                )
-              : Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    color: Theme.of(ctx).colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(Icons.meeting_room),
-                ),
-          descriptionBuilder: (ctx, it) =>
+          headerBuilder: (ctx, it) => thumbnailBuilder(ctx, it),
+          bodyBuilder: (ctx, it) =>
               EntityDescription(title: it.room.name, subtitle: it.room.description),
           trailingBuilder: (ctx, it) => ContextActionMenu(
-            onView: () => AppRoutes.roomContents.push(
+            onView: () => AppRoutes.roomContentsAlias.push(
               context,
               pathParams: {'locationId': vm.locationId, 'roomId': it.room.id},
             ),
-            onEdit: () => AppRoutes.roomsEdit.push(
+            onEdit: () => AppRoutes.roomEdit.push(
               ctx,
               pathParams: {'locationId': vm.locationId, 'roomId': it.room.id},
             ),

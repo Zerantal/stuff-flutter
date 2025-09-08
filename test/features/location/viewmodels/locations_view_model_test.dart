@@ -24,7 +24,7 @@ void main() {
     locStream = StreamController<List<Location>>.broadcast();
 
     // The VM listens to this stream to produce LocationListItems.
-    when(data.getLocationsStream()).thenAnswer((_) => locStream.stream);
+    when(data.watchLocations()).thenAnswer((_) => locStream.stream);
 
     registerCommonDummies();
   });

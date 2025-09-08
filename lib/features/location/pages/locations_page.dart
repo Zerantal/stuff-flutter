@@ -6,9 +6,6 @@ import 'package:provider/provider.dart';
 
 import '../../../app/routing/app_routes.dart';
 import '../../../app/routing/app_routes_ext.dart';
-import '../../../services/contracts/data_service_interface.dart';
-import '../../../services/contracts/image_data_service_interface.dart';
-import '../../../services/utils/sample_data_populator.dart';
 import '../../../shared/image/image_ref.dart';
 import '../../../shared/widgets/confirmation_dialog.dart';
 import '../../../shared/widgets/context_action_menu.dart';
@@ -31,6 +28,7 @@ class LocationsPage extends StatelessWidget {
     final vm = context.read<LocationsViewModel>();
 
     return Scaffold(
+      key: const ValueKey('LocationsPage'),
       appBar: AppBar(
         title: const Text('Locations'),
         leading: kDebugMode
@@ -43,16 +41,7 @@ class LocationsPage extends StatelessWidget {
               )
             : null,
       ),
-      drawer: kDebugMode
-          ? DeveloperDrawer(
-              onPopulateSampleData: () async {
-                final data = context.read<IDataService>();
-                final images = context.read<IImageDataService>();
-                // Perform the actual population (no ViewModel coupling here)
-                await SampleDataPopulator(dataService: data, imageDataService: images).populate();
-              },
-            )
-          : null,
+      drawer: kDebugMode ? const DeveloperDrawer() : null,
       body: StreamBuilder<List<LocationListItem>>(
         stream: vm.locations,
         builder: (context, snapshot) {
@@ -69,33 +58,43 @@ class LocationsPage extends StatelessWidget {
           final items = snapshot.data ?? const <LocationListItem>[];
           if (items.isEmpty) {
             return EmptyListState(
-              onAdd: () => AppRoutes.locationsAdd.push(context),
-              text: 'No locations found. Tap + to add one..',
+              onAdd: () => AppRoutes.locationAdd.push(context),
+              text: 'No locations found. Tap + to add one.',
               buttonText: 'Add First Location',
               buttonIcon: const Icon(Icons.add_home_outlined),
             );
           }
 
+          GestureWrappedThumbnail thumbnailBuilder(BuildContext context, LocationListItem item) =>
+              GestureWrappedThumbnail(
+                images: item.images,
+                entityId: item.location.id,
+                entityName: item.location.name,
+                size: 80,
+                borderRadius: 10,
+                placeholder: const ImageRef.asset('assets/images/image_placeholder.png'),
+              );
+
           return ResponsiveEntityList<LocationListItem>(
-            minTileWidth: 300,
             items: items,
-            onTap: (it) =>
-                AppRoutes.rooms.push(context, pathParams: {'locationId': it.location.id}),
-            thumbnailBuilder: (ctx, it) => GestureWrappedThumbnail(
-              images: it.images,
-              entityId: it.location.id,
-              entityName: it.location.name,
-              size: 80,
-              placeholder: const ImageRef.asset('assets/images/location_placeholder.jpg'),
+            onTap: (it) => AppRoutes.roomsForLocation.push(
+              context,
+              pathParams: {'locationId': it.location.id},
+              extra: it.location.name,
             ),
-            descriptionBuilder: itemDescriptionBuilder,
+            headerBuilder: thumbnailBuilder,
+            bodyBuilder: itemDescriptionBuilder,
             trailingBuilder: (ctx, it) => ContextActionMenu(
-              onView: () =>
-                  AppRoutes.rooms.push(context, pathParams: {'locationId': it.location.id}),
+              onView: () => AppRoutes.roomsForLocation.push(
+                context,
+                pathParams: {'locationId': it.location.id},
+                extra: it.location.name,
+              ),
               onEdit: () =>
-                  AppRoutes.locationsEdit.push(context, pathParams: {'locationId': it.location.id}),
+                  AppRoutes.locationEdit.push(context, pathParams: {'locationId': it.location.id}),
               onDelete: () => _confirmDelete(context, vm, it),
             ),
+            gridBodyTargetHeight: 100,
           );
         },
       ),
@@ -103,14 +102,14 @@ class LocationsPage extends StatelessWidget {
           ? FloatingActionButton.extended(
               key: const ValueKey('add_location_fab'),
               heroTag: 'locationsPageFAB',
-              onPressed: () => AppRoutes.locationsAdd.push(context),
+              onPressed: () => AppRoutes.locationAdd.push(context),
               icon: const Icon(Icons.add_home_outlined),
               label: const Text('Add Location'),
             )
           : FloatingActionButton(
               key: const ValueKey('add_location_fab'),
               heroTag: 'locationsPageFAB',
-              onPressed: () => AppRoutes.locationsAdd.push(context),
+              onPressed: () => AppRoutes.locationAdd.push(context),
               tooltip: 'Add Location',
               child: const Icon(Icons.add_home_outlined),
             ),
@@ -149,7 +148,7 @@ class LocationsPage extends StatelessWidget {
                   child: Text(
                     item.location.address!,
                     style: theme.textTheme.bodySmall,
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -160,7 +159,6 @@ class LocationsPage extends StatelessWidget {
     );
   }
 
-  // Future<void> _confirmDelete(BuildContext context, LocationsViewModel vm, Location loc) async {
   Future<void> _confirmDelete(
     BuildContext context,
     LocationsViewModel vm,

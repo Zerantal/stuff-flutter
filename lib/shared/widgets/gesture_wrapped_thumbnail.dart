@@ -20,7 +20,9 @@ class GestureWrappedThumbnail extends StatelessWidget {
     this.height,
     this.size = 80,
     this.borderRadius = 8,
+    this.fit = BoxFit.cover,
     this.placeholder,
+    this.backgroundColor,
   });
 
   /// Images to preview (first is used as the thumbnail).
@@ -41,12 +43,10 @@ class GestureWrappedThumbnail extends StatelessWidget {
 
   /// Fallback side length for a square thumbnail when width/height are omitted.
   final double size;
-
-  /// Corner radius applied to the thumbnail.
   final double borderRadius;
-
-  /// Optional placeholder image (defaults to the location placeholder asset).
   final ImageRef? placeholder;
+  final BoxFit fit;
+  final Color? backgroundColor;
 
   @override
   Widget build(BuildContext context) {
@@ -90,7 +90,9 @@ class GestureWrappedThumbnail extends StatelessWidget {
           width: w,
           height: h,
           borderRadius: BorderRadius.circular(borderRadius),
+          fit: fit,
           placeholderWidget: placeholderWidget,
+          backgroundColor: backgroundColor,
         ),
       ),
     );

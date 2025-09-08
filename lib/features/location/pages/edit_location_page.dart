@@ -46,14 +46,17 @@ class _EditLocationPageState extends State<EditLocationPage> {
       (m) => m.initialLoadError,
     );
 
+    const pageKey = ValueKey('EditLocationPage');
+
     // 1) Loading (before init completes)
     if (!isInitialised && initialLoadError == null) {
-      return const LoadingScaffold(title: 'Edit Room');
+      return const LoadingScaffold(key: pageKey, title: 'Edit Room');
     }
 
     // 2) Error (init failed)
     if (initialLoadError != null) {
       return InitialLoadErrorPanel(
+        key: pageKey,
         title: 'Edit Room',
         message: 'Could not load room.',
         details: initialLoadError.toString(),
@@ -75,6 +78,7 @@ class _EditLocationPageState extends State<EditLocationPage> {
     final isBusy = isSaving || isGettingLocation;
 
     return EditEntityScaffold(
+      key: pageKey,
       title: isNewLocation ? 'Add Location' : 'Edit Location',
       isCreate: isNewLocation,
       isBusy: isBusy,

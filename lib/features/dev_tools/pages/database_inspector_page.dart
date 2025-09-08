@@ -87,6 +87,7 @@ class _DatabaseInspectorPageState extends State<DatabaseInspectorPage>
       '[DBInspector] build: Building widget. Current _tab.index: ${_tab.index}, _tabIndex: $_tabIndex',
     );
     return Scaffold(
+      key: const ValueKey('DatabaseInspectorPage'),
       appBar: AppBar(
         title: const Text('Database Inspector'),
         bottom: TabBar(
@@ -310,7 +311,7 @@ class _LocationsTabState extends State<_LocationsTab> with AutomaticKeepAliveCli
   @override
   void initState() {
     super.initState();
-    _locationsStream = context.read<IDataService>().getLocationsStream();
+    _locationsStream = context.read<IDataService>().watchLocations();
   }
 
   @override
@@ -427,7 +428,7 @@ class _RoomsTabState extends State<_RoomsTab> with AutomaticKeepAliveClientMixin
     final data = context.read<IDataService>();
     setState(() {
       _currentLocId = id;
-      _roomsStream = data.getRoomsStream(id);
+      _roomsStream = data.watchRooms(id);
       _expanded.clear();
       _lastReportedIds = null;
     });

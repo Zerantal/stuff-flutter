@@ -6,7 +6,9 @@ import 'package:provider/provider.dart';
 
 import '../../features/container/pages/edit_container_page.dart';
 import '../../features/contents/pages/contents_page.dart';
+import '../../features/contents/viewmodels/contents_view_model.dart';
 import '../../features/dev_tools/pages/database_inspector_page.dart';
+import '../../features/dev_tools/pages/sample_data_options_page.dart';
 import '../../features/item/pages/edit_item_page.dart';
 import '../../features/location/pages/locations_page.dart';
 import '../../features/location/pages/edit_location_page.dart';
@@ -49,7 +51,7 @@ class AppRouter {
           branches: <StatefulShellBranch>[
             StatefulShellBranch(
               routes: <RouteBase>[
-                // --- Locations ---
+                // ────────────────────────── Locations ──────────────────────────
                 GoRoute(
                   name: AppRoutes.locations.name,
                   path: AppRoutes.locations.path,
@@ -60,8 +62,8 @@ class AppRouter {
                   ),
                 ),
                 GoRoute(
-                  name: AppRoutes.locationsAdd.name,
-                  path: AppRoutes.locationsAdd.path,
+                  name: AppRoutes.locationAdd.name,
+                  path: AppRoutes.locationAdd.path,
                   builder: (context, state) => ChangeNotifierProvider(
                     key: state.pageKey,
                     create: (_) => EditLocationViewModel.forNew(context),
@@ -69,8 +71,8 @@ class AppRouter {
                   ),
                 ),
                 GoRoute(
-                  name: AppRoutes.locationsEdit.name,
-                  path: AppRoutes.locationsEdit.path,
+                  name: AppRoutes.locationEdit.name,
+                  path: AppRoutes.locationEdit.path,
                   builder: (context, state) {
                     final locationId = state.pathParameters['locationId']!;
                     return ChangeNotifierProvider(
@@ -80,20 +82,23 @@ class AppRouter {
                     );
                   },
                 ),
-                // --- Rooms ---
+                // ──────────────────────────── Rooms ────────────────────────────
                 GoRoute(
-                  name: AppRoutes.rooms.name,
-                  path: AppRoutes.rooms.path,
-                  builder: (context, state) => Provider<RoomsViewModel>(
-                    key: state.pageKey,
-                    create: (ctx) =>
-                        RoomsViewModel.forLocation(ctx, state.pathParameters['locationId']!),
-                    child: const RoomsPage(),
-                  ),
+                  name: AppRoutes.roomsForLocation.name,
+                  path: AppRoutes.roomsForLocation.path,
+                  builder: (context, state) {
+                    final locationName = state.extra as String?;
+                    final locationId = state.pathParameters['locationId']!;
+                    return Provider<RoomsViewModel>(
+                      key: state.pageKey,
+                      create: (ctx) => RoomsViewModel.forLocation(ctx, locationId, locationName),
+                      child: const RoomsPage(),
+                    );
+                  },
                 ),
                 GoRoute(
-                  name: AppRoutes.roomsAdd.name,
-                  path: AppRoutes.roomsAdd.path,
+                  name: AppRoutes.roomAdd.name,
+                  path: AppRoutes.roomAdd.path,
                   builder: (context, state) => ChangeNotifierProvider(
                     key: state.pageKey,
                     create: (_) => EditRoomViewModel.forNew(
@@ -104,8 +109,8 @@ class AppRouter {
                   ),
                 ),
                 GoRoute(
-                  name: AppRoutes.roomsEdit.name,
-                  path: AppRoutes.roomsEdit.path,
+                  name: AppRoutes.roomEdit.name,
+                  path: AppRoutes.roomEdit.path,
                   builder: (context, state) {
                     final roomId = state.pathParameters['roomId']!;
                     final locationId = state.pathParameters['locationId']!;
@@ -120,56 +125,48 @@ class AppRouter {
                     );
                   },
                 ),
-                // --- Containers ---
+                // ───────────────────────── Containers ──────────────────────────
                 GoRoute(
-                  name: AppRoutes.containersAdd.name,
-                  path: AppRoutes.containersAdd.path,
-                  builder: (c, s) => EditContainerPage(
-                    locationId: s.pathParameters['locationId']!,
-                    roomId: s.pathParameters['roomId']!,
-                  ),
+                  name: AppRoutes.containerAddToRoom.name,
+                  path: AppRoutes.containerAddToRoom.path,
+                  builder: (c, s) => EditContainerPage(roomId: s.pathParameters['roomId']!),
                 ),
                 GoRoute(
-                  name: AppRoutes.containersEdit.name,
-                  path: AppRoutes.containersEdit.path,
-                  builder: (c, s) => EditContainerPage(
-                    locationId: s.pathParameters['locationId']!,
-                    roomId: s.pathParameters['roomId']!,
-                    containerId: s.pathParameters['containerId']!,
-                  ),
+                  name: AppRoutes.containerAddToContainer.name,
+                  path: AppRoutes.containerAddToContainer.path,
+                  builder: (c, s) => EditContainerPage(roomId: s.pathParameters['containerId']!),
+                ),
+                GoRoute(
+                  name: AppRoutes.containerEdit.name,
+                  path: AppRoutes.containerEdit.path,
+                  builder: (c, s) =>
+                      EditContainerPage(containerId: s.pathParameters['containerId']!),
                 ),
 
-                // --- Items ---
+                // ──────────────────────────── Items ────────────────────────────
                 GoRoute(
-                  name: 'itemsAddToContainer',
-                  path: '/locations/:locationId/rooms/:roomId/containers/:containerId/items/add',
-                  builder: (c, s) => ItemDetailsPage.addToContainer(
-                    locationId: s.pathParameters['locationId']!,
-                    roomId: s.pathParameters['roomId']!,
-                    containerId: s.pathParameters['containerId']!,
-                  ),
+                  name: AppRoutes.itemView.name,
+                  path: AppRoutes.itemView.path,
+                  builder: (c, s) => const ItemDetailsPage(),
                 ),
                 GoRoute(
-                  name: 'itemsAddToRoom',
-                  path: '/locations/:locationId/rooms/:roomId/items/add',
-                  builder: (c, s) => ItemDetailsPage.addToRoom(
-                    locationId: s.pathParameters['locationId']!,
-                    roomId: s.pathParameters['roomId']!,
-                  ),
+                  name: AppRoutes.itemEdit.name,
+                  path: AppRoutes.itemEdit.path,
+                  builder: (c, s) => const ItemDetailsPage(),
                 ),
                 GoRoute(
-                  name: 'itemView',
-                  path: '/items/:itemId',
-                  builder: (c, s) => ItemDetailsPage.view(itemId: s.pathParameters['itemId']!),
+                  name: AppRoutes.itemAddToRoom.name,
+                  path: AppRoutes.itemAddToRoom.path,
+                  builder: (c, s) => const ItemDetailsPage(),
                 ),
                 GoRoute(
-                  name: 'itemEdit',
-                  path: '/items/:itemId/edit',
-                  builder: (c, s) => ItemDetailsPage.edit(itemId: s.pathParameters['itemId']!),
+                  name: AppRoutes.itemAddToContainer.name,
+                  path: AppRoutes.itemAddToContainer.path,
+                  builder: (c, s) => const ItemDetailsPage(),
                 ),
                 GoRoute(
-                  name: AppRoutes.itemViewInRoom.name,
-                  path: AppRoutes.itemViewInRoom.path,
+                  name: AppRoutes.itemViewInRoomAlias.name,
+                  path: AppRoutes.itemViewInRoomAlias.path,
                   redirect: (context, state) {
                     return AppRoutes.itemView.toUrlString(
                       pathParams: state.pathParameters,
@@ -178,8 +175,8 @@ class AppRouter {
                   },
                 ),
                 GoRoute(
-                  name: AppRoutes.itemEditInRoom.name,
-                  path: AppRoutes.itemEditInRoom.path,
+                  name: AppRoutes.itemEditInRoomAlias.name,
+                  path: AppRoutes.itemEditInRoomAlias.path,
                   redirect: (context, state) {
                     return AppRoutes.itemEdit.toUrlString(
                       pathParams: state.pathParameters,
@@ -188,8 +185,8 @@ class AppRouter {
                   },
                 ),
                 GoRoute(
-                  name: AppRoutes.itemViewInContainer.name,
-                  path: AppRoutes.itemViewInContainer.path,
+                  name: AppRoutes.itemViewInContainerAlias.name,
+                  path: AppRoutes.itemViewInContainerAlias.path,
                   redirect: (context, state) {
                     return AppRoutes.itemView.toUrlString(
                       pathParams: state.pathParameters,
@@ -198,8 +195,8 @@ class AppRouter {
                   },
                 ),
                 GoRoute(
-                  name: AppRoutes.itemEditInContainer.name,
-                  path: AppRoutes.itemEditInContainer.path,
+                  name: AppRoutes.itemEditInContainerAlias.name,
+                  path: AppRoutes.itemEditInContainerAlias.path,
                   redirect: (context, state) {
                     return AppRoutes.itemEdit.toUrlString(
                       pathParams: state.pathParameters,
@@ -208,50 +205,98 @@ class AppRouter {
                   },
                 ),
 
-                // --- Contents (scoped views) ---
+                // ────────────────────────── Contents ───────────────────────────
                 GoRoute(
                   name: AppRoutes.allContents.name,
                   path: AppRoutes.allContents.path,
-                  builder: (c, s) => const ContentsPage(scope: ContentsScope.all()),
+                  builder: (ctx, state) {
+                    return ChangeNotifierProvider(
+                      key: state.pageKey,
+                      create: (c) =>
+                          ContentsVmFactory.fromContext(c, scope: const ContentsScope.all()),
+                      child: const ContentsPage(),
+                    );
+                  },
                 ),
                 GoRoute(
                   name: AppRoutes.locationContents.name,
                   path: AppRoutes.locationContents.path,
-                  builder: (c, s) =>
-                      ContentsPage(scope: ContentsScope.location(s.pathParameters['locationId']!)),
+                  builder: (ctx, state) {
+                    final locationId = state.pathParameters['locationId']!;
+                    return ChangeNotifierProvider(
+                      key: state.pageKey,
+                      create: (c) => ContentsVmFactory.fromContext(
+                        c,
+                        scope: ContentsScope.location(locationId),
+                      ),
+                      child: const ContentsPage(),
+                    );
+                  },
                 ),
                 GoRoute(
                   name: AppRoutes.roomContents.name,
                   path: AppRoutes.roomContents.path,
-                  builder: (c, s) => ContentsPage(
-                    scope: ContentsScope.room(
-                      s.pathParameters['locationId']!,
-                      s.pathParameters['roomId']!,
-                    ),
-                  ),
+                  builder: (context, state) {
+                    final roomId = state.pathParameters['roomId']!;
+                    return ChangeNotifierProvider(
+                      key: state.pageKey,
+                      create: (c) =>
+                          ContentsVmFactory.fromContext(c, scope: ContentsScope.room(roomId)),
+                      child: const ContentsPage(),
+                    );
+                  },
                 ),
                 GoRoute(
                   name: AppRoutes.containerContents.name,
                   path: AppRoutes.containerContents.path,
-                  builder: (c, s) => ContentsPage(
-                    scope: ContentsScope.container(
-                      s.pathParameters['locationId']!,
-                      s.pathParameters['roomId']!,
-                      s.pathParameters['containerId']!,
-                    ),
-                  ),
+                  builder: (context, state) {
+                    final containerId = state.pathParameters['containerId']!;
+                    return ChangeNotifierProvider(
+                      key: state.pageKey,
+                      create: (c) => ContentsVmFactory.fromContext(
+                        c,
+                        scope: ContentsScope.container(containerId),
+                      ),
+                      child: const ContentsPage(),
+                    );
+                  },
+                ),
+                GoRoute(
+                  name: AppRoutes.roomContentsAlias.name,
+                  path: AppRoutes.roomContentsAlias.path,
+                  redirect: (ctx, state) {
+                    return AppRoutes.roomContents.toUrlString(
+                      pathParams: state.pathParameters,
+                      queryParams: state.uri.queryParameters,
+                    );
+                  },
+                ),
+                GoRoute(
+                  name: AppRoutes.containerContentsAlias.name,
+                  path: AppRoutes.containerContentsAlias.path,
+                  redirect: (ctx, state) {
+                    return AppRoutes.containerContents.toUrlString(
+                      pathParams: state.pathParameters,
+                      queryParams: state.uri.queryParameters,
+                    );
+                  },
                 ),
               ],
             ),
             // Branch 1: Developer tools
             StatefulShellBranch(
-              // navigatorKey: GlobalKey<NavigatorState>(debugLabel: 'devToolsBranch'), // Optional
+              navigatorKey: GlobalKey<NavigatorState>(debugLabel: 'devToolsBranch'),
               routes: <RouteBase>[
                 // Debug
                 GoRoute(
                   name: AppRoutes.debugDbInspector.name,
                   path: AppRoutes.debugDbInspector.path,
                   builder: (c, s) => const DatabaseInspectorPage(),
+                ),
+                GoRoute(
+                  name: AppRoutes.debugSampleDbRandomiser.name,
+                  path: AppRoutes.debugSampleDbRandomiser.path,
+                  builder: (c, s) => const SampleDataOptionsPage(),
                 ),
               ],
             ),

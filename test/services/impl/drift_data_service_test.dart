@@ -26,7 +26,7 @@ void main() {
 
   test('locations: add/get and stream emits', () async {
     final expectStream = expectLater(
-      svc.getLocationsStream(),
+      svc.watchLocations(),
       emitsInOrder([
         isA<List<Location>>().having((l) => l.map((e) => e.id).toList(), 'after L1', ['L1']),
         isA<List<Location>>().having((l) => l.map((e) => e.id).toList(), 'after L2', ['L1', 'L2']),
@@ -47,7 +47,7 @@ void main() {
 
     // Watch for L1; expect initial empty, then 1 room
     final expectRoomsL1 = expectLater(
-      svc.getRoomsStream('L1'),
+      svc.watchRooms('L1'),
       emitsInOrder([isA<List<Room>>().having((l) => l.single.id, 'after add', 'R1')]),
     );
 
@@ -86,7 +86,7 @@ void main() {
 
     // Watch both locations
     final expectL1 = expectLater(
-      svc.getRoomsStream('L1'),
+      svc.watchRooms('L1'),
       emitsInOrder([
         isA<List<Room>>().having((l) => l.length, 'initial after add', 1),
         isA<List<Room>>().having((l) => l.length, 'after move away', 0),
@@ -94,7 +94,7 @@ void main() {
     );
 
     final expectL2 = expectLater(
-      svc.getRoomsStream('L2'),
+      svc.watchRooms('L2'),
       emitsInOrder([
         isA<List<Room>>().having((l) => l.length, 'initial empty', 0),
         isA<List<Room>>().having((l) => l.single.id, 'after move in', 'R1'),
@@ -122,12 +122,12 @@ void main() {
 
     // Expect locations stream to eventually emit empty after clear
     final expectLocs = expectLater(
-      svc.getLocationsStream(),
+      svc.watchLocations(),
       emitsThrough(isA<List<Location>>().having((l) => l.length, 'after clear', 0)),
     );
     // Rooms stream for L1 should also emit empty after clear
     final expectRooms = expectLater(
-      svc.getRoomsStream('L1'),
+      svc.watchRooms('L1'),
       emitsThrough(isA<List<Room>>().having((l) => l.length, 'after clear', 0)),
     );
 
@@ -173,7 +173,7 @@ void main() {
     required String id,
     String roomId = 'R1',
     String? containerId,
-    String? name,
+    required String name,
     String? description,
     Map<String, dynamic> attrs = const {},
     List<String> guids = const [],
@@ -201,7 +201,7 @@ void main() {
     await seedLocationRoom();
 
     final streamExpectation = expectLater(
-      svc.watchTopLevelContainers('R1'),
+      svc.watchRoomContainers('R1'),
       emitsThrough(
         isA<List<Container>>().having((l) => l.map((c) => c.id).toList(), 'ids', ['C1', 'C2']),
       ),
@@ -210,7 +210,7 @@ void main() {
     await svc.addContainer(container(id: 'C1', name: 'Crate'));
     await svc.addContainer(container(id: 'C2', name: 'Bin'));
 
-    final list = await svc.getTopLevelContainers('R1');
+    final list = await svc.getRoomContainers('R1');
     expect(list.map((c) => c.id).toList(), ['C1', 'C2']);
 
     // update via upsert
@@ -252,11 +252,11 @@ void main() {
     await svc.addContainer(container(id: 'C1'));
     await svc.addContainer(container(id: 'C2'));
 
-    expect((await svc.getTopLevelContainers('R1')).length, 2);
+    expect((await svc.getRoomContainers('R1')).length, 2);
 
     await svc.deleteRoom('R1');
 
-    expect(await svc.getTopLevelContainers('R1'), isEmpty);
+    expect(await svc.getRoomContainers('R1'), isEmpty);
     expect(await svc.getContainerById('C1'), isNull);
     expect(await svc.getContainerById('C2'), isNull);
   });
@@ -270,13 +270,13 @@ void main() {
     await svc.addContainer(container(id: 'C1', name: 'Box'));
 
     final expectRoomItems = expectLater(
-      svc.watchItemsInRoom('R1'),
+      svc.watchRoomItems('R1'),
       emitsThrough(
         isA<List<Item>>().having((l) => l.map((i) => i.id).toList(), 'room items ids', ['I1']),
       ),
     );
     final expectContainerItems = expectLater(
-      svc.watchItemsInContainer('C1'),
+      svc.watchContainerItems('C1'),
       emitsThrough(
         isA<List<Item>>().having((l) => l.map((i) => i.id).toList(), 'container items ids', ['I2']),
       ),
@@ -372,7 +372,7 @@ void main() {
     await svc.deleteContainer('C1');
 
     final postRoomItems = await svc.getItemsInRoom('R1');
-    expect(postRoomItems.map((e) => e.id).toSet(), {'IR', 'IC'});
+    expect(postRoomItems.map((e) => e.id).toSet(), {'IR'});
     expect(await svc.getItemsInContainer('C1'), isEmpty);
 
     // Now delete the room: all items should be gone
@@ -385,24 +385,107 @@ void main() {
   test('clearAllData wipes containers and items (streams go empty)', () async {
     await seedLocationRoom();
     await svc.addContainer(container(id: 'C1'));
-    await svc.addItem(item0(id: 'I1'));
-    await svc.addItem(item0(id: 'I2', containerId: 'C1'));
+    await svc.addItem(item0(id: 'I1', name: 'Container_I1'));
+    await svc.addItem(item0(id: 'I2', containerId: 'C1', name: 'Container_I2'));
 
     final expectTopLevel = expectLater(
-      svc.watchTopLevelContainers('R1'),
+      svc.watchRoomContainers('R1'),
       emitsThrough(isA<List<Container>>().having((l) => l.length, 'after clear', 0)),
     );
     final expectItemsRoom = expectLater(
-      svc.watchItemsInRoom('R1'),
+      svc.watchRoomItems('R1'),
       emitsThrough(isA<List<Item>>().having((l) => l.length, 'after clear', 0)),
     );
 
     await svc.clearAllData();
 
-    expect(await svc.getTopLevelContainers('R1'), isEmpty);
+    expect(await svc.getRoomContainers('R1'), isEmpty);
     expect(await svc.getItemsInRoom('R1'), isEmpty);
 
     await expectTopLevel;
     await expectItemsRoom;
+  });
+
+  test('deleteContainer cascades to descendant containers and their items', () async {
+    // 1) Seed a location + room
+    await svc.addLocation(Location(id: 'L1', name: 'Home'));
+    final room = await svc.addRoom(Room(id: 'R1', locationId: 'L1', name: 'Garage'));
+
+    // 2) Build a container tree in R1:
+    //    C1 (top)
+    //      ├─ C1a
+    //      │    └─ C1a1
+    //      └─ C1b
+    //    C2 (another top-level, should survive)
+    final c1 = await svc.addContainer(Container(roomId: room.id, name: 'C1'));
+    final c1a = await svc.addContainer(
+      Container(roomId: room.id, parentContainerId: c1.id, name: 'C1a'),
+    );
+    final c1a1 = await svc.addContainer(
+      Container(roomId: room.id, parentContainerId: c1a.id, name: 'C1a1'),
+    );
+    final c1b = await svc.addContainer(
+      Container(roomId: room.id, parentContainerId: c1.id, name: 'C1b'),
+    );
+
+    final c2 = await svc.addContainer(Container(roomId: room.id, name: 'C2')); // survivor
+
+    // 3) Items: some in the C1 subtree, one in C2, and one room-level (should survive)
+    final roomItem = await svc.addItem(Item(roomId: room.id, name: 'Room-level item'));
+
+    final iC1 = await svc.addItem(Item(roomId: room.id, containerId: c1.id, name: 'In C1'));
+    final iC1a = await svc.addItem(Item(roomId: room.id, containerId: c1a.id, name: 'In C1a'));
+    final iC1a1 = await svc.addItem(Item(roomId: room.id, containerId: c1a1.id, name: 'In C1a1'));
+    final iC1b = await svc.addItem(Item(roomId: room.id, containerId: c1b.id, name: 'In C1b'));
+
+    final iC2 = await svc.addItem(
+      Item(roomId: room.id, containerId: c2.id, name: 'In C2'),
+    ); // survivor
+
+    // Sanity preconditions
+    expect(await svc.getContainerById(c1.id), isNotNull);
+    expect(await svc.getContainerById(c1a.id), isNotNull);
+    expect(await svc.getContainerById(c1a1.id), isNotNull);
+    expect(await svc.getContainerById(c1b.id), isNotNull);
+    expect(await svc.getContainerById(c2.id), isNotNull);
+
+    expect((await svc.getItemsInContainer(c1.id)).length, 1);
+    expect((await svc.getItemsInContainer(c1a.id)).length, 1);
+    expect((await svc.getItemsInContainer(c1a1.id)).length, 1);
+    expect((await svc.getItemsInContainer(c1b.id)).length, 1);
+    expect((await svc.getItemsInContainer(c2.id)).length, 1);
+
+    // 4) Delete C1 (top-level). Expect its entire subtree + their items to be gone.
+    await svc.deleteContainer(c1.id);
+
+    // Containers in C1 subtree are gone
+    expect(await svc.getContainerById(c1.id), isNull);
+    expect(await svc.getContainerById(c1a.id), isNull);
+    expect(await svc.getContainerById(c1a1.id), isNull);
+    expect(await svc.getContainerById(c1b.id), isNull);
+
+    // Items in C1 subtree are gone
+    expect(await svc.getItemById(iC1.id), isNull);
+    expect(await svc.getItemById(iC1a.id), isNull);
+    expect(await svc.getItemById(iC1a1.id), isNull);
+    expect(await svc.getItemById(iC1b.id), isNull);
+
+    // Unrelated container + its item survives
+    expect(await svc.getContainerById(c2.id), isNotNull);
+    expect(await svc.getItemById(iC2.id), isNotNull);
+
+    // Room-level item survives
+    expect(await svc.getItemById(roomItem.id), isNotNull);
+
+    // Top-level containers for the room should now only include C2
+    final tops = await svc.getRoomContainers(room.id);
+    expect(tops.map((t) => t.id), contains(c2.id));
+    expect(tops.any((t) => t.id == c1.id), isFalse);
+
+    // No items left in the deleted subtree (defensive checks)
+    expect(await svc.getItemsInContainer(c1.id), isEmpty);
+    expect(await svc.getItemsInContainer(c1a.id), isEmpty);
+    expect(await svc.getItemsInContainer(c1a1.id), isEmpty);
+    expect(await svc.getItemsInContainer(c1b.id), isEmpty);
   });
 }

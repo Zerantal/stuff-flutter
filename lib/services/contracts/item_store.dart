@@ -2,8 +2,10 @@ import '../../domain/models/item_model.dart';
 
 abstract class IItemStore {
   // Streams
-  Stream<List<Item>> watchItemsInRoom(String roomId);
-  Stream<List<Item>> watchItemsInContainer(String containerId);
+  Stream<List<Item>> watchRoomItems(String roomId);
+  Stream<List<Item>> watchContainerItems(String containerId);
+  Stream<List<Item>> watchLocationItems(String locationId);
+  Stream<List<Item>> watchAllItems();
 
   // One-shot queries
   Future<List<Item>> getItemsInRoom(String roomId);

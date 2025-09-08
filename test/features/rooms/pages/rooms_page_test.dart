@@ -35,13 +35,13 @@ void main() {
 
     // Initial route: /locations (from AppRouter)
     // Navigate to Rooms for a location
-    router.goNamed(AppRoutes.rooms.name, pathParameters: {'locationId': 'L1'});
+    router.goNamed(AppRoutes.roomsForLocation.name, pathParameters: {'locationId': 'L1'});
     await tester.pumpAndSettle();
 
     expect(find.byType(RoomsPage), findsOneWidget);
 
     // Now navigate to add room page
-    router.goNamed(AppRoutes.roomsAdd.name, pathParameters: {'locationId': 'L1'});
+    router.goNamed(AppRoutes.roomAdd.name, pathParameters: {'locationId': 'L1'});
     await tester.pumpAndSettle();
 
     expect(find.byType(EditRoomPage), findsOneWidget);
@@ -66,7 +66,7 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    router.goNamed(AppRoutes.roomsEdit.name, pathParameters: {'locationId': 'L1', 'roomId': 'R1'});
+    router.goNamed(AppRoutes.roomEdit.name, pathParameters: {'locationId': 'L1', 'roomId': 'R1'});
     await tester.pumpAndSettle();
 
     expect(find.byType(EditRoomPage), findsOneWidget);

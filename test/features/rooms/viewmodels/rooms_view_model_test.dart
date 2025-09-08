@@ -20,7 +20,7 @@ void main() {
     test('maps rooms stream into RoomListItem', () async {
       // Arrange a controllable stream
       final controller = StreamController<List<Room>>();
-      when(data.getRoomsStream('L1')).thenAnswer((_) => controller.stream);
+      when(data.watchRooms('L1')).thenAnswer((_) => controller.stream);
 
       final vm = RoomsViewModel(data: data, images: images, locationId: 'L1');
 
@@ -44,7 +44,7 @@ void main() {
     test('deleteRoom completes (delegates to DbOps behind the scenes)', () async {
       // We don’t stub DbOps directly; we just ensure the call completes.
       // If DbOps internally calls IDataService methods, we keep them permissive.
-      when(data.getRoomsStream(any)).thenAnswer((_) => const Stream<List<Room>>.empty());
+      when(data.watchRooms(any)).thenAnswer((_) => const Stream<List<Room>>.empty());
       when(data.deleteRoom('R-Z')).thenAnswer((_) async => Future.value());
 
       final vm = RoomsViewModel(data: data, images: images, locationId: 'L1');
