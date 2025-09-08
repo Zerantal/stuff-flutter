@@ -1,4 +1,5 @@
 // lib/features/dev_tools/pages/sample_data_options_page.dart
+// coverage:ignore-file
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
