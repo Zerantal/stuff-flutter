@@ -83,7 +83,6 @@ class DbOps {
         final imagesToBeDeleted = <String>{}..addAll(c.imageGuids);
 
         await _collectContainerCascade(c.id, imagesToBeDeleted);
-        await dataService.deleteContainer(c.id);
 
         await imageService.deleteImages(imagesToBeDeleted);
       });

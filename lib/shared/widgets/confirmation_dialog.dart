@@ -17,7 +17,11 @@ class ConfirmationDialog {
         title: Text(title),
         content: Text(message),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: Text(cancelText)),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            key: const ValueKey('conf_dialog_cancel_btn'),
+            child: Text(cancelText),
+          ),
           danger
               ? FilledButton.tonalIcon(
                   key: const ValueKey('conf_dialog_confirm_btn'),
@@ -26,7 +30,7 @@ class ConfirmationDialog {
                   label: Text(confirmText),
                 )
               : FilledButton(
-                  key: const ValueKey('conf_dialog_cancel_btn'),
+                  key: const ValueKey('conf_dialog_confirm_btn'),
                   onPressed: () => Navigator.of(ctx).pop(true),
                   child: Text(confirmText),
                 ),

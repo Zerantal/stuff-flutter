@@ -278,7 +278,7 @@ void main() {
       verify(data.getContainerById(cId)).called(1);
       verify(data.getChildContainers(cId)).called(1);
       verify(data.getItemsInContainer(cId)).called(1);
-      verify(data.deleteContainer(any)).called(2);
+      verify(data.deleteContainer(cId)).called(1);
 
       verify(images.deleteImage('CIMG')).called(1);
       verify(images.deleteImage('C2IMG')).called(1);
