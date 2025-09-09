@@ -93,6 +93,22 @@ class DbOps {
     }
   }
 
+  Future<void> deleteItem(String itemId) async {
+    try {
+      await dataService.runInTransaction(() async {
+        final item = await dataService.getItemById(itemId);
+        if (item == null) return;
+
+        await dataService.deleteItem(itemId);
+
+        await imageService.deleteImages(item.imageGuids);
+      });
+    } catch (e, s) {
+      _log.severe("Failed to delete item $itemId", e, s);
+      rethrow;
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------------

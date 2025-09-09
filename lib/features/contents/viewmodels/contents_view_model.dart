@@ -9,6 +9,7 @@ import '../../../services/contracts/data_service_interface.dart';
 import '../../../domain/models/container_model.dart' as dm;
 import '../../../domain/models/item_model.dart' as dm;
 import '../../../services/contracts/image_data_service_interface.dart';
+import '../../../services/ops/db_ops.dart';
 import '../../../services/utils/image_data_service_extensions.dart';
 import '../../../shared/image/image_ref.dart';
 
@@ -75,12 +76,14 @@ class ContentsViewModel {
     required IImageDataService imageDataService,
     required this.scope,
   }) : _data = dataService,
-       _imageDataService = imageDataService {
+       _imageDataService = imageDataService,
+        _dbOps = DbOps(dataService, imageDataService) {
     _initStreams();
   }
 
   final IDataService _data;
   final IImageDataService _imageDataService;
+  final DbOps _dbOps;
   final ContentsScope scope;
 
   late final Stream<List<ContainerListItem>> containersStream;
@@ -127,10 +130,8 @@ class ContentsViewModel {
         });
   }
 
-  Future<void> deleteContainer(String id) async {
-    // Todo: delete container
-    _log.fine('deleteContainer called for $id');
-  }
+  Future<void> deleteContainer(String containerId) => _dbOps.deleteContainer(containerId);
+  Future<void> deleteItem(String itemId) => _dbOps.deleteItem(itemId);
 
   // ---- internals -----------------------------------------------------------
 
