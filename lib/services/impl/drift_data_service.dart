@@ -39,8 +39,8 @@ class DriftDataService implements IDataService {
     await db.close();
   }
 
-  // coverage:ignore-line
   @override
+  // coverage:ignore-line
   Future<T> runInTransaction<T>(Future<T> Function() action) {
     _ensureReady();
     return db.transaction<T>(() async => await action());
