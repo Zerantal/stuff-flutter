@@ -51,6 +51,10 @@ void main() {
       router: router,
       onMocksReady: (m) {
         when(m.dataService.watchLocations()).thenAnswer((_) => controller.stream);
+        when(m.dataService.runInTransaction(any)).thenAnswer((invocation) {
+          final action = invocation.positionalArguments[0] as Future Function();
+          return action();
+        });
       },
     );
 

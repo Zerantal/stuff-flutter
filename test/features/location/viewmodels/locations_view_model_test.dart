@@ -25,6 +25,10 @@ void main() {
 
     // The VM listens to this stream to produce LocationListItems.
     when(data.watchLocations()).thenAnswer((_) => locStream.stream);
+    when(data.runInTransaction(any)).thenAnswer((invocation) {
+      final action = invocation.positionalArguments[0] as Future Function();
+      return action();
+    });
 
     registerCommonDummies();
   });

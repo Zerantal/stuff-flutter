@@ -11,6 +11,10 @@ abstract class IDataService implements ILocationStore, IRoomStore, IContainerSto
   /// Should be called once when the app starts.
   Future<void> init();
 
+  /// Runs [action] inside a single database transaction.
+  /// Ensures all operations are committed atomically.
+  Future<T> runInTransaction<T>(Future<T> Function() action);
+
   /// Clears all data from all relevant stores.
   Future<void> clearAllData();
 
