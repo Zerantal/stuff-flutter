@@ -13,6 +13,6 @@ class EditContainerPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // TODO: implement build
-    return const UnderConstructionPage(key : ValueKey('EditContainerPage'));
+    return const UnderConstructionPage(key: ValueKey('EditContainerPage'));
   }
 }

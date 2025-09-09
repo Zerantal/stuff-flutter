@@ -77,7 +77,7 @@ class ContentsViewModel {
     required this.scope,
   }) : _data = dataService,
        _imageDataService = imageDataService,
-        _dbOps = DbOps(dataService, imageDataService) {
+       _dbOps = DbOps(dataService, imageDataService) {
     _initStreams();
   }
 

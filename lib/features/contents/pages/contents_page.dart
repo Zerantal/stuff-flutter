@@ -150,45 +150,30 @@ class ContentsPage extends StatelessWidget {
           onSelected: (choice) {
             switch (choice) {
               case _AddAction.container:
-                AppRoutes.containerAddToRoom.push(
-                  context,
-                  pathParams: {'roomId': roomId},
-                );
+                AppRoutes.containerAddToRoom.push(context, pathParams: {'roomId': roomId});
                 break;
               case _AddAction.item:
-                AppRoutes.itemAddToRoom.push(
-                  context,
-                  pathParams: {'roomId': roomId},
-                );
+                AppRoutes.itemAddToRoom.push(context, pathParams: {'roomId': roomId});
                 break;
             }
           },
           itemBuilder: (ctx) => const [
             PopupMenuItem(
               value: _AddAction.container,
-              child: ListTile(
-                leading: Icon(Icons.archive_outlined),
-                title: Text('Add Container'),
-              ),
+              child: ListTile(leading: Icon(Icons.archive_outlined), title: Text('Add Container')),
             ),
             PopupMenuItem(
               value: _AddAction.item,
-              child: ListTile(
-                leading: Icon(Icons.inventory_2_outlined),
-                title: Text('Add Item'),
-              ),
+              child: ListTile(leading: Icon(Icons.inventory_2_outlined), title: Text('Add Item')),
             ),
           ],
           child: extended
               ? const FloatingActionButton.extended(
-            icon: Icon(Icons.add),
-            label: Text('Add'),
-            onPressed: null,
-          )
-              : const FloatingActionButton(
-            onPressed: null,
-            child: Icon(Icons.add),
-          ),
+                  icon: Icon(Icons.add),
+                  label: Text('Add'),
+                  onPressed: null,
+                )
+              : const FloatingActionButton(onPressed: null, child: Icon(Icons.add)),
         );
       },
       container: (containerId) {
@@ -221,22 +206,16 @@ class ContentsPage extends StatelessWidget {
             ),
             PopupMenuItem(
               value: _AddAction.item,
-              child: ListTile(
-                leading: Icon(Icons.inventory_2_outlined),
-                title: Text('Add Item'),
-              ),
+              child: ListTile(leading: Icon(Icons.inventory_2_outlined), title: Text('Add Item')),
             ),
           ],
           child: extended
               ? const FloatingActionButton.extended(
-            icon: Icon(Icons.add),
-            label: Text('Add'),
-            onPressed: null,
-          )
-              : const FloatingActionButton(
-            onPressed: null,
-            child: Icon(Icons.add),
-          ),
+                  icon: Icon(Icons.add),
+                  label: Text('Add'),
+                  onPressed: null,
+                )
+              : const FloatingActionButton(onPressed: null, child: Icon(Icons.add)),
         );
       },
     );

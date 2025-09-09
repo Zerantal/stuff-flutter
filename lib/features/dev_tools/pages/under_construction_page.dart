@@ -29,10 +29,7 @@ class UnderConstructionPage extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             SizedBox(height: 8),
-            Text(
-              'Please check back later!',
-              style: TextStyle(fontSize: 16, color: Colors.grey),
-            ),
+            Text('Please check back later!', style: TextStyle(fontSize: 16, color: Colors.grey)),
           ],
         ),
       ),
