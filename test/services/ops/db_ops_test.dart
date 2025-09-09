@@ -314,4 +314,64 @@ void main() {
       verifyNever(images.deleteImage(any));
     });
   });
+
+  group('DbOps.deleteItem', () {
+    test('deletes item and its images when found', () async {
+      const itemId = 'I1';
+      final item = Item(
+        id: itemId,
+        roomId: 'R1',
+        name: 'Chair',
+        description: null,
+        imageGuids: const ['IMG1', 'IMG2'],
+      );
+
+      when(data.getItemById(itemId)).thenAnswer((_) async => item);
+      when(data.deleteItem(itemId)).thenAnswer((_) async {});
+      when(data.runInTransaction<void>(any)).thenAnswer((inv) => inv.positionalArguments[0]());
+
+      await ops.deleteItem(itemId);
+
+      verifyInOrder([
+        data.runInTransaction<void>(any),
+        data.getItemById(itemId),
+        data.deleteItem(itemId),
+      ]);
+
+      verify(images.deleteImage(any)).called(2);
+    });
+
+    test('no-op if item does not exist', () async {
+      const itemId = 'I404';
+      when(data.getItemById(itemId)).thenAnswer((_) async => null);
+      when(data.runInTransaction<void>(any)).thenAnswer((inv) => inv.positionalArguments[0]());
+
+      await ops.deleteItem(itemId);
+
+      verify(data.getItemById(itemId)).called(1);
+      verifyNever(data.deleteItem(any));
+      verifyNever(images.deleteImage(any));
+    });
+
+    test('rethrows if deleteItem fails and does NOT delete images', () async {
+      const itemId = 'IERR';
+      final item = Item(
+        id: itemId,
+        roomId: 'R1',
+        name: 'Broken',
+        description: null,
+        imageGuids: const ['X'],
+      );
+
+      when(data.getItemById(itemId)).thenAnswer((_) async => item);
+      when(data.deleteItem(itemId)).thenThrow(Exception('boom'));
+      when(data.runInTransaction<void>(any)).thenAnswer((inv) => inv.positionalArguments[0]());
+
+      await expectLater(ops.deleteItem(itemId), throwsA(isA<Exception>()));
+
+      verify(data.getItemById(itemId)).called(1);
+      verify(data.deleteItem(itemId)).called(1);
+      verifyNever(images.deleteImage(any));
+    });
+  });
 }
