@@ -42,7 +42,7 @@ class _EditContainerPageState extends State<EditContainerPage> {
       (m) => m.initialLoadError,
     );
 
-    const pageKey = ValueKey('EditContainerPagePage');
+    const pageKey = ValueKey('EditContainerPage');
 
     // 1) Loading (before init completes)
     if (!isInitialised && initialLoadError == null) {
