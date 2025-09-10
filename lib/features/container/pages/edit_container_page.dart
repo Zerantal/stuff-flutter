@@ -10,7 +10,7 @@ import '../../../shared/widgets/edit_entity_scaffold.dart';
 import '../../../shared/widgets/image_manager_input.dart';
 import '../../../shared/widgets/initial_load_error_panel.dart';
 import '../../../shared/widgets/loading_scaffold.dart';
-import '../viewmodels/edit_page_view_model.dart';
+import '../viewmodels/edit_container_view_model.dart';
 
 class EditContainerPage extends StatefulWidget {
   final String? containerId;

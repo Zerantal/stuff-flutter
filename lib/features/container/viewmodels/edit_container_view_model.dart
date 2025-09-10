@@ -68,7 +68,7 @@ class EditContainerViewModel extends ChangeNotifier
       imageDataService: ctx.read<IImageDataService>(),
       tempFileService: ctx.read<ITemporaryFileService>(),
     );
-    scheduleMicrotask(() => vm._initForNew(roomId: roomId, parentContainerId: parentContainerId));
+    scheduleMicrotask(() => vm.initForNew(roomId: roomId, parentContainerId: parentContainerId));
     return vm;
   }
 
@@ -129,7 +129,12 @@ class EditContainerViewModel extends ChangeNotifier
     initTextControllers();
   }
 
-  Future<void> _initForNew({String? roomId, String? parentContainerId}) async {
+  Future<void> initForNew({String? roomId, String? parentContainerId}) async {
+    assert(
+      (roomId == null) ^ (parentContainerId == null),
+      'Must provide either roomId or parentContainerId (not both)',
+    );
+
     late String id;
 
     if (roomId != null) {

@@ -1,6 +1,6 @@
-// lib/features/container/state/edit_room_state.dart
+// lib/features/container/state/edit_container_state.dart
 //
-// Immutable state for the Edit Room screen.
+// Immutable state for the Edit Container screen.
 
 import '../../shared/state/image_set.dart';
 

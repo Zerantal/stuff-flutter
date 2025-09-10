@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../features/container/pages/edit_container_page.dart';
-import '../../features/container/viewmodels/edit_page_view_model.dart';
+import '../../features/container/viewmodels/edit_container_view_model.dart';
 import '../../features/contents/pages/contents_page.dart';
 import '../../features/contents/viewmodels/contents_view_model.dart';
 import '../../features/dev_tools/pages/database_inspector_page.dart';
