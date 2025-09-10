@@ -56,7 +56,7 @@ class _EditContainerPageState extends State<EditContainerPage> {
         title: 'Edit Container',
         message: 'Could not load container.',
         details: initialLoadError.toString(),
-        onRetry: (containerId == null) ? null : () => vm.retryInitForEdit(containerId!),
+        onRetry: (containerId == null) ? null : () async => await vm.retryInitForEdit(containerId!),
         onClose: () => Navigator.of(context).maybePop(),
       );
     }

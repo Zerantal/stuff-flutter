@@ -53,7 +53,7 @@ class _EditRoomPageState extends State<EditRoomPage> {
         title: 'Edit Room',
         message: 'Could not load room.',
         details: initialLoadError.toString(),
-        onRetry: (roomId == null) ? null : () => vm.retryInitForEdit(roomId!),
+        onRetry: (roomId == null) ? null : () async => await vm.retryInitForEdit(roomId!),
         onClose: () => Navigator.of(context).maybePop(),
       );
     }

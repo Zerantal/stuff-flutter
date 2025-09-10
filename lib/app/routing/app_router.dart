@@ -163,7 +163,7 @@ class AppRouter {
                       key: state.pageKey,
                       create: (_) =>
                           EditContainerViewModel.forEdit(context, containerId: containerId),
-                      child: const EditContainerPage(),
+                      child: EditContainerPage(containerId: containerId),
                     );
                   },
                 ),
