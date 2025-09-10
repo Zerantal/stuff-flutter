@@ -50,6 +50,7 @@ class InitialLoadErrorPanel extends StatelessWidget {
                       children: [
                         if (onRetry != null)
                           FilledButton.icon(
+                            key: const ValueKey('initial_load_retry_btn'),
                             onPressed: onRetry,
                             icon: const Icon(Icons.refresh),
                             label: const Text('Retry'),
@@ -57,6 +58,7 @@ class InitialLoadErrorPanel extends StatelessWidget {
                         if (onRetry != null && onClose != null) const SizedBox(width: 8),
                         if (onClose != null)
                           OutlinedButton.icon(
+                            key: const ValueKey('initial_load_close_btn'),
                             onPressed: onClose,
                             icon: const Icon(Icons.close),
                             label: const Text('Close'),

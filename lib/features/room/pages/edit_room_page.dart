@@ -53,7 +53,7 @@ class _EditRoomPageState extends State<EditRoomPage> {
         title: 'Edit Room',
         message: 'Could not load room.',
         details: initialLoadError.toString(),
-        onRetry: (roomId == null) ? null : () => vm.retryInitForEdit(roomId!),
+        onRetry: (roomId == null) ? null : () async => await vm.retryInitForEdit(roomId!),
         onClose: () => Navigator.of(context).maybePop(),
       );
     }
@@ -136,28 +136,10 @@ class _EditForm extends StatelessWidget {
                 onImagePicked: vm.onImagePicked,
                 tileSize: 92,
                 spacing: 8,
-                // Todo: create actual asset placeholder for room image picker
-                placeholderAsset: 'assets/images/location_placeholder.jpg',
+                placeholderAsset: 'assets/images/image_placeholder.jpg',
               );
             },
           ),
-
-          // if (vm.hasTempSession)
-          //   ImageManagerInput(
-          //     key: const Key('room_image_manager'),
-          //     session: vm.tempSession!,
-          //     images: vm.currentState.images,
-          //     onRemoveAt: vm.onRemoveAt,
-          //     onImagePicked: vm.onImagePicked,
-          //     tileSize: 92,
-          //     spacing: 8,
-          //     placeholderAsset: 'assets/images/location_placeholder.jpg',
-          //   )
-          // else
-          //   const SizedBox(
-          //     height: 90,
-          //     child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-          //   ),
         ],
       ),
     );
