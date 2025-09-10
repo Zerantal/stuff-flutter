@@ -1,5 +1,4 @@
 // lib/services/ops/db_ops.dart
-
 import 'package:logging/logging.dart';
 
 import '../contracts/data_service_interface.dart';
@@ -16,18 +15,30 @@ class DbOps {
 
   Future<void> deleteLocation(String locationId) async {
     try {
-      // Need to get all photos associated with location first
-      final loc = await dataService.getLocationById(locationId);
-      if (loc == null) return;
+      await dataService.runInTransaction(() async {
+        final loc = await dataService.getLocationById(locationId);
+        if (loc == null) return;
 
-      final imagesToBeDeleted = List<String>.from(loc.imageGuids);
+        final imagesToBeDeleted = <String>{}..addAll(loc.imageGuids);
 
-      final rooms = await dataService.getRoomsForLocation(locationId);
-      imagesToBeDeleted.addAll(rooms.expand((room) => room.imageGuids));
+        final rooms = await dataService.getRoomsForLocation(locationId);
+        for (final room in rooms) {
+          imagesToBeDeleted.addAll(room.imageGuids);
 
-      await dataService.deleteLocation(locationId);
+          final containers = await dataService.getRoomContainers(room.id);
+          for (final c in containers) {
+            imagesToBeDeleted.addAll(c.imageGuids); // caller handles top-level container
+            await _collectContainerCascade(c.id, imagesToBeDeleted);
+          }
 
-      imageService.deleteImages(imagesToBeDeleted);
+          final items = await dataService.getItemsInRoom(room.id);
+          imagesToBeDeleted.addAll(items.expand((i) => i.imageGuids));
+        }
+
+        await dataService.deleteLocation(locationId);
+
+        await imageService.deleteImages(imagesToBeDeleted);
+      });
     } catch (e, s) {
       _log.severe("Failed to delete location $locationId", e, s);
       rethrow;
@@ -36,14 +47,81 @@ class DbOps {
 
   Future<void> deleteRoom(String roomId) async {
     try {
-      final r = await dataService.getRoomById(roomId);
-      await dataService.deleteRoom(roomId);
-      if (r != null && r.imageGuids.isNotEmpty) {
-        imageService.deleteImages(List<String>.from(r.imageGuids));
-      }
+      await dataService.runInTransaction(() async {
+        final room = await dataService.getRoomById(roomId);
+        await dataService.deleteRoom(roomId);
+
+        if (room == null) return;
+
+        final imagesToBeDeleted = <String>{}..addAll(room.imageGuids);
+
+        final containers = await dataService.getRoomContainers(room.id);
+        for (final c in containers) {
+          imagesToBeDeleted.addAll(c.imageGuids);
+          await _collectContainerCascade(c.id, imagesToBeDeleted);
+        }
+
+        final items = await dataService.getItemsInRoom(room.id);
+        imagesToBeDeleted.addAll(items.expand((i) => i.imageGuids));
+
+        await imageService.deleteImages(imagesToBeDeleted);
+      });
     } catch (e, s) {
       _log.severe("Failed to delete room $roomId", e, s);
       rethrow;
     }
+  }
+
+  Future<void> deleteContainer(String containerId) async {
+    try {
+      await dataService.runInTransaction(() async {
+        final c = await dataService.getContainerById(containerId);
+        if (c == null) return;
+
+        await dataService.deleteContainer(containerId);
+
+        final imagesToBeDeleted = <String>{}..addAll(c.imageGuids);
+
+        await _collectContainerCascade(c.id, imagesToBeDeleted);
+
+        await imageService.deleteImages(imagesToBeDeleted);
+      });
+    } catch (e, s) {
+      _log.severe("Failed to delete container $containerId", e, s);
+      rethrow;
+    }
+  }
+
+  Future<void> deleteItem(String itemId) async {
+    try {
+      await dataService.runInTransaction(() async {
+        final item = await dataService.getItemById(itemId);
+        if (item == null) return;
+
+        await dataService.deleteItem(itemId);
+
+        await imageService.deleteImages(item.imageGuids);
+      });
+    } catch (e, s) {
+      _log.severe("Failed to delete item $itemId", e, s);
+      rethrow;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Helpers
+  // ---------------------------------------------------------------------------
+
+  Future<void> _collectContainerCascade(String parentId, Set<String> imagesToBeDeleted) async {
+    // children
+    final children = await dataService.getChildContainers(parentId);
+    for (final child in children) {
+      imagesToBeDeleted.addAll(child.imageGuids);
+      await _collectContainerCascade(child.id, imagesToBeDeleted);
+    }
+
+    // items
+    final items = await dataService.getItemsInContainer(parentId);
+    imagesToBeDeleted.addAll(items.expand((i) => i.imageGuids));
   }
 }

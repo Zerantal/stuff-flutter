@@ -13,7 +13,7 @@ import 'package:stuff/services/contracts/temporary_file_service_interface.dart';
 import 'package:flutter/material.dart' show NavigatorObserver;
 
 @GenerateNiceMocks([
-  MockSpec<IDataService>(),
+  MockSpec<IDataService>(onMissingStub: OnMissingStub.returnDefault),
   MockSpec<IImageDataService>(),
   MockSpec<ILocationService>(),
   MockSpec<IPermissionService>(),

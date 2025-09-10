@@ -15,11 +15,15 @@ import '../viewmodels/contents_view_model.dart';
 
 final Logger _log = Logger('ContentsPage');
 
+enum _AddAction { container, item }
+
 class ContentsPage extends StatelessWidget {
   const ContentsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final vm = context.watch<ContentsViewModel>();
+
     // Pull just what we need; avoid rebuilding the whole page on unrelated changes.
     final containersStream = context.select<ContentsViewModel, Stream<List<ContainerListItem>>>(
       (m) => m.containersStream,
@@ -27,6 +31,9 @@ class ContentsPage extends StatelessWidget {
     final itemsStream = context.select<ContentsViewModel, Stream<List<ItemListItem>>>(
       (m) => m.itemsStream,
     );
+
+    final width = MediaQuery.sizeOf(context).width;
+    final useExtendedFab = width >= 720; // wide screens get an extended FAB
 
     return Scaffold(
       key: const ValueKey('ContentsPage'),
@@ -51,7 +58,7 @@ class ContentsPage extends StatelessWidget {
                   if (nothingToShow)
                     const SliverFillRemaining(
                       hasScrollBody: false,
-                      child: EmptyListState(text: 'No contents yet/nAdd containers or items.'),
+                      child: EmptyListState(text: 'No contents yet!\nAdd containers or items.'),
                     )
                   else ...[
                     if (containers.isNotEmpty) ...[
@@ -78,9 +85,8 @@ class ContentsPage extends StatelessWidget {
                             ctx,
                             pathParams: {'containerId': it.container.id},
                           ),
-                          onDelete: () => _confirmDelete(context, it),
+                          onDelete: () => _confirmDeleteContents(context, it),
                         ),
-                        // Tap handling (wire to your router if desired)
                         onTap: (c) {
                           AppRoutes.containerContents.push(
                             context,
@@ -109,10 +115,15 @@ class ContentsPage extends StatelessWidget {
                               ? it.item.description
                               : null,
                         ),
-                        trailingBuilder: null,
-                        onTap: (it) {
-                          // TODO: navigate to item view/edit
-                          // AppRoutes.itemViewCanonical.go(ctx, itemId: it.id!);
+                        trailingBuilder: (ctx, it) => ContextActionMenu(
+                          onView: () =>
+                              AppRoutes.itemView.push(context, pathParams: {'itemId': it.item.id}),
+                          onEdit: () =>
+                              AppRoutes.itemEdit.push(ctx, pathParams: {'itemId': it.item.id}),
+                          onDelete: () => _confirmDeleteItem(context, it),
+                        ),
+                        onTap: (c) {
+                          AppRoutes.itemView.push(context, pathParams: {'itemId': c.item.id});
                         },
                       ),
                     ],
@@ -123,10 +134,94 @@ class ContentsPage extends StatelessWidget {
           );
         },
       ),
+      floatingActionButton: _buildFab(context, vm, useExtendedFab),
     );
   }
 
-  Future<void> _confirmDelete(BuildContext context, ContainerListItem c) async {
+  /// Builds a FAB only for room/container scopes.
+  Widget? _buildFab(BuildContext context, ContentsViewModel vm, bool extended) {
+    return vm.scope.map(
+      all: () => null,
+      location: (_) => null,
+      room: (roomId) {
+        return PopupMenuButton<_AddAction>(
+          tooltip: 'Add',
+          position: PopupMenuPosition.over,
+          onSelected: (choice) {
+            switch (choice) {
+              case _AddAction.container:
+                AppRoutes.containerAddToRoom.push(context, pathParams: {'roomId': roomId});
+                break;
+              case _AddAction.item:
+                AppRoutes.itemAddToRoom.push(context, pathParams: {'roomId': roomId});
+                break;
+            }
+          },
+          itemBuilder: (ctx) => const [
+            PopupMenuItem(
+              value: _AddAction.container,
+              child: ListTile(leading: Icon(Icons.archive_outlined), title: Text('Add Container')),
+            ),
+            PopupMenuItem(
+              value: _AddAction.item,
+              child: ListTile(leading: Icon(Icons.inventory_2_outlined), title: Text('Add Item')),
+            ),
+          ],
+          child: extended
+              ? const FloatingActionButton.extended(
+                  icon: Icon(Icons.add),
+                  label: Text('Add'),
+                  onPressed: null,
+                )
+              : const FloatingActionButton(onPressed: null, child: Icon(Icons.add)),
+        );
+      },
+      container: (containerId) {
+        return PopupMenuButton<_AddAction>(
+          tooltip: 'Add',
+          position: PopupMenuPosition.over,
+          onSelected: (choice) {
+            switch (choice) {
+              case _AddAction.container:
+                AppRoutes.containerAddToContainer.push(
+                  context,
+                  pathParams: {'containerId': containerId},
+                );
+                break;
+              case _AddAction.item:
+                AppRoutes.itemAddToContainer.push(
+                  context,
+                  pathParams: {'containerId': containerId},
+                );
+                break;
+            }
+          },
+          itemBuilder: (ctx) => const [
+            PopupMenuItem(
+              value: _AddAction.container,
+              child: ListTile(
+                leading: Icon(Icons.archive_outlined),
+                title: Text('Add Sub-Container'),
+              ),
+            ),
+            PopupMenuItem(
+              value: _AddAction.item,
+              child: ListTile(leading: Icon(Icons.inventory_2_outlined), title: Text('Add Item')),
+            ),
+          ],
+          child: extended
+              ? const FloatingActionButton.extended(
+                  icon: Icon(Icons.add),
+                  label: Text('Add'),
+                  onPressed: null,
+                )
+              : const FloatingActionButton(onPressed: null, child: Icon(Icons.add)),
+        );
+      },
+    );
+  }
+
+  Future<void> _confirmDeleteContents(BuildContext context, ContainerListItem c) async {
     final vm = context.read<ContentsViewModel>();
 
     // capture before async gap to avoid use_build_context_synchronously lint
@@ -144,10 +239,36 @@ class ContentsPage extends StatelessWidget {
     if (ok == true) {
       try {
         await vm.deleteContainer(c.container.id);
-        messenger.showSnackBar(const SnackBar(content: Text('Location deleted')));
+        messenger.showSnackBar(const SnackBar(content: Text('Container deleted')));
       } catch (e, s) {
         messenger.showSnackBar(const SnackBar(content: Text('Delete failed')));
-        _log.severe('Failed to delete location', e, s);
+        _log.severe('Failed to delete container', e, s);
+      }
+    }
+  }
+
+  Future<void> _confirmDeleteItem(BuildContext context, ItemListItem i) async {
+    final vm = context.read<ContentsViewModel>();
+
+    // capture before async gap to avoid use_build_context_synchronously lint
+    final messenger = ScaffoldMessenger.of(context);
+
+    final ok = await ConfirmationDialog.show(
+      context,
+      title: 'Delete item?',
+      message: 'This will permanently delete this item.',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      danger: true,
+    );
+
+    if (ok == true) {
+      try {
+        await vm.deleteItem(i.item.id);
+        messenger.showSnackBar(const SnackBar(content: Text('Item deleted')));
+      } catch (e, s) {
+        messenger.showSnackBar(const SnackBar(content: Text('Delete failed')));
+        _log.severe('Failed to delete item', e, s);
       }
     }
   }

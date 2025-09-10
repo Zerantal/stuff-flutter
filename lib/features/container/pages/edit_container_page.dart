@@ -2,6 +2,8 @@
 
 import 'package:flutter/material.dart';
 
+import '../../dev_tools/pages/under_construction_page.dart';
+
 class EditContainerPage extends StatelessWidget {
   final String? roomId;
   final String? containerId;
@@ -11,6 +13,6 @@ class EditContainerPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // TODO: implement build
-    return Container(key: const ValueKey('EditContainerPage'));
+    return const UnderConstructionPage(key: ValueKey('EditContainerPage'));
   }
 }

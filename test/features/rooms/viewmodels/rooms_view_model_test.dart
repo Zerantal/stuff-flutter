@@ -15,6 +15,11 @@ void main() {
     setUp(() {
       data = MockIDataService();
       images = MockIImageDataService();
+
+      when(data.runInTransaction(any)).thenAnswer((invocation) {
+        final action = invocation.positionalArguments[0] as Future Function();
+        return action();
+      });
     });
 
     test('maps rooms stream into RoomListItem', () async {

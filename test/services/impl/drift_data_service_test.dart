@@ -393,9 +393,6 @@ void main() {
   // ---------------------------------------------------------------------------
   group('service lifecycle', () {
     test('dispose closes database and prevents further use', () async {
-      final db = AppDatabase(NativeDatabase.memory());
-      final svc = DriftDataService(db);
-
       await svc.dispose();
 
       // Further calls should throw StateError due to _ensureReady()
@@ -404,9 +401,6 @@ void main() {
     });
 
     test('dispose is idempotent', () async {
-      final db = AppDatabase(NativeDatabase.memory());
-      final svc = DriftDataService(db);
-
       await svc.dispose();
       // Calling dispose again should not throw
       await svc.dispose();
