@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../features/container/pages/edit_container_page.dart';
+import '../../features/container/viewmodels/edit_page_view_model.dart';
 import '../../features/contents/pages/contents_page.dart';
 import '../../features/contents/viewmodels/contents_view_model.dart';
 import '../../features/dev_tools/pages/database_inspector_page.dart';
@@ -129,18 +130,47 @@ class AppRouter {
                 GoRoute(
                   name: AppRoutes.containerAddToRoom.name,
                   path: AppRoutes.containerAddToRoom.path,
-                  builder: (c, s) => EditContainerPage(roomId: s.pathParameters['roomId']!),
+                  builder: (context, state) {
+                    final roomId = state.pathParameters['roomId']!;
+                    return ChangeNotifierProvider(
+                      key: state.pageKey,
+                      create: (_) => EditContainerViewModel.forNew(
+                        context,
+                        roomId: roomId,
+                      ),
+                      child: const EditContainerPage(),
+                    );
+                  }
                 ),
                 GoRoute(
                   name: AppRoutes.containerAddToContainer.name,
                   path: AppRoutes.containerAddToContainer.path,
-                  builder: (c, s) => EditContainerPage(roomId: s.pathParameters['containerId']!),
+                  builder: (context, state) {
+                    final parentContainerId = state.pathParameters['containerId']!;
+                    return ChangeNotifierProvider(
+                      key: state.pageKey,
+                      create: (_) => EditContainerViewModel.forNew(
+                        context,
+                        parentContainerId: parentContainerId,
+                      ),
+                      child: const EditContainerPage(),
+                    );
+                  }
                 ),
                 GoRoute(
                   name: AppRoutes.containerEdit.name,
                   path: AppRoutes.containerEdit.path,
-                  builder: (c, s) =>
-                      EditContainerPage(containerId: s.pathParameters['containerId']!),
+                    builder: (context, state) {
+                      final containerId = state.pathParameters['containerId']!;
+                      return ChangeNotifierProvider(
+                        key: state.pageKey,
+                        create: (_) => EditContainerViewModel.forEdit(
+                          context,
+                          containerId: containerId,
+                        ),
+                        child: const EditContainerPage(),
+                      );
+                    }
                 ),
 
                 // ──────────────────────────── Items ────────────────────────────
