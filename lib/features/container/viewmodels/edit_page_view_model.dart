@@ -29,8 +29,8 @@ class EditContainerViewModel extends ChangeNotifier
     required IImageDataService imageDataService,
     required ITemporaryFileService tempFileService,
   }) : _data = dataService,
-        _imageStore = imageDataService,
-        _dbOps = DbOps(dataService, imageDataService) {
+       _imageStore = imageDataService,
+       _dbOps = DbOps(dataService, imageDataService) {
     configureImageEditing(
       imageStore: imageDataService,
       tempFiles: tempFileService,
@@ -44,10 +44,7 @@ class EditContainerViewModel extends ChangeNotifier
 
   // ------------------ Context-aware convenience factories --------------------
 
-  static EditContainerViewModel forEdit(
-      BuildContext ctx, {
-        required String containerId,
-      }) {
+  static EditContainerViewModel forEdit(BuildContext ctx, {required String containerId}) {
     final vm = EditContainerViewModel(
       dataService: ctx.read<IDataService>(),
       imageDataService: ctx.read<IImageDataService>(),
@@ -57,8 +54,15 @@ class EditContainerViewModel extends ChangeNotifier
     return vm;
   }
 
-  static EditContainerViewModel forNew(BuildContext ctx, {String? roomId, String? parentContainerId}) {
-   assert((roomId == null) ^ (parentContainerId == null), 'Must provide either roomId or parentContainerId (not both)');
+  static EditContainerViewModel forNew(
+    BuildContext ctx, {
+    String? roomId,
+    String? parentContainerId,
+  }) {
+    assert(
+      (roomId == null) ^ (parentContainerId == null),
+      'Must provide either roomId or parentContainerId (not both)',
+    );
     final vm = EditContainerViewModel(
       dataService: ctx.read<IDataService>(),
       imageDataService: ctx.read<IImageDataService>(),
@@ -72,9 +76,9 @@ class EditContainerViewModel extends ChangeNotifier
 
   final IDataService _data;
   final IImageDataService _imageStore;
-  String? parentContainerId;  // if adding new container to container
-  late String roomId;         // Must be set if adding new to room or container
-  String? containerId;        // if editing existing container
+  String? parentContainerId; // if adding new container to container
+  late String roomId; // Must be set if adding new to room or container
+  String? containerId; // if editing existing container
   final DbOps _dbOps;
 
   final uuid = const Uuid();

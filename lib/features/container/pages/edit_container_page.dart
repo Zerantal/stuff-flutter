@@ -19,7 +19,6 @@ class EditContainerPage extends StatefulWidget {
 
   @override
   State<EditContainerPage> createState() => _EditContainerPageState();
-
 }
 
 class _EditContainerPageState extends State<EditContainerPage> {
@@ -39,7 +38,9 @@ class _EditContainerPageState extends State<EditContainerPage> {
   Widget build(BuildContext context) {
     final vm = context.read<EditContainerViewModel>();
     final isInitialised = context.select<EditContainerViewModel, bool>((m) => m.isInitialised);
-    final initialLoadError = context.select<EditContainerViewModel, Object?>((m) => m.initialLoadError);
+    final initialLoadError = context.select<EditContainerViewModel, Object?>(
+      (m) => m.initialLoadError,
+    );
 
     const pageKey = ValueKey('EditContainerPagePage');
 
@@ -63,7 +64,9 @@ class _EditContainerPageState extends State<EditContainerPage> {
     // VM will have been initialised by now. Can
     final isSaving = context.select<EditContainerViewModel, bool>((m) => m.isSaving);
     final isNewContainer = context.select<EditContainerViewModel, bool>((m) => m.isNewContainer);
-    final hasUnsavedChanges = context.select<EditContainerViewModel, bool>((m) => m.hasUnsavedChanges);
+    final hasUnsavedChanges = context.select<EditContainerViewModel, bool>(
+      (m) => m.hasUnsavedChanges,
+    );
 
     final isBusy = isSaving;
 

@@ -11,7 +11,7 @@ class EditContainerState {
   final ImageSet images;
 
   EditContainerState({this.name = '', this.description = '', ImageSet? images})
-      : images = images ?? ImageSet.empty();
+    : images = images ?? ImageSet.empty();
 
   EditContainerState copyWith({String? name, String? description, ImageSet? images}) {
     return EditContainerState(
@@ -24,11 +24,11 @@ class EditContainerState {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-          other is EditContainerState &&
-              runtimeType == other.runtimeType &&
-              name == other.name &&
-              description == other.description &&
-              images == other.images;
+      other is EditContainerState &&
+          runtimeType == other.runtimeType &&
+          name == other.name &&
+          description == other.description &&
+          images == other.images;
 
   @override
   int get hashCode => Object.hash(name, description, images);

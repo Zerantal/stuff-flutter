@@ -134,13 +134,10 @@ class AppRouter {
                     final roomId = state.pathParameters['roomId']!;
                     return ChangeNotifierProvider(
                       key: state.pageKey,
-                      create: (_) => EditContainerViewModel.forNew(
-                        context,
-                        roomId: roomId,
-                      ),
+                      create: (_) => EditContainerViewModel.forNew(context, roomId: roomId),
                       child: const EditContainerPage(),
                     );
-                  }
+                  },
                 ),
                 GoRoute(
                   name: AppRoutes.containerAddToContainer.name,
@@ -155,22 +152,20 @@ class AppRouter {
                       ),
                       child: const EditContainerPage(),
                     );
-                  }
+                  },
                 ),
                 GoRoute(
                   name: AppRoutes.containerEdit.name,
                   path: AppRoutes.containerEdit.path,
-                    builder: (context, state) {
-                      final containerId = state.pathParameters['containerId']!;
-                      return ChangeNotifierProvider(
-                        key: state.pageKey,
-                        create: (_) => EditContainerViewModel.forEdit(
-                          context,
-                          containerId: containerId,
-                        ),
-                        child: const EditContainerPage(),
-                      );
-                    }
+                  builder: (context, state) {
+                    final containerId = state.pathParameters['containerId']!;
+                    return ChangeNotifierProvider(
+                      key: state.pageKey,
+                      create: (_) =>
+                          EditContainerViewModel.forEdit(context, containerId: containerId),
+                      child: const EditContainerPage(),
+                    );
+                  },
                 ),
 
                 // ──────────────────────────── Items ────────────────────────────
