@@ -83,7 +83,7 @@ class _EditContainerPageState extends State<EditContainerPage> {
   }
 }
 
-/// The main form body: name, description, address row (with GPS), image manager, etc.
+/// The main form body: name, description, etc
 class _EditForm extends StatelessWidget {
   const _EditForm({required this.vm});
 
@@ -101,9 +101,9 @@ class _EditForm extends StatelessWidget {
           TextFormField(
             key: const Key('container_name'),
             controller: vm.nameController.raw,
-            decoration: entityDecoration(label: 'Name', hint: 'e.g., Kitchen'),
+            decoration: entityDecoration(label: 'Name', hint: 'e.g., Toolbox'),
             textInputAction: TextInputAction.next,
-            validator: requiredMax(100),
+            validator: requiredMax(50),
             enabled: !disabled,
           ),
           const SizedBox(height: 12),
@@ -112,7 +112,7 @@ class _EditForm extends StatelessWidget {
             controller: vm.descriptionController.raw,
             decoration: entityDecoration(label: 'Description', hint: 'Optional notes...'),
             textInputAction: TextInputAction.newline,
-            validator: requiredMax(100),
+            validator: optionalMax(250),
             maxLines: 3,
             enabled: !disabled,
           ),

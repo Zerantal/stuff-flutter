@@ -10,7 +10,9 @@ import '../../features/contents/pages/contents_page.dart';
 import '../../features/contents/viewmodels/contents_view_model.dart';
 import '../../features/dev_tools/pages/database_inspector_page.dart';
 import '../../features/dev_tools/pages/sample_data_options_page.dart';
-import '../../features/item/pages/edit_item_page.dart';
+import '../../features/item/pages/item_details_page.dart';
+import '../../features/item/pages/item_details_wrapper.dart';
+import '../../features/item/viewmodels/item_details_view_model.dart';
 import '../../features/location/pages/locations_page.dart';
 import '../../features/location/pages/edit_location_page.dart';
 import '../../features/location/viewmodels/edit_location_view_model.dart';
@@ -172,22 +174,49 @@ class AppRouter {
                 GoRoute(
                   name: AppRoutes.itemView.name,
                   path: AppRoutes.itemView.path,
-                  builder: (c, s) => const ItemDetailsPage(),
+                  pageBuilder: (context, state) {
+                    final itemId = state.pathParameters['itemId']!;
+                    return MaterialPage(
+                      key: ValueKey('item_page_$itemId'), // stable across view/edit
+                      child: ItemDetailsWrapper(itemId: itemId, editable: false),
+                    );
+                  },
                 ),
                 GoRoute(
                   name: AppRoutes.itemEdit.name,
                   path: AppRoutes.itemEdit.path,
-                  builder: (c, s) => const ItemDetailsPage(),
+                  pageBuilder: (context, state) {
+                    final itemId = state.pathParameters['itemId']!;
+                    return MaterialPage(
+                      key: ValueKey('item_page_$itemId'), // same key, same element
+                      child: ItemDetailsWrapper(itemId: itemId, editable: true),
+                    );
+                  },
                 ),
+
                 GoRoute(
                   name: AppRoutes.itemAddToRoom.name,
                   path: AppRoutes.itemAddToRoom.path,
-                  builder: (c, s) => const ItemDetailsPage(),
+                  builder: (context, state) {
+                    final roomId = state.pathParameters['roomId']!;
+                    return ChangeNotifierProvider(
+                      key: state.pageKey,
+                      create: (_) => ItemDetailsViewModel.forNew(context, roomId: roomId),
+                      child: const ItemDetailsPage(),
+                    );
+                  },
                 ),
                 GoRoute(
                   name: AppRoutes.itemAddToContainer.name,
                   path: AppRoutes.itemAddToContainer.path,
-                  builder: (c, s) => const ItemDetailsPage(),
+                  builder: (context, state) {
+                    final containerId = state.pathParameters['containerId']!;
+                    return ChangeNotifierProvider(
+                      key: state.pageKey,
+                      create: (_) => ItemDetailsViewModel.forNew(context, containerId: containerId),
+                      child: const ItemDetailsPage(),
+                    );
+                  },
                 ),
                 GoRoute(
                   name: AppRoutes.itemViewInRoomAlias.name,

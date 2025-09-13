@@ -5,6 +5,9 @@ class SuppressibleTextEditingController {
   final TextEditingController controller;
   bool _suppress = false;
 
+  // keep track of wrapped closures so we can remove them later
+  final List<VoidCallback> _wrappedListeners = [];
+
   SuppressibleTextEditingController({String? text})
     : controller = TextEditingController(text: text);
 
@@ -18,12 +21,25 @@ class SuppressibleTextEditingController {
   }
 
   void addListener(VoidCallback listener) {
-    controller.addListener(() {
+    void wrapped() {
       if (!_suppress) listener();
-    });
+    }
+
+    _wrappedListeners.add(wrapped);
+    controller.addListener(wrapped);
   }
 
-  void dispose() => controller.dispose();
+  void clearListeners() {
+    for (final wrapped in _wrappedListeners) {
+      controller.removeListener(wrapped);
+    }
+    _wrappedListeners.clear();
+  }
+
+  void dispose() {
+    clearListeners();
+    controller.dispose();
+  }
 
   // Forwards
   String get text => controller.text;

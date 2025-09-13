@@ -51,15 +51,14 @@ extension AppRouteNav on AppRoutes {
     context.pushNamed(name, pathParameters: pathParams, queryParameters: queryParams, extra: extra);
   }
 
-  void popAndPush(
+  void pushReplacement(
     BuildContext context, {
     Map<String, String> pathParams = const {},
     Map<String, String> queryParams = const {},
     Object? extra,
   }) {
     _check(pathParams);
-    if (context.canPop()) context.pop();
-    context.pushNamed(name, pathParameters: pathParams, queryParameters: queryParams, extra: extra);
+    context.pushReplacement(toUrlString(pathParams: pathParams, queryParams: queryParams));
   }
 
   // Build a location via router (validates & respects redirections)

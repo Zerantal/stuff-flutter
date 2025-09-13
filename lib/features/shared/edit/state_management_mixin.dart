@@ -20,6 +20,7 @@ mixin StateManagementMixin<T> on ChangeNotifier {
   bool _isInitialised = false; // true once a real state is set
   bool _isSaving = false;
   Object? _initialLoadError;
+  bool _isEditable = true; // default editable
 
   // in case '==' not defined on state type
   bool Function(T a, T b)? _equals;
@@ -33,6 +34,22 @@ mixin StateManagementMixin<T> on ChangeNotifier {
   // ---------------------------------------------------------------------------
   // Public surface
   // ---------------------------------------------------------------------------
+
+  /// Whether this VM allows editing/mutating operations.
+  /// Default is true. Override in your VM to bind to an internal flag.
+  bool get isEditable => _isEditable;
+
+  /// Change editability. When set to false, mutators become no-ops.
+  set isEditable(bool value) {
+    if (_isEditable == value) return;
+    _isEditable = value;
+
+    // Only fire hook + notify if state is already initialised
+    if (_isInitialised) {
+      onChangeIsEditableState(value);
+      notifyListeners();
+    }
+  }
 
   bool get isInitialised => _isInitialised;
   bool get isSaving => _isSaving;
@@ -96,6 +113,7 @@ mixin StateManagementMixin<T> on ChangeNotifier {
   @protected
   bool replaceOriginal(T data, {bool keepCurrent = true, bool notify = false}) {
     if (!_ensureInitialised('replaceOriginal')) return false;
+    if (!isEditable) return false; // 🚫 prevent replacement in view-only mode
 
     _originalState = data;
     if (!keepCurrent) {
@@ -110,6 +128,7 @@ mixin StateManagementMixin<T> on ChangeNotifier {
   @protected
   bool setCurrentState(T next, {bool notify = true}) {
     if (!_ensureInitialised('setCurrentState')) return false;
+    if (!isEditable) return false; // 🚫 ignore in view-only mode
 
     if (_areEqual(next, _currentState)) return true;
     _currentState = next;
@@ -121,6 +140,8 @@ mixin StateManagementMixin<T> on ChangeNotifier {
   @protected
   bool updateState(T Function(T current) build, {bool notify = true}) {
     if (!_ensureInitialised('updateState')) return false;
+    if (!isEditable) return false; // 🚫 ignore in view-only mode
+
     setCurrentState(build(_currentState), notify: notify);
     return true;
   }
@@ -129,6 +150,7 @@ mixin StateManagementMixin<T> on ChangeNotifier {
   /// Returns true on success (including when nothing to save due to invalid).
   Future<bool> saveState() async {
     if (!_ensureInitialised('saveState')) return false;
+    if (!isEditable) return false; // 🚫 block saves in view-only mode
 
     if (_isSaving) return false;
 
@@ -184,6 +206,9 @@ mixin StateManagementMixin<T> on ChangeNotifier {
   /// Persist the state. Implement this in your VM.
   @protected
   Future<void> onSaveState(T data);
+
+  @protected
+  void onChangeIsEditableState(bool isEditable) {}
 
   // ---------------------------------------------------------------------------
   // Internals
