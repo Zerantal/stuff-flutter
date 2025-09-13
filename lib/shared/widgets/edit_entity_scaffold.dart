@@ -12,8 +12,10 @@ class EditEntityScaffold extends StatelessWidget {
     required this.title,
     required this.isCreate,
     required this.isBusy,
+    this.isViewOnly = false,
     this.hasUnsavedChanges = false,
     this.onDelete,
+    this.onEdit,
     required this.onSave,
     required this.body,
   });
@@ -21,8 +23,10 @@ class EditEntityScaffold extends StatelessWidget {
   final String title;
   final bool isCreate;
   final bool isBusy;
+  final bool isViewOnly;
   final bool hasUnsavedChanges;
   final Future<void> Function()? onDelete;
+  final VoidCallback? onEdit;
   final Future<bool> Function() onSave;
   final Widget body;
 
@@ -33,25 +37,28 @@ class EditEntityScaffold extends StatelessWidget {
       onPopInvokedWithResult: (bool didPop, Object? result) async {
         if (didPop) return;
 
-        final nav = Navigator.of(context); // capture before awaiting
-        final discard = await ConfirmationDialog.show(
-          context,
-          title: 'Discard changes?',
-          message: 'You have unsaved changes. Discard them and leave?',
-          confirmText: 'Discard',
-          cancelText: 'Cancel',
-        );
-        if (!context.mounted) return;
+        // Only prompt discard if editing
+        if (!isViewOnly && hasUnsavedChanges) {
+          final nav = Navigator.of(context); // capture before awaiting
+          final discard = await ConfirmationDialog.show(
+            context,
+            title: 'Discard changes?',
+            message: 'You have unsaved changes. Discard them and leave?',
+            confirmText: 'Discard',
+            cancelText: 'Cancel',
+          );
+          if (!context.mounted) return;
 
-        if (discard == true && nav.canPop()) {
-          nav.pop();
+          if (discard == true && nav.canPop()) {
+            nav.pop();
+          }
         }
       },
       child: Scaffold(
         appBar: AppBar(
           title: Text(title),
           actions: [
-            if (onDelete != null)
+            if (!isViewOnly && onDelete != null)
               IconButton(
                 key: const Key('delete_entity_btn'),
                 tooltip: 'Delete',
@@ -79,32 +86,41 @@ class EditEntityScaffold extends StatelessWidget {
                         }
                       },
               ),
+            if (isViewOnly && onEdit != null)
+              IconButton(
+                key: const Key('edit_entity_btn'),
+                tooltip: 'Edit',
+                icon: const Icon(Icons.edit_outlined),
+                onPressed: onEdit,
+              ),
           ],
         ),
         body: body,
-        floatingActionButton: FloatingActionButton.extended(
-          key: const Key('save_entity_fab'),
-          onPressed: isBusy
-              ? null
-              : () async {
-                  final ok = await onSave();
-                  if (!context.mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        ok
-                            ? (isCreate ? 'Created' : 'Saved')
-                            : 'Please fix the errors and try again.',
-                      ),
-                    ),
-                  );
-                  if (ok && Navigator.of(context).canPop()) {
-                    Navigator.of(context).pop(true);
-                  }
-                },
-          icon: const Icon(Icons.save_outlined),
-          label: Text(isCreate ? 'Create' : 'Save'),
-        ),
+        floatingActionButton: isViewOnly
+            ? null
+            : FloatingActionButton.extended(
+                key: const Key('save_entity_fab'),
+                onPressed: isBusy
+                    ? null
+                    : () async {
+                        final ok = await onSave();
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              ok
+                                  ? (isCreate ? 'Created' : 'Saved')
+                                  : 'Please fix the errors and try again.',
+                            ),
+                          ),
+                        );
+                        if (ok && Navigator.of(context).canPop()) {
+                          Navigator.of(context).pop(true);
+                        }
+                      },
+                icon: const Icon(Icons.save_outlined),
+                label: Text(isCreate ? 'Create' : 'Save'),
+              ),
       ),
     );
   }

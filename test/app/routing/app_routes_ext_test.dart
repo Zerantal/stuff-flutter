@@ -150,7 +150,7 @@ void main() {
 
       // Call the extension under test: pop current then push Locations
       final ctx = tester.element(find.byType(EditLocationPage));
-      AppRoutes.locations.popAndPush(ctx);
+      AppRoutes.locations.pushReplacement(ctx);
       await tester.pumpAndSettle();
 
       // Now stack is [Locations, Locations]; edit page is gone.
