@@ -18,7 +18,7 @@ import '../../../shared/forms/suppressible_text_editing_controller.dart';
 import '../../shared/edit/image_picking_mixin.dart';
 import '../../shared/edit/state_management_mixin.dart';
 import '../../shared/state/image_set.dart';
-import '../State/item_details_state.dart';
+import '../state/item_details_state.dart';
 
 // final _log = Logger('EditRoomViewModel');
 
