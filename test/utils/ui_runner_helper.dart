@@ -40,6 +40,7 @@ class TestAppMocks {
 
 // Typedefs to make intent obvious
 typedef NotifierVmFactory<T extends ChangeNotifier> = T Function(TestAppMocks m);
+typedef ContextVmFactory<T> = T Function(TestAppMocks m, BuildContext ctx);
 typedef PlainVmFactory<T> = T Function(TestAppMocks m);
 typedef AfterInit<T> = Future<void> Function(T vm, TestAppMocks m);
 
@@ -125,29 +126,44 @@ class PumpedNotifierVm<T extends ChangeNotifier> {
 /// Builds a real ChangeNotifier VM from mocks, provides it, pumps the app,
 /// and optionally runs [afterInit] AFTER the provider is mounted.
 Future<PumpedNotifierVm<T>> pumpWithNotifierVm<T extends ChangeNotifier>(
-  WidgetTester tester, {
-  required Widget home,
-  required NotifierVmFactory<T> vmFactory,
-  MediaQueryData? mediaQueryData,
-  List<NavigatorObserver> navigatorObservers = const [],
-  GoRouter? router,
-  void Function(TestAppMocks m)? onMocksReady,
-  AfterInit<T>? afterInit,
-  List<SingleChildWidget> additionalProviders = const [],
-}) async {
+    WidgetTester tester, {
+      required Widget home,
+      NotifierVmFactory<T>? vmFactory,
+      ContextVmFactory<T>? contextVmFactory,
+      MediaQueryData? mediaQueryData,
+      List<NavigatorObserver> navigatorObservers = const [],
+      GoRouter? router,
+      void Function(TestAppMocks m)? onMocksReady,
+      AfterInit<T>? afterInit,
+      List<SingleChildWidget> additionalProviders = const [],
+    }) async {
+  assert(
+  vmFactory != null || contextVmFactory != null,
+  'You must provide either vmFactory or contextVmFactory',
+  );
+
   final mocks = TestAppMocks();
   onMocksReady?.call(mocks);
 
-  final vm = vmFactory(mocks);
+  late T vm;
 
   await pumpApp(
     tester,
-    home: home,
-    providers: [
-      ...mocks.providers,
-      ...additionalProviders,
-      ChangeNotifierProvider<T>.value(value: vm),
-    ],
+    home: Builder(
+      builder: (ctx) {
+        if (contextVmFactory != null) {
+          vm = contextVmFactory(mocks, ctx);
+        } else {
+          vm = vmFactory!(mocks);
+        }
+
+        return ChangeNotifierProvider<T>.value(
+          value: vm,
+          child: home,
+        );
+      },
+    ),
+    providers: [...mocks.providers, ...additionalProviders],
     mediaQueryData: mediaQueryData,
     navigatorObservers: navigatorObservers,
     router: router,

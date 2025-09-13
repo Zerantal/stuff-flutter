@@ -118,9 +118,6 @@ class ItemDetailsViewModel extends ChangeNotifier
 
     if (!isInitialised) return;
 
-    // upon successful init, roomId will be set
-    assert(roomId != null);
-
     if (isEditable) {
       // create session for storing temp files
       final String sessionLabel = concatenateFirstTenChars(['edit_item', itemId]);
@@ -171,9 +168,6 @@ class ItemDetailsViewModel extends ChangeNotifier
     });
 
     if (!isInitialised) return;
-
-    // upon successful init, roomId will be set
-    assert(roomId != null);
 
     id = this.containerId ?? this.roomId!;
     final String sessionLabel = concatenateFirstTenChars(['add_item', id, (const Uuid().v4())]);
