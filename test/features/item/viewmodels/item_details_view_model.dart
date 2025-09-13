@@ -3,13 +3,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
-import 'package:provider/provider.dart';
 
 import 'package:stuff/domain/models/container_model.dart' as domain;
-import 'package:stuff/domain/models/item_model.dart' as domain;
 import 'package:stuff/features/item/viewmodels/item_details_view_model.dart';
-import 'package:stuff/features/item/state/item_details_state.dart';
-import 'package:stuff/features/shared/state/image_set.dart';
 
 import '../../../utils/mocks.dart';
 import '../../../utils/ui_runner_helper.dart';
@@ -20,14 +16,10 @@ void main() {
       await pumpWithNotifierVm<ItemDetailsViewModel>(
         tester,
         home: const SizedBox.shrink(),
-        contextVmFactory: (m, ctx) =>
-            ItemDetailsViewModel.forNew(ctx, roomId: 'r1'),
+        contextVmFactory: (m, ctx) => ItemDetailsViewModel.forNew(ctx, roomId: 'r1'),
         afterInit: (vm, m) async {
           // call initForNew again should throw
-          expect(
-                () => vm.retryInit(),
-            throwsStateError,
-          );
+          expect(() => vm.retryInit(), throwsStateError);
         },
       );
     });
@@ -37,11 +29,12 @@ void main() {
         tester,
         home: const SizedBox.shrink(),
         contextVmFactory: (m, ctx) {
-          when(m.dataService.getContainerById('c1')).thenAnswer(
-                (_) async => domain.Container(id: 'c1', roomId: 'r99', name: 'foo'),
-          );
-          when(m.temporaryFileService.startSession(label: anyNamed('label')))
-              .thenAnswer((_) async => MockTempSession());
+          when(
+            m.dataService.getContainerById('c1'),
+          ).thenAnswer((_) async => domain.Container(id: 'c1', roomId: 'r99', name: 'foo'));
+          when(
+            m.temporaryFileService.startSession(label: anyNamed('label')),
+          ).thenAnswer((_) async => MockTempSession());
 
           return ItemDetailsViewModel.forNew(ctx, containerId: 'c1');
         },
@@ -54,36 +47,35 @@ void main() {
       );
     });
 
-    testWidgets('retryInit in item mode with null itemId throws',
-            (tester) async {
-          await pumpWithNotifierVm<ItemDetailsViewModel>(
-            tester,
-            home: const SizedBox.shrink(),
-            vmFactory: (m) => ItemDetailsViewModel(
-              dataService: m.dataService,
-              imageDataService: m.imageDataService,
-              tempFileService: m.temporaryFileService,
-            ),
-            afterInit: (vm, m) async {
-              // Force init mode to item but clear itemId
-              vm
-                ..itemId = null
-                ..isEditable = true;
-              // Pretend already initialised
-              expect(() => vm.retryInit(), throwsStateError);
-            },
-          );
-        });
+    testWidgets('retryInit in item mode with null itemId throws', (tester) async {
+      await pumpWithNotifierVm<ItemDetailsViewModel>(
+        tester,
+        home: const SizedBox.shrink(),
+        vmFactory: (m) => ItemDetailsViewModel(
+          dataService: m.dataService,
+          imageDataService: m.imageDataService,
+          tempFileService: m.temporaryFileService,
+        ),
+        afterInit: (vm, m) async {
+          // Force init mode to item but clear itemId
+          vm
+            ..itemId = null
+            ..isEditable = true;
+          // Pretend already initialised
+          expect(() => vm.retryInit(), throwsStateError);
+        },
+      );
+    });
 
     testWidgets('retryInit succeeds in newItem mode', (tester) async {
       await pumpWithNotifierVm<ItemDetailsViewModel>(
         tester,
         home: const SizedBox.shrink(),
-        contextVmFactory: (m, ctx) =>
-            ItemDetailsViewModel.forNew(ctx, roomId: 'r1'),
+        contextVmFactory: (m, ctx) => ItemDetailsViewModel.forNew(ctx, roomId: 'r1'),
         onMocksReady: (m) {
-          when(m.temporaryFileService.startSession(label: anyNamed('label')))
-              .thenAnswer((_) async => MockTempSession());
+          when(
+            m.temporaryFileService.startSession(label: anyNamed('label')),
+          ).thenAnswer((_) async => MockTempSession());
         },
         afterInit: (vm, m) async {
           // vm was initialised via forNew, should succeed when retrying

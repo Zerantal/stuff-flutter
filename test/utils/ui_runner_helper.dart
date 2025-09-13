@@ -126,20 +126,20 @@ class PumpedNotifierVm<T extends ChangeNotifier> {
 /// Builds a real ChangeNotifier VM from mocks, provides it, pumps the app,
 /// and optionally runs [afterInit] AFTER the provider is mounted.
 Future<PumpedNotifierVm<T>> pumpWithNotifierVm<T extends ChangeNotifier>(
-    WidgetTester tester, {
-      required Widget home,
-      NotifierVmFactory<T>? vmFactory,
-      ContextVmFactory<T>? contextVmFactory,
-      MediaQueryData? mediaQueryData,
-      List<NavigatorObserver> navigatorObservers = const [],
-      GoRouter? router,
-      void Function(TestAppMocks m)? onMocksReady,
-      AfterInit<T>? afterInit,
-      List<SingleChildWidget> additionalProviders = const [],
-    }) async {
+  WidgetTester tester, {
+  required Widget home,
+  NotifierVmFactory<T>? vmFactory,
+  ContextVmFactory<T>? contextVmFactory,
+  MediaQueryData? mediaQueryData,
+  List<NavigatorObserver> navigatorObservers = const [],
+  GoRouter? router,
+  void Function(TestAppMocks m)? onMocksReady,
+  AfterInit<T>? afterInit,
+  List<SingleChildWidget> additionalProviders = const [],
+}) async {
   assert(
-  vmFactory != null || contextVmFactory != null,
-  'You must provide either vmFactory or contextVmFactory',
+    vmFactory != null || contextVmFactory != null,
+    'You must provide either vmFactory or contextVmFactory',
   );
 
   final mocks = TestAppMocks();
@@ -157,10 +157,7 @@ Future<PumpedNotifierVm<T>> pumpWithNotifierVm<T extends ChangeNotifier>(
           vm = vmFactory!(mocks);
         }
 
-        return ChangeNotifierProvider<T>.value(
-          value: vm,
-          child: home,
-        );
+        return ChangeNotifierProvider<T>.value(value: vm, child: home);
       },
     ),
     providers: [...mocks.providers, ...additionalProviders],
