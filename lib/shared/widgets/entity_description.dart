@@ -1,6 +1,8 @@
 // lib/shared/widgets/entity_description.dart
 import 'package:flutter/material.dart';
 
+import '../../App/theme.dart';
+
 class EntityDescription extends StatelessWidget {
   final String title;
   final String? subtitle;
@@ -10,17 +12,19 @@ class EntityDescription extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     final children = <Widget>[
-      Text(title, style: Theme.of(context).textTheme.titleMedium),
+      Text(title, style: theme.textTheme.titleMedium, overflow: TextOverflow.ellipsis, maxLines: 2),
       if (subtitle != null && subtitle!.isNotEmpty)
         Padding(
-          padding: const EdgeInsets.only(top: 2),
-          child: Text(subtitle!, style: Theme.of(context).textTheme.bodySmall),
+          padding: const EdgeInsets.only(top: AppSpacing.xs),
+          child: Text(subtitle!, style: theme.textTheme.bodySmall),
         ),
       if (badges != null && badges!.isNotEmpty)
         Padding(
-          padding: const EdgeInsets.only(top: 8),
-          child: Wrap(spacing: 6, runSpacing: -8, children: badges!),
+          padding: const EdgeInsets.only(top: AppSpacing.sm),
+          child: Wrap(spacing: AppSpacing.sm, runSpacing: -AppSpacing.sm, children: badges!),
         ),
     ];
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: children);

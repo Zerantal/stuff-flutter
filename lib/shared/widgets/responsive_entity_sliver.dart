@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 
+import '../../App/theme.dart';
 import 'entity_tile_theme.dart';
 
 enum SnapAlign { left, center, right }
@@ -259,13 +260,22 @@ class _ListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Material(
+      color: theme.cardColor,
+      elevation: theme.cardTheme.elevation ?? AppElevation.card,
+      shape: theme.cardTheme.shape ?? RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
       child: InkWell(
+        borderRadius: BorderRadius.circular(AppRadius.md),
         onTap: onTap,
         child: ConstrainedBox(
           constraints: BoxConstraints(minHeight: minHeight),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.sm,
+            ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -309,14 +319,21 @@ class _GridTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final pad = EdgeInsets.symmetric(vertical: paddingV / 2, horizontal: 12);
+    final theme = Theme.of(context);
 
     return Card(
+      elevation: theme.cardTheme.elevation ?? AppElevation.card,
+      shape: theme.cardTheme.shape ??
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
+        borderRadius: BorderRadius.circular(AppRadius.md),
         onTap: onTap,
         child: Padding(
-          padding: pad,
+          padding: const EdgeInsets.symmetric(
+            vertical: AppSpacing.sm,
+            horizontal: AppSpacing.md,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [

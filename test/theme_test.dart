@@ -4,7 +4,7 @@ import 'package:stuff/app/theme.dart';
 
 void main() {
   test('buildAppTheme uses Material 3 and seed color scheme', () {
-    final theme = buildAppTheme();
+    final theme = AppTheme.buildAppTheme();
     expect(theme.useMaterial3, isTrue);
 
     // Deterministic check against Flutter's seeded scheme.

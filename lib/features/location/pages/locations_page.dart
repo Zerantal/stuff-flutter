@@ -10,9 +10,11 @@ import '../../../shared/image/image_ref.dart';
 import '../../../shared/widgets/confirmation_dialog.dart';
 import '../../../shared/widgets/context_action_menu.dart';
 import '../../../shared/widgets/empty_list_state.dart';
+import '../../../shared/widgets/entity_tile_theme.dart';
 import '../../../shared/widgets/gesture_wrapped_thumbnail.dart';
 import '../../../shared/widgets/responsive_entity_list.dart';
 import '../../../shared/widgets/skeleton_tile.dart';
+import '../../../App/theme.dart';
 import '../widgets/developer_drawer.dart';
 import '../viewmodels/locations_view_model.dart';
 
@@ -48,9 +50,10 @@ class LocationsPage extends StatelessWidget {
           if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
             // Skeletons while first batch loads
             return ListView.separated(
-              padding: const EdgeInsets.symmetric(vertical: 8),
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
               itemCount: 6,
-              separatorBuilder: (_, _) => const SizedBox(height: 4),
+              separatorBuilder: (_, _) =>
+                  const SizedBox(height: AppSpacing.xs),
               itemBuilder: (context, i) => const SkeletonTile(),
             );
           }
@@ -71,11 +74,13 @@ class LocationsPage extends StatelessWidget {
                 entityId: item.location.id,
                 entityName: item.location.name,
                 size: 80,
-                borderRadius: 10,
-                placeholder: const ImageRef.asset('assets/images/image_placeholder.png'),
+                borderRadius: AppRadius.md,
+                placeholder: const ImageRef.asset(
+                    'assets/images/image_placeholder.png'),
               );
 
           return ResponsiveEntityList<LocationListItem>(
+            density: EntityTileDensity.roomy,
             items: items,
             onTap: (it) => AppRoutes.roomsForLocation.push(
               context,
@@ -83,7 +88,7 @@ class LocationsPage extends StatelessWidget {
               extra: it.location.name,
             ),
             headerBuilder: thumbnailBuilder,
-            bodyBuilder: itemDescriptionBuilder,
+            bodyBuilder: _itemDescriptionBuilder,
             trailingBuilder: (ctx, it) => ContextActionMenu(
               onView: () => AppRoutes.roomsForLocation.push(
                 context,
@@ -116,20 +121,24 @@ class LocationsPage extends StatelessWidget {
     );
   }
 
-  Widget itemDescriptionBuilder(BuildContext context, LocationListItem item) {
+  /// Renders the body content of a location card
+  Widget _itemDescriptionBuilder(
+    BuildContext context,
+    LocationListItem item,
+  ) {
     final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           item.location.name,
-          style: theme.textTheme.titleLarge,
+          style: theme.textTheme.titleMedium,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
         if ((item.location.description ?? '').isNotEmpty)
           Padding(
-            padding: const EdgeInsets.only(top: 4),
+            padding: const EdgeInsets.only(top: AppSpacing.xs),
             child: Text(
               item.location.description!,
               style: theme.textTheme.bodySmall,
@@ -139,11 +148,15 @@ class LocationsPage extends StatelessWidget {
           ),
         if ((item.location.address ?? '').isNotEmpty)
           Padding(
-            padding: const EdgeInsets.only(top: 6),
+            padding: const EdgeInsets.only(top: AppSpacing.sm),
             child: Row(
               children: [
-                const Icon(Icons.place_outlined, size: 14),
-                const SizedBox(width: 4),
+                Icon(
+                  Icons.place_outlined,
+                  size: theme.iconTheme.size ?? 16,
+                  color: theme.iconTheme.color?.withValues(alpha: 0.7),
+                ),
+                const SizedBox(width: AppSpacing.xs),
                 Expanded(
                   child: Text(
                     item.location.address!,

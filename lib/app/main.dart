@@ -47,7 +47,7 @@ class _App extends StatelessWidget {
       restorationScopeId: 'root',
       debugShowCheckedModeBanner: true,
       routerConfig: router,
-      theme: buildAppTheme(),
+      theme: AppTheme.buildAppTheme(),
     );
   }
 }
