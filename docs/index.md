@@ -12,6 +12,8 @@ Its primary aim is to help individuals and families **organize possessions acros
 
 By balancing simplicity and privacy in the offline edition with collaborative features in the cloud edition, Stuff is designed to be flexible enough for both personal and shared use.
 
+[Short-term Todo list](todo.md)
+
 [Roadmap](roadmap.md)
 
 ---

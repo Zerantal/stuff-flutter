@@ -1,20 +1,7 @@
 # Notes for the stuff_flutter project
 
 
----
 
-## 1. Spruce up UI & theming
-
-* **Color scheme & typography**
-  Use `ColorScheme.fromSeed` with a brand-like accent. Tweak `textTheme` for headings (so your “Name”/“Description” labels in view mode pop).
-* **Consistent padding & spacing**
-  Consider a design tokens file with constants for spacing, corner radius, elevation, etc.
-* **Custom widgets**
-
-    * `LabeledValue(label, value)` for view-only mode.
-    * Consistent `EntityCard` styles (Location, Room, Container, Item).
-* **Animation polish**
-  You’re already using `AnimatedSwitcher`. Try `PageTransitionSwitcher` (from the `animations` package) for shared-axis transitions (nice for “view → edit”).
 
 ---
 
@@ -52,7 +39,5 @@ Think of these in layers:
 5. **Optional sync/sharing** (longer-term).
 
 ---
-
-👉 Would you like me to sketch a **short visual style guide** (colors, typography scale, padding system) so you have a foundation for the UI spruce-up?
 
 
