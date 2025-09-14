@@ -45,7 +45,7 @@ jobs:
         run: flutter pub get --offline || flutter pub get
 
       - name: Generate files
-        run: dart run build_runner build --delete-conflicting-outputs --build-filter="lib/** test/**"
+        run: dart run build_runner build --delete-conflicting-outputs --build-filter="{lib/**,test/**,build/**}"
 
       - name: Run analyzer
         run: flutter analyze
@@ -99,7 +99,7 @@ jobs:
         run: flutter pub get --offline || flutter pub get
 
       - name: Generate files
-        run: dart run build_runner build --delete-conflicting-outputs --build-filter="lib/** test/**"
+        run: dart run build_runner build --delete-conflicting-outputs --build-filter="{lib/**,test/**,build/**}"
 
       - name: Run tests (PRs)
         run: flutter test -j 2 --coverage --no-pub --test-randomize-ordering-seed=random
