@@ -59,6 +59,18 @@ stuff-flutter/
 └── README.md               # Project overview (this file)
 ```
 
+## Documentation
+
+All project documentation is maintained in the [`/docs`](./docs) directory.  
+The documentation site is built using [MkDocs](https://www.mkdocs.org/), making it easy to browse and search.
+
+To serve the docs locally during development:
+
+```bash
+pip install mkdocs-material
+mkdocs serve
+````
+
 ##Contributing
 
 We welcome contributions! Please review our [Contributing Guide](CONTRIBUTING.md) to get started.
@@ -68,8 +80,6 @@ We welcome contributions! Please review our [Contributing Guide](CONTRIBUTING.md
 * **Formatting**: Enforced by dart format in pre-commit hooks and CI.
 
 * **Testing**: Run `flutter test` to execute unit and widget tests.
-
-
 
 
 ## Code of Conduct

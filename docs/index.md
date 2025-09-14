@@ -14,5 +14,13 @@ By balancing simplicity and privacy in the offline edition with collaborative fe
 
 [Roadmap](roadmap.md)
 
+---
+
+[README](https://github.com/Zerantal/stuff-flutter/blob/main/README.md)
+
+[Contributing](https://github.com/Zerantal/stuff-flutter/blob/main/CONTRIBUTING.md)
+
+[LICENSE](https://github.com/Zerantal/stuff-flutter/blob/main/LICENSE)
+
 
 
