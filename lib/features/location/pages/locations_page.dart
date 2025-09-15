@@ -14,7 +14,7 @@ import '../../../shared/widgets/entity_description.dart';
 import '../../../shared/widgets/entity_tile_theme.dart';
 import '../../../shared/widgets/gesture_wrapped_thumbnail.dart';
 import '../../../shared/widgets/responsive_entity_list.dart';
-import '../../../shared/widgets/skeleton_tile.dart';
+import '../../../shared/widgets/skeleton_entity_list.dart';
 import '../../../App/theme.dart';
 import '../widgets/developer_drawer.dart';
 import '../viewmodels/locations_view_model.dart';
@@ -50,12 +50,7 @@ class LocationsPage extends StatelessWidget {
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
             // Skeletons while first batch loads
-            return ListView.separated(
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-              itemCount: 6,
-              separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.xs),
-              itemBuilder: (context, i) => const SkeletonTile(),
-            );
+            return const SkeletonEntityList(count: 6, numRows: 3);
           }
 
           final items = snapshot.data ?? const <LocationListItem>[];

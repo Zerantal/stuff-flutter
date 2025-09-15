@@ -10,6 +10,7 @@ import 'package:stuff/features/location/pages/locations_page.dart';
 import 'package:stuff/domain/models/location_model.dart';
 import 'package:stuff/features/location/viewmodels/locations_view_model.dart';
 import 'package:stuff/shared/widgets/empty_list_state.dart';
+import 'package:stuff/shared/widgets/skeleton_entity_list.dart';
 
 import '../../../utils/test_logger_manager.dart';
 import '../../../utils/test_router.dart';
@@ -65,7 +66,7 @@ void main() {
     testWidgets('loading - empty state', (tester) async {
       await pump(tester);
       await tester.pump(); // initial frame: skeleton list
-      expect(find.byType(ListView), findsOneWidget);
+      expect(find.byType(SkeletonEntityList), findsOneWidget);
 
       // empty
       controller.add(const <Location>[]);
