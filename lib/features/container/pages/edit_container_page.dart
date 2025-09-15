@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../App/theme.dart';
 import '../../../services/contracts/temporary_file_service_interface.dart';
 import '../../../shared/forms/decoration.dart';
 import '../../../shared/forms/validators.dart';
@@ -96,7 +97,7 @@ class _EditForm extends StatelessWidget {
     return Form(
       key: vm.formKey,
       child: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.md),
         children: [
           TextFormField(
             key: const Key('container_name'),
@@ -106,7 +107,7 @@ class _EditForm extends StatelessWidget {
             validator: requiredMax(50),
             enabled: !disabled,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           TextFormField(
             key: const Key('container_description'),
             controller: vm.descriptionController.raw,
@@ -116,7 +117,7 @@ class _EditForm extends StatelessWidget {
             maxLines: 3,
             enabled: !disabled,
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: AppSpacing.lg),
           // Image picker grid (uses the same component you use in Locations)
           Selector<EditContainerViewModel, (bool, TempSession?, int)>(
             selector: (_, m) => (m.hasTempSession, m.tempSession, m.imageListRevision),

@@ -22,6 +22,7 @@ import '../../features/room/pages/rooms_page.dart';
 
 import '../../features/room/viewmodels/edit_room_view_model.dart';
 import '../../features/room/viewmodels/rooms_view_model.dart';
+import '../theme.dart';
 import 'app_routes_ext.dart';
 import 'app_routes.dart';
 
@@ -367,7 +368,7 @@ class AppRouter {
       appBar: AppBar(title: const Text('Error')),
       body: Center(
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(AppSpacing.md),
           child: Text(message, textAlign: TextAlign.center),
         ),
       ),

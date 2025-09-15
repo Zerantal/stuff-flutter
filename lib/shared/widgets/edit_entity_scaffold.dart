@@ -56,7 +56,7 @@ class EditEntityScaffold extends StatelessWidget {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: Text(title),
+          title: Text(title, style: Theme.of(context).textTheme.titleLarge),
           actions: [
             if (!isViewOnly && onDelete != null)
               IconButton(
@@ -78,10 +78,8 @@ class EditEntityScaffold extends StatelessWidget {
 
                         if (confirmDelete) {
                           await onDelete!();
-                          if (context.mounted) {
-                            if (Navigator.of(context).canPop()) {
-                              Navigator.of(context).pop(true);
-                            }
+                          if (context.mounted && Navigator.of(context).canPop()) {
+                            Navigator.of(context).pop(true);
                           }
                         }
                       },
@@ -95,7 +93,7 @@ class EditEntityScaffold extends StatelessWidget {
               ),
           ],
         ),
-        body: body,
+        body: SafeArea(child: body),
         floatingActionButton: isViewOnly
             ? null
             : FloatingActionButton.extended(

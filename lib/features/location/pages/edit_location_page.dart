@@ -4,12 +4,13 @@ import 'package:flutter/material.dart';
 // import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
 
+import '../../../App/theme.dart';
 import '../../../services/contracts/temporary_file_service_interface.dart';
 import '../../../shared/widgets/edit_entity_scaffold.dart';
 import '../../../shared/widgets/initial_load_error_panel.dart';
 import '../../../shared/widgets/loading_scaffold.dart';
-import '../viewmodels/edit_location_view_model.dart';
 import '../../../shared/widgets/image_manager_input.dart';
+import '../viewmodels/edit_location_view_model.dart';
 
 const _kLocationPlaceholderAsset = 'assets/images/location_placeholder.jpg';
 // final _log = Logger('EditLocationPage');
@@ -105,7 +106,7 @@ class _EditForm extends StatelessWidget {
     return Form(
       key: vm.formKey,
       child: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.md),
         children: [
           TextFormField(
             key: const Key('loc_name'),
@@ -114,7 +115,6 @@ class _EditForm extends StatelessWidget {
             decoration: const InputDecoration(
               labelText: 'Name',
               hintText: 'e.g., Office, Garage, Storage Unit',
-              border: OutlineInputBorder(),
             ),
             textInputAction: TextInputAction.next,
             validator: (v) {
@@ -124,7 +124,8 @@ class _EditForm extends StatelessWidget {
               return null;
             },
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
+
           TextFormField(
             key: const Key('loc_desc'),
             controller: vm.descriptionController.raw,
@@ -133,11 +134,12 @@ class _EditForm extends StatelessWidget {
             decoration: const InputDecoration(
               labelText: 'Description',
               hintText: 'Optional notes…',
-              border: OutlineInputBorder(),
+              alignLabelWithHint: true,
             ),
             textInputAction: TextInputAction.newline,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
+
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -149,11 +151,10 @@ class _EditForm extends StatelessWidget {
                   decoration: const InputDecoration(
                     labelText: 'Address',
                     hintText: 'e.g., 123 Main St, Anytown',
-                    border: OutlineInputBorder(),
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
               Tooltip(
                 message: 'Use current location',
                 child: ElevatedButton.icon(
@@ -178,12 +179,11 @@ class _EditForm extends StatelessWidget {
                         )
                       : const Icon(Icons.my_location_outlined),
                   label: const Text('Use\nGPS', textAlign: TextAlign.center),
-                  style: ElevatedButton.styleFrom(minimumSize: const Size(72, 56)),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: AppSpacing.md),
 
           // Images block: only rebuild when session/images change.
           Selector<EditLocationViewModel, (bool, TempSession?, int)>(
@@ -208,7 +208,7 @@ class _EditForm extends StatelessWidget {
                 onRemoveAt: vm.onRemoveAt,
                 onImagePicked: vm.onImagePicked,
                 tileSize: 92,
-                spacing: 8,
+                spacing: AppSpacing.sm,
                 placeholderAsset: _kLocationPlaceholderAsset,
               );
             },

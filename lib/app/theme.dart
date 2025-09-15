@@ -21,8 +21,9 @@ class AppRadius {
 }
 
 class AppElevation {
-  static const double card = 2;
-  static const double modal = 6;
+  static const double none = 0; // AppBar, TextField
+  static const double low = 1; // Card, Entity tiles, ElevatedButton
+  static const double high = 3; // Menus, popups, modals, snackbar, FAB
 }
 
 /// App-wide theme
@@ -37,16 +38,14 @@ class AppTheme {
     return base.copyWith(
       textTheme: GoogleFonts.robotoTextTheme(base.textTheme).copyWith(
         // Medium titles (e.g. list headers, card titles)
-        titleMedium: GoogleFonts.robotoTextTheme(base.textTheme).titleMedium?.copyWith(
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-        ),
+        titleMedium: GoogleFonts.robotoTextTheme(
+          base.textTheme,
+        ).titleMedium?.copyWith(fontSize: 16, fontWeight: FontWeight.w600),
 
         // Smaller section headers
-        headlineSmall: GoogleFonts.robotoTextTheme(base.textTheme).headlineSmall?.copyWith(
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-        ),
+        headlineSmall: GoogleFonts.robotoTextTheme(
+          base.textTheme,
+        ).headlineSmall?.copyWith(fontSize: 20, fontWeight: FontWeight.bold),
 
         // Labels (e.g. LabeledValue, form field labels)
         labelMedium: GoogleFonts.robotoTextTheme(base.textTheme).labelMedium?.copyWith(
@@ -57,21 +56,53 @@ class AppTheme {
       ),
 
       cardTheme: CardThemeData(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.md),
-        ),
-        elevation: AppElevation.card,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+        elevation: AppElevation.low,
         margin: const EdgeInsets.all(AppSpacing.sm),
       ),
 
       inputDecorationTheme: InputDecorationTheme(
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.sm),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
         contentPadding: const EdgeInsets.symmetric(
+          vertical: AppSpacing.md,
           horizontal: AppSpacing.md,
-          vertical: AppSpacing.sm,
         ),
+        alignLabelWithHint: true,
+      ),
+
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          elevation: AppElevation.low,
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm, horizontal: AppSpacing.md),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+          textStyle: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+      ),
+
+      appBarTheme: const AppBarTheme(
+        elevation: AppElevation.low,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(bottom: Radius.circular(AppRadius.md)),
+        ),
+      ),
+
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        elevation: AppElevation.high,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
+      ),
+
+      iconButtonTheme: IconButtonThemeData(
+        style: ButtonStyle(
+          shape: WidgetStatePropertyAll(
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.sm)),
+          ),
+        ),
+      ),
+
+      snackBarTheme: SnackBarThemeData(
+        elevation: AppElevation.high,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+        behavior: SnackBarBehavior.floating,
       ),
     );
   }

@@ -1,6 +1,9 @@
 // lib/shared/widgets/confirmation_dialog.dart
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../App/theme.dart';
 
 class ConfirmationDialog {
   static Future<bool?> show(
@@ -16,22 +19,23 @@ class ConfirmationDialog {
       builder: (ctx) => AlertDialog(
         title: Text(title),
         content: Text(message),
+        elevation: AppElevation.high,
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
+            onPressed: () => context.pop(false),
             key: const ValueKey('conf_dialog_cancel_btn'),
             child: Text(cancelText),
           ),
           danger
               ? FilledButton.tonalIcon(
                   key: const ValueKey('conf_dialog_confirm_btn'),
-                  onPressed: () => Navigator.of(ctx).pop(true),
+                  onPressed: () => context.pop(true),
                   icon: const Icon(Icons.delete_outline),
                   label: Text(confirmText),
                 )
               : FilledButton(
                   key: const ValueKey('conf_dialog_confirm_btn'),
-                  onPressed: () => Navigator.of(ctx).pop(true),
+                  onPressed: () => context.pop(true),
                   child: Text(confirmText),
                 ),
         ],

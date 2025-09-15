@@ -10,6 +10,7 @@ import '../../../shared/image/image_ref.dart';
 import '../../../shared/widgets/confirmation_dialog.dart';
 import '../../../shared/widgets/context_action_menu.dart';
 import '../../../shared/widgets/empty_list_state.dart';
+import '../../../shared/widgets/entity_description.dart';
 import '../../../shared/widgets/entity_tile_theme.dart';
 import '../../../shared/widgets/gesture_wrapped_thumbnail.dart';
 import '../../../shared/widgets/responsive_entity_list.dart';
@@ -52,8 +53,7 @@ class LocationsPage extends StatelessWidget {
             return ListView.separated(
               padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
               itemCount: 6,
-              separatorBuilder: (_, _) =>
-                  const SizedBox(height: AppSpacing.xs),
+              separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.xs),
               itemBuilder: (context, i) => const SkeletonTile(),
             );
           }
@@ -75,8 +75,7 @@ class LocationsPage extends StatelessWidget {
                 entityName: item.location.name,
                 size: 80,
                 borderRadius: AppRadius.md,
-                placeholder: const ImageRef.asset(
-                    'assets/images/image_placeholder.png'),
+                placeholder: const ImageRef.asset('assets/images/image_placeholder.png'),
               );
 
           return ResponsiveEntityList<LocationListItem>(
@@ -122,39 +121,19 @@ class LocationsPage extends StatelessWidget {
   }
 
   /// Renders the body content of a location card
-  Widget _itemDescriptionBuilder(
-    BuildContext context,
-    LocationListItem item,
-  ) {
+  Widget _itemDescriptionBuilder(BuildContext context, LocationListItem item) {
     final theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          item.location.name,
-          style: theme.textTheme.titleMedium,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        if ((item.location.description ?? '').isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(top: AppSpacing.xs),
-            child: Text(
-              item.location.description!,
-              style: theme.textTheme.bodySmall,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        if ((item.location.address ?? '').isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(top: AppSpacing.sm),
-            child: Row(
+
+    return EntityDescription(
+      title: item.location.name,
+      description: item.location.description,
+      extra: (item.location.address?.isNotEmpty ?? false)
+          ? Row(
               children: [
                 Icon(
                   Icons.place_outlined,
-                  size: theme.iconTheme.size ?? 16,
-                  color: theme.iconTheme.color?.withValues(alpha: 0.7),
+                  size: theme.iconTheme.size ?? 14,
+                  color: theme.iconTheme.color?.withValues(alpha: 0.7), // replaces withOpacity
                 ),
                 const SizedBox(width: AppSpacing.xs),
                 Expanded(
@@ -166,9 +145,8 @@ class LocationsPage extends StatelessWidget {
                   ),
                 ),
               ],
-            ),
-          ),
-      ],
+            )
+          : null,
     );
   }
 

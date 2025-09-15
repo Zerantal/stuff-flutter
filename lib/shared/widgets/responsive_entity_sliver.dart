@@ -264,18 +264,17 @@ class _ListTile extends StatelessWidget {
 
     return Material(
       color: theme.cardColor,
-      elevation: theme.cardTheme.elevation ?? AppElevation.card,
-      shape: theme.cardTheme.shape ?? RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+      elevation: theme.cardTheme.elevation ?? AppElevation.low,
+      shape:
+          theme.cardTheme.shape ??
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
       child: InkWell(
         borderRadius: BorderRadius.circular(AppRadius.md),
         onTap: onTap,
         child: ConstrainedBox(
           constraints: BoxConstraints(minHeight: minHeight),
           child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md,
-              vertical: AppSpacing.sm,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -322,18 +321,16 @@ class _GridTile extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Card(
-      elevation: theme.cardTheme.elevation ?? AppElevation.card,
-      shape: theme.cardTheme.shape ??
+      elevation: theme.cardTheme.elevation ?? AppElevation.low,
+      shape:
+          theme.cardTheme.shape ??
           RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         borderRadius: BorderRadius.circular(AppRadius.md),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(
-            vertical: AppSpacing.sm,
-            horizontal: AppSpacing.md,
-          ),
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm, horizontal: AppSpacing.md),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [

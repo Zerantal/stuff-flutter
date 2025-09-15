@@ -77,7 +77,7 @@ class ContentsPage extends StatelessWidget {
                         ),
                         bodyBuilder: (ctx, c) => EntityDescription(
                           title: c.container.name,
-                          subtitle: c.container.description,
+                          description: c.container.description,
                         ),
                         // _Body(title: c.container.name, subtitle: c.container.description),
                         trailingBuilder: (ctx, it) => ContextActionMenu(
@@ -103,6 +103,7 @@ class ContentsPage extends StatelessWidget {
                     if (items.isNotEmpty) ...[
                       _sectionHeader('Items'),
                       ResponsiveEntitySliver<ItemListItem>(
+                        gridBodyTargetHeight: 80,
                         items: items,
                         headerBuilder: (ctx, item) => GestureWrappedThumbnail(
                           images: item.images,
@@ -115,7 +116,7 @@ class ContentsPage extends StatelessWidget {
                         ),
                         bodyBuilder: (ctx, it) => EntityDescription(
                           title: it.item.name,
-                          subtitle: (it.item.description?.isNotEmpty ?? false)
+                          description: (it.item.description?.isNotEmpty ?? false)
                               ? it.item.description
                               : null,
                         ),

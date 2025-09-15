@@ -9,21 +9,14 @@ class LabeledValue extends StatelessWidget {
   final String value;
   final bool dense;
 
-  const LabeledValue(
-      this.label,
-      this.value, {
-        super.key,
-        this.dense = false,
-      });
+  const LabeledValue(this.label, this.value, {super.key, this.dense = false});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
     return Padding(
-      padding: EdgeInsets.symmetric(
-        vertical: dense ? AppSpacing.xs : AppSpacing.sm,
-      ),
+      padding: EdgeInsets.symmetric(vertical: dense ? AppSpacing.xs : AppSpacing.sm),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

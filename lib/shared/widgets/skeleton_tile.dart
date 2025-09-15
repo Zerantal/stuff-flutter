@@ -1,38 +1,54 @@
 // lib/features/location/widgets/skeleton_tile.dart
 import 'package:flutter/material.dart';
 
+import '../../App/theme.dart';
+import 'entity_tile_theme.dart';
+
 /// Simple skeleton placeholder row used during initial load.
 class SkeletonTile extends StatelessWidget {
-  const SkeletonTile({super.key});
+  final int numRows;
+  final double? tileHeight;
+
+  const SkeletonTile({super.key, this.numRows = 2, this.tileHeight});
 
   @override
   Widget build(BuildContext context) {
     final c = Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.6);
+
+    // Default tile height from theme extension (fallback to 88 like comfy preset)
+    final ext = Theme.of(context).extension<EntityTileTheme>();
+    final effectiveTileHeight = tileHeight ?? ext?.listTileMinHeight ?? 88.0;
+
     Widget box(double w, double h, {BorderRadius? r}) => Container(
       width: w,
       height: h,
-      decoration: BoxDecoration(color: c, borderRadius: r ?? BorderRadius.circular(6)),
+      decoration: BoxDecoration(color: c, borderRadius: r ?? BorderRadius.circular(AppRadius.sm)),
     );
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        children: [
-          box(80, 80, r: BorderRadius.circular(8)),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                box(double.infinity, 16),
-                const SizedBox(height: 8),
-                box(180, 14),
-                const SizedBox(height: 6),
-                box(120, 14),
-              ],
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+      child: SizedBox(
+        height: effectiveTileHeight,
+        child: Row(
+          children: [
+            // Square thumbnail = same as tile height
+            box(effectiveTileHeight, effectiveTileHeight, r: BorderRadius.circular(AppRadius.md)),
+            const SizedBox(width: AppSpacing.md - AppSpacing.xs), // ~12
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  box(double.infinity, 16), // title skeleton
+                  for (int i = 0; i < numRows; i++) ...[
+                    const SizedBox(height: AppSpacing.xs),
+                    box(180 - i * 40.0, 14), // variable widths for realism
+                  ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
