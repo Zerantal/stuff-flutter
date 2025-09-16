@@ -76,22 +76,14 @@ Future<void> pumpApp(
     assert(home != null, 'pumpApp: `home` is required when `router` is null.');
 
     router = GoRouter(
-      routes: [
-        GoRoute(
-          path: '/',
-          builder: (_, __) => home!,
-        ),
-      ],
+      routes: [GoRoute(path: '/', builder: (_, _) => home!)],
       // 👇 attach test observers here
       observers: [...navigatorObservers],
     );
   }
 
   await tester.pumpWidget(
-    MaterialApp.router(
-      routerConfig: router,
-      builder: (context, child) => wrap(child),
-    ),
+    MaterialApp.router(routerConfig: router, builder: (context, child) => wrap(child)),
   );
 }
 
