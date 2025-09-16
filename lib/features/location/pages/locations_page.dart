@@ -15,7 +15,7 @@ import '../../../shared/widgets/entity_tile_theme.dart';
 import '../../../shared/widgets/gesture_wrapped_thumbnail.dart';
 import '../../../shared/widgets/responsive_entity_list.dart';
 import '../../../shared/widgets/skeleton_entity_list.dart';
-import '../../../App/theme.dart';
+import '../../../app/theme.dart';
 import '../widgets/developer_drawer.dart';
 import '../viewmodels/locations_view_model.dart';
 

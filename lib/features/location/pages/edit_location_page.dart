@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 // import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
 
-import '../../../App/theme.dart';
+import '../../../app/theme.dart';
 import '../../../services/contracts/temporary_file_service_interface.dart';
 import '../../../shared/widgets/edit_entity_scaffold.dart';
 import '../../../shared/widgets/initial_load_error_panel.dart';
