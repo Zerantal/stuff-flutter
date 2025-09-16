@@ -1,5 +1,6 @@
 // lib/shared/widgets/edit_entity_scaffold.dart
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import 'confirmation_dialog.dart';
 
@@ -39,7 +40,6 @@ class EditEntityScaffold extends StatelessWidget {
 
         // Only prompt discard if editing
         if (!isViewOnly && hasUnsavedChanges) {
-          final nav = Navigator.of(context); // capture before awaiting
           final discard = await ConfirmationDialog.show(
             context,
             title: 'Discard changes?',
@@ -49,8 +49,8 @@ class EditEntityScaffold extends StatelessWidget {
           );
           if (!context.mounted) return;
 
-          if (discard == true && nav.canPop()) {
-            nav.pop();
+          if (discard == true && context.canPop()) {
+            context.pop();
           }
         }
       },
@@ -78,8 +78,8 @@ class EditEntityScaffold extends StatelessWidget {
 
                         if (confirmDelete) {
                           await onDelete!();
-                          if (context.mounted && Navigator.of(context).canPop()) {
-                            Navigator.of(context).pop(true);
+                          if (context.mounted && context.canPop()) {
+                            context.pop(true);
                           }
                         }
                       },
@@ -112,8 +112,8 @@ class EditEntityScaffold extends StatelessWidget {
                             ),
                           ),
                         );
-                        if (ok && Navigator.of(context).canPop()) {
-                          Navigator.of(context).pop(true);
+                        if (ok && context.canPop()) {
+                          context.pop(true);
                         }
                       },
                 icon: const Icon(Icons.save_outlined),

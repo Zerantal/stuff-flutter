@@ -74,18 +74,25 @@ Future<void> pumpApp(
 
   if (router == null) {
     assert(home != null, 'pumpApp: `home` is required when `router` is null.');
-    await tester.pumpWidget(
-      MaterialApp(
-        navigatorObservers: navigatorObservers,
-        home: home!, // safe due to assert
-        builder: (context, child) => wrap(child),
-      ),
-    );
-  } else {
-    await tester.pumpWidget(
-      MaterialApp.router(routerConfig: router, builder: (context, child) => wrap(child)),
+
+    router = GoRouter(
+      routes: [
+        GoRoute(
+          path: '/',
+          builder: (_, __) => home!,
+        ),
+      ],
+      // 👇 attach test observers here
+      observers: [...navigatorObservers],
     );
   }
+
+  await tester.pumpWidget(
+    MaterialApp.router(
+      routerConfig: router,
+      builder: (context, child) => wrap(child),
+    ),
+  );
 }
 
 // -------- Convenience: mocks only -------------------------------------------
