@@ -1,6 +1,6 @@
 // lib/shared/widgets/error_display_app.dart
-
 import 'package:flutter/material.dart';
+import 'error_view.dart';
 
 class ErrorDisplayApp extends StatelessWidget {
   final Object error;
@@ -11,49 +11,18 @@ class ErrorDisplayApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      // Make sure this MaterialApp is simple and has no dependencies
-      // on providers or services that might have failed to initialize.
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text('Critical Application Error'),
-          backgroundColor: Colors.red,
-        ),
-        body: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.error_outline, color: Colors.red, size: 60),
-                const SizedBox(height: 20),
-                const Text(
-                  'A critical error occurred during app initialization, and the app cannot continue.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 15),
-                Text(
-                  'Error: $error',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 16),
-                ),
-                if (stackTrace != null) ...[
-                  const SizedBox(height: 10),
-                  const Text(
-                    'StackTrace:',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 5),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      child: Text(stackTrace.toString(), style: const TextStyle(fontSize: 14)),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ),
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.red),
+        useMaterial3: true,
+      ),
+      home: ErrorView(
+        appBarTitle: 'Critical Application Error',
+        headline: 'Unable to start the app',
+        description:
+        'A critical error occurred during initialization. The app cannot continue.',
+        error: error,
+        stackTrace: stackTrace,
       ),
     );
   }

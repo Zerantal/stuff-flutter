@@ -3,12 +3,15 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 import '../data/drift/open_db.dart';
 import '../services/contracts/data_service_interface.dart';
 import '../services/impl/drift_data_service.dart';
 import '../services/contracts/image_data_service_interface.dart';
 import '../services/impl/local_image_data_service.dart';
+import '../shared/widgets/runtime_error_page.dart';
+import 'theme.dart';
 
 final _log = Logger('Bootstrap');
 
@@ -55,7 +58,30 @@ Future<AppCore> bootstrapCore() async {
 /// Catch framework and platform errors.
 void setupFlutterErrorHooks() {
   FlutterError.onError = (FlutterErrorDetails details) {
-    _log.severe('FlutterError', details.exception, details.stack);
+    Logger('FlutterError').severe(
+      details.exceptionAsString(),
+      details.exception,
+      details.stack,
+    );
+
+    FlutterError.presentError(details);
+
+    // Auto-report to Sentry
+    Sentry.captureException(
+      details.exception,
+      stackTrace: details.stack,
+    );
+  };
+
+  ErrorWidget.builder = (FlutterErrorDetails details) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.buildAppTheme(),
+      home: RuntimeErrorPage(
+        error: details.exception,
+        stackTrace: details.stack,
+      ),
+    );
   };
 
   // Unhandled errors coming from platform/engine layer

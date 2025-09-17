@@ -37,11 +37,11 @@ class RootAppShell extends StatelessWidget {
 }
 
 class AppRouter {
-  static GoRouter buildRouter({String? initialLocation}) {
-    final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>(
-      debugLabel: 'root',
-    );
+  static final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>(
+    debugLabel: 'root',
+  );
 
+  static GoRouter buildRouter({String? initialLocation}) {
     return GoRouter(
       navigatorKey: rootNavigatorKey,
       debugLogDiagnostics: kDebugMode,

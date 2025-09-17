@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/theme.dart';
 import 'confirmation_dialog.dart';
 
 /// A reusable scaffold for entity editors (Location/Room/etc.)
@@ -33,6 +34,8 @@ class EditEntityScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return PopScope(
       canPop: !hasUnsavedChanges,
       onPopInvokedWithResult: (bool didPop, Object? result) async {
@@ -56,13 +59,13 @@ class EditEntityScaffold extends StatelessWidget {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: Text(title, style: Theme.of(context).textTheme.titleLarge),
+          title: Text(title),
           actions: [
             if (!isViewOnly && onDelete != null)
               IconButton(
                 key: const Key('delete_entity_btn'),
                 tooltip: 'Delete',
-                icon: const Icon(Icons.delete_outline),
+                icon: Icon(Icons.delete_outline, color: theme.colorScheme.error),
                 onPressed: isBusy
                     ? null
                     : () async {
@@ -93,7 +96,12 @@ class EditEntityScaffold extends StatelessWidget {
               ),
           ],
         ),
-        body: SafeArea(child: body),
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.xs),
+            child: body
+          ),
+        ),
         floatingActionButton: isViewOnly
             ? null
             : FloatingActionButton.extended(
