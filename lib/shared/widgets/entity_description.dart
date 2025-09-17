@@ -1,7 +1,7 @@
 // lib/shared/widgets/entity_description.dart
 import 'package:flutter/material.dart';
 
-import '../../App/theme.dart';
+import '../../app/theme.dart';
 
 class EntityDescription extends StatelessWidget {
   final String title;

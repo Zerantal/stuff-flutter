@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../App/theme.dart';
+import '../../app/theme.dart';
 
 class ConfirmationDialog {
   static Future<bool?> show(

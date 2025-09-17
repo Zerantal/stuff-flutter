@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 
-import '../../App/theme.dart';
+import '../../app/theme.dart';
 import 'entity_tile_theme.dart';
 
 enum SnapAlign { left, center, right }

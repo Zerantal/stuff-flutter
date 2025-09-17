@@ -1,6 +1,6 @@
 // lib/shared/widgets/labeled_value.dart
 import 'package:flutter/material.dart';
-import '../../App/theme.dart';
+import '../../app/theme.dart';
 
 /// Displays a label (e.g. "Name") and its corresponding value.
 /// Useful for view-only pages (item details, location details).

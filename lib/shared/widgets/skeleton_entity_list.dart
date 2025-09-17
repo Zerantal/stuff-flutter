@@ -1,6 +1,6 @@
 // lib/shared/widgets/skeleton_entity_list.dart
 import 'package:flutter/material.dart';
-import '../../../App/theme.dart';
+import '../../../app/theme.dart';
 import 'responsive_entity_list.dart';
 
 /// Responsive skeleton list that matches the layout of [ResponsiveEntityList].
