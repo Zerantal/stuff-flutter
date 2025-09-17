@@ -1,12 +1,20 @@
-// lib/shared/widgets/error_display_app.dart
 import 'package:flutter/material.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'error_view.dart';
 
 class ErrorDisplayApp extends StatelessWidget {
   final Object error;
   final StackTrace? stackTrace;
+  final SentryId? sentryId;
+  final Future<void> Function()? onRestart;
 
-  const ErrorDisplayApp({super.key, required this.error, this.stackTrace});
+  const ErrorDisplayApp({
+    super.key,
+    required this.error,
+    this.stackTrace,
+    this.sentryId,
+    this.onRestart,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -22,6 +30,8 @@ class ErrorDisplayApp extends StatelessWidget {
         description: 'A critical error occurred during initialization. The app cannot continue.',
         error: error,
         stackTrace: stackTrace,
+        sentryId: sentryId,
+        onRestart: onRestart,
       ),
     );
   }

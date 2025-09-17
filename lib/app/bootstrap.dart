@@ -11,6 +11,7 @@ import '../services/impl/drift_data_service.dart';
 import '../services/contracts/image_data_service_interface.dart';
 import '../services/impl/local_image_data_service.dart';
 import '../shared/widgets/runtime_error_page.dart';
+import 'main.dart';
 import 'theme.dart';
 
 final _log = Logger('Bootstrap');
@@ -43,8 +44,6 @@ Future<IDataService> buildDataService() async {
 /// DataService + ImageDataService in order.
 /// Returns instances that are READY to use.
 Future<AppCore> bootstrapCore() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
   final dataService = await buildDataService();
 
   _log.info('Creating/initializing LocalImageDataService...');
@@ -53,6 +52,17 @@ Future<AppCore> bootstrapCore() async {
   _log.info('ImageDataService initialized');
 
   return AppCore(dataService: dataService, imageDataService: images);
+}
+
+/// Restart handler: re-bootstrap and relaunch the app.
+Future<void> onRestart() async {
+  try {
+    final core = await bootstrapCore();
+    launchApp(core);
+  } catch (e, s) {
+    await Sentry.captureException(e, stackTrace: s);
+    runApp(RuntimeErrorPage(error: e, stackTrace: s));
+  }
 }
 
 /// Catch framework and platform errors.
@@ -70,7 +80,11 @@ void setupFlutterErrorHooks() {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: AppTheme.buildAppTheme(),
-      home: RuntimeErrorPage(error: details.exception, stackTrace: details.stack),
+      home: RuntimeErrorPage(
+        error: details.exception,
+        stackTrace: details.stack,
+        onRestart: onRestart,
+      ),
     );
   };
 

@@ -1,7 +1,7 @@
 // lib/app/main.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:logging/logging.dart';
+// import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
@@ -24,30 +24,37 @@ Future<void> main() async {
       // options.tracesSampleRate = 1.0;
     },
     appRunner: () async {
-      // Use runZonedGuarded to catch any unhandled Dart errors
-      runZonedGuarded(
-        () async {
-          // Configure bootstrap-safe tags (no context needed)
-          SentrySetup.configureBootstrapScope();
+      WidgetsFlutterBinding.ensureInitialized();
 
-          final core = await _safeBootstrap();
-          if (core == null) return;
+      // Configure bootstrap-safe tags (no context needed)
+      SentrySetup.configureBootstrapScope();
 
-          runApp(
-            MultiProvider(
-              providers: buildGlobalProviders(
-                dataService: core.dataService,
-                imageDataService: core.imageDataService,
-              ),
-              child: const _App(),
-            ),
-          );
-        },
-        (error, stack) {
-          Logger('Zone').severe('Uncaught zone error', error, stack);
-        },
-      );
+      try {
+        final core = await bootstrapCore();
+
+        launchApp(core);
+      } catch (e, s) {
+        // Report to Sentry immediately
+        final eventId = await Sentry.captureException(e, stackTrace: s);
+
+        // Show standalone error UI with *real* error + stacktrace
+        runApp(ErrorDisplayApp(error: e, stackTrace: s, sentryId: eventId));
+      }
     },
+  );
+}
+
+/// Public method to launch the app with given [AppCore].
+/// Can also be used by restart handlers.
+void launchApp(AppCore core) {
+  runApp(
+    MultiProvider(
+      providers: buildGlobalProviders(
+        dataService: core.dataService,
+        imageDataService: core.imageDataService,
+      ),
+      child: const _App(),
+    ),
   );
 }
 
@@ -67,20 +74,5 @@ class _App extends StatelessWidget {
       routerConfig: router,
       theme: AppTheme.buildAppTheme(),
     );
-  }
-}
-
-/// Attempts to bootstrap services. On failure, shows ErrorDisplayApp and reports to Sentry.
-Future<AppCore?> _safeBootstrap() async {
-  try {
-    return await bootstrapCore(); // your service init (Hive, IDataService, etc.)
-  } catch (e, s) {
-    // Report to Sentry immediately
-    await Sentry.captureException(e, stackTrace: s);
-
-    // Show standalone error UI
-    runApp(ErrorDisplayApp(error: e, stackTrace: s));
-
-    return null;
   }
 }

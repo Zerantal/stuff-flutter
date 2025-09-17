@@ -62,8 +62,9 @@ class _DeveloperDrawerState extends State<DeveloperDrawer> {
 
   Future<void> _handlePopulateRandom() async {
     if (_busyPopulating) return;
-    StatefulNavigationShell.of(context).goBranch(1);
+
     context.pop();
+    StatefulNavigationShell.of(context).goBranch(1);
     AppRoutes.debugSampleDbRandomiser.go(context);
 
     if (!mounted) return;
@@ -119,8 +120,8 @@ class _DeveloperDrawerState extends State<DeveloperDrawer> {
               title: const Text('Database Inspector'),
               subtitle: const Text('Browse records (debug)'),
               onTap: () {
-                StatefulNavigationShell.of(context).goBranch(1);
                 context.pop();
+                StatefulNavigationShell.of(context).goBranch(1);
                 AppRoutes.debugDbInspector.go(context);
               },
             ),
