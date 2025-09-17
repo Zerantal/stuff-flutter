@@ -97,10 +97,7 @@ class EditEntityScaffold extends StatelessWidget {
           ],
         ),
         body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.xs),
-            child: body
-          ),
+          child: Padding(padding: const EdgeInsets.all(AppSpacing.xs), child: body),
         ),
         floatingActionButton: isViewOnly
             ? null

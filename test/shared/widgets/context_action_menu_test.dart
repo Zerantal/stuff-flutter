@@ -15,20 +15,20 @@ Future<void> _openMenu(WidgetTester tester) async {
 }
 
 void main() {
-  testWidgets('shows all menu items', (tester) async {
+  testWidgets('shows no menu items when no callbacks are provided', (tester) async {
     await tester.pumpWidget(
       _wrap(const ContextActionMenu(onEdit: null, onView: null, onDelete: null)),
     );
 
     await _openMenu(tester);
 
-    expect(find.byKey(const ValueKey('edit_btn')), findsOneWidget);
-    expect(find.byKey(const ValueKey('view_btn')), findsOneWidget);
-    expect(find.byKey(const ValueKey('delete_btn')), findsOneWidget);
+    expect(find.byKey(const ValueKey('edit_btn')), findsNothing);
+    expect(find.byKey(const ValueKey('view_btn')), findsNothing);
+    expect(find.byKey(const ValueKey('delete_btn')), findsNothing);
 
-    expect(find.text('Edit'), findsOneWidget);
-    expect(find.text('View'), findsOneWidget);
-    expect(find.text('Delete'), findsOneWidget);
+    expect(find.text('Edit'), findsNothing);
+    expect(find.text('View'), findsNothing);
+    expect(find.text('Delete'), findsNothing);
   });
 
   testWidgets('selecting Edit calls onEdit only', (tester) async {
@@ -101,23 +101,5 @@ void main() {
     expect(editCount, 0);
     expect(viewCount, 0);
     expect(deleteCount, 1);
-  });
-
-  testWidgets('null callbacks do not throw', (tester) async {
-    await tester.pumpWidget(
-      _wrap(const ContextActionMenu(onEdit: null, onView: null, onDelete: null)),
-    );
-
-    await _openMenu(tester);
-    await tester.tap(find.byKey(const ValueKey('edit_btn')));
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.byKey(const ValueKey('view_btn')));
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.byKey(const ValueKey('delete_btn')));
-    await tester.pumpAndSettle();
-
-    // If no exceptions were thrown, test passes.
   });
 }

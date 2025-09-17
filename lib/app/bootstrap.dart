@@ -58,29 +58,19 @@ Future<AppCore> bootstrapCore() async {
 /// Catch framework and platform errors.
 void setupFlutterErrorHooks() {
   FlutterError.onError = (FlutterErrorDetails details) {
-    Logger('FlutterError').severe(
-      details.exceptionAsString(),
-      details.exception,
-      details.stack,
-    );
+    Logger('FlutterError').severe(details.exceptionAsString(), details.exception, details.stack);
 
     FlutterError.presentError(details);
 
     // Auto-report to Sentry
-    Sentry.captureException(
-      details.exception,
-      stackTrace: details.stack,
-    );
+    Sentry.captureException(details.exception, stackTrace: details.stack);
   };
 
   ErrorWidget.builder = (FlutterErrorDetails details) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: AppTheme.buildAppTheme(),
-      home: RuntimeErrorPage(
-        error: details.exception,
-        stackTrace: details.stack,
-      ),
+      home: RuntimeErrorPage(error: details.exception, stackTrace: details.stack),
     );
   };
 

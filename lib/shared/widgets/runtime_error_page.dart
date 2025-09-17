@@ -13,8 +13,7 @@ class RuntimeErrorPage extends StatelessWidget {
     return ErrorView(
       appBarTitle: 'Unexpected Error',
       headline: 'Something went wrong',
-      description:
-      'An unexpected error occurred. We’ve automatically reported this to our team.',
+      description: 'An unexpected error occurred. We’ve automatically reported this to our team.',
       error: error,
       stackTrace: stackTrace,
     );

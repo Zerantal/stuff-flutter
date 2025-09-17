@@ -77,14 +77,12 @@ class ErrorView extends StatelessWidget {
                 FutureBuilder<SentryId>(
                   future: Sentry.captureException(error, stackTrace: stackTrace),
                   builder: (context, snapshot) {
-                    final eventId =
-                    snapshot.hasData ? snapshot.data.toString() : 'pending…';
+                    final eventId = snapshot.hasData ? snapshot.data.toString() : 'pending…';
                     return Text(
                       'Sentry event ID: $eventId',
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodySmall
-                          ?.copyWith(color: Colors.grey[700]),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(color: Colors.grey[700]),
                     );
                   },
                 ),

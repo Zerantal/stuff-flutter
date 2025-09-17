@@ -19,8 +19,7 @@ class ErrorDisplayApp extends StatelessWidget {
       home: ErrorView(
         appBarTitle: 'Critical Application Error',
         headline: 'Unable to start the app',
-        description:
-        'A critical error occurred during initialization. The app cannot continue.',
+        description: 'A critical error occurred during initialization. The app cannot continue.',
         error: error,
         stackTrace: stackTrace,
       ),
