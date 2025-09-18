@@ -1,14 +1,16 @@
 // lib/shared/widgets/image_manager_input.dart
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../image/image_ref.dart';
+import '../../app/theme.dart';
 import '../../core/image_identifier.dart';
-import '../image/image_picker_controller.dart';
-import '../image/pick_result.dart';
 import '../../services/contracts/image_data_service_interface.dart';
 import '../../services/contracts/image_picker_service_interface.dart';
 import '../../services/contracts/temporary_file_service_interface.dart';
+import '../image/image_ref.dart';
+import '../image/image_picker_controller.dart';
+import '../image/pick_result.dart';
 import 'image_thumb.dart';
 
 /// Reusable image manager (grid of thumbnails + “Add” tile).
@@ -24,7 +26,7 @@ class ImageManagerInput extends StatelessWidget {
     required this.onRemoveAt,
     required this.onImagePicked,
     this.tileSize = 92,
-    this.spacing = 8,
+    this.spacing = AppSpacing.sm,
     this.placeholderAsset,
   });
 
@@ -42,10 +44,8 @@ class ImageManagerInput extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final items = <Widget>[];
-
-    for (var i = 0; i < images.length; i++) {
-      items.add(
+    final items = <Widget>[
+      for (var i = 0; i < images.length; i++)
         _ThumbTile(
           key: Key('img_tile_$i'),
           image: images[i],
@@ -53,19 +53,14 @@ class ImageManagerInput extends StatelessWidget {
           placeholderAsset: placeholderAsset,
           onRemove: () => onRemoveAt(i),
         ),
-      );
-    }
-
-    items.add(
       _AddTile(
         key: const Key('img_tile_add'),
         session: session,
         size: tileSize,
-        spacing: spacing,
-        placeholderAsset: placeholderAsset,
         onPicked: onImagePicked,
+        placeholderAsset: placeholderAsset,
       ),
-    );
+    ];
 
     return Wrap(spacing: spacing, runSpacing: spacing, children: items);
   }
@@ -87,46 +82,47 @@ class _ThumbTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: SizedBox(
-            width: size,
-            height: size,
-            child: ImageThumb(
-              image: image,
+    final theme = Theme.of(context);
+
+    return Card(
+      margin: EdgeInsets.zero, // override only margin
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            child: SizedBox(
               width: size,
               height: size,
-              borderRadius: BorderRadius.circular(8),
-              loadingWidget: SizedBox(
+              child: ImageThumb(
+                image: image,
                 width: size,
                 height: size,
-                child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                loadingWidget: const Center(
+                  child: SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+                errorWidget: (placeholderAsset == null)
+                    ? Icon(Icons.image_not_supported_outlined, color: theme.colorScheme.error)
+                    : Image.asset(placeholderAsset!, width: size, height: size, fit: BoxFit.cover),
               ),
-              errorWidget: (placeholderAsset == null)
-                  ? const Center(child: Icon(Icons.broken_image_outlined))
-                  : Image(
-                      image: AssetImage(placeholderAsset!),
-                      width: size,
-                      height: size,
-                      fit: BoxFit.cover,
-                    ),
             ),
           ),
-        ),
-        Positioned(
-          top: -8,
-          right: -8,
-          child: IconButton.filledTonal(
-            tooltip: 'Remove',
-            icon: const Icon(Icons.close),
-            style: IconButton.styleFrom(padding: EdgeInsets.zero, fixedSize: const Size(28, 28)),
-            onPressed: onRemove,
+          Positioned(
+            top: -AppOverlay.offset,
+            right: -AppOverlay.offset,
+            child: IconButton.filledTonal(
+              tooltip: 'Remove',
+              icon: const Icon(Icons.close),
+              onPressed: onRemove,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -136,19 +132,19 @@ class _AddTile extends StatelessWidget {
     super.key,
     required this.session,
     required this.size,
-    required this.spacing,
     required this.onPicked,
     this.placeholderAsset,
   });
 
   final TempSession session;
   final double size;
-  final double spacing;
   final void Function(ImageIdentifier id, ImageRef ref) onPicked;
   final String? placeholderAsset;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     // Grab dependencies *before* we await anything (avoids context-after-await lints)
     final picker = context.read<IImagePickerService>();
     final store = context.read<IImageDataService>();
@@ -157,62 +153,72 @@ class _AddTile extends StatelessWidget {
     final controller = ImagePickerController(picker: picker, store: store, session: session);
 
     Future<void> handleAction(_AddAction action) async {
-      PickResult r;
-      if (action == _AddAction.camera) {
-        r = await controller.pickFromCamera();
-      } else {
-        r = await controller.pickFromGallery();
-      }
+      final r = action == _AddAction.camera
+          ? await controller.pickFromCamera()
+          : await controller.pickFromGallery();
 
-      if (r is PickCancelled) return;
-
-      if (r is PickFailed) {
-        // Silent fail (or show a SnackBar if you prefer)
-        return;
-      }
+      if (r is PickCancelled || r is PickFailed) return;
 
       if (r is PickedTemp) {
         final id = TempImageIdentifier(r.file);
         final ref = ImageRef.file(r.file.path);
         onPicked(id, ref);
-        return;
-      }
-
-      if (r is SavedGuid) {
-        // Resolve to ImageRef via store, otherwise fall back to a placeholder
-        ImageRef? ref;
-        ref = await store.getImage(r.guid, verifyExists: true);
-        ref ??= (placeholderAsset == null)
-            ? const ImageRef.asset('assets/images/location_placeholder.jpg')
-            : ImageRef.asset(placeholderAsset!);
-
+      } else if (r is SavedGuid) {
+        final ref =
+            await store.getImage(r.guid, verifyExists: true) ??
+            (placeholderAsset == null
+                ? const ImageRef.asset('assets/images/location_placeholder.jpg')
+                : ImageRef.asset(placeholderAsset!));
         onPicked(PersistedImageIdentifier(r.guid), ref);
-        return;
       }
+    }
+
+    Future<void> showPickerSheet() async {
+      final action = await showModalBottomSheet<_AddAction>(
+        context: context,
+        builder: (ctx) {
+          return SafeArea(
+            child: Wrap(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.photo_library_outlined),
+                  title: const Text('Pick from Gallery'),
+                  onTap: () async {
+                    context.pop();
+                    await handleAction(_AddAction.gallery);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.photo_camera_outlined),
+                  title: const Text('Take Photo'),
+                  onTap: () async {
+                    context.pop();
+                    await handleAction(_AddAction.camera);
+                  },
+                ),
+              ],
+            ),
+          );
+        },
+      );
+      if (action != null) await handleAction(action);
     }
 
     return SizedBox(
       width: size,
       height: size,
-      child: Material(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(8),
+      child: Card(
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppOverlay.radius)),
+        color: theme.colorScheme.surfaceContainerHighest,
         child: InkWell(
-          borderRadius: BorderRadius.circular(8),
-          onTap: () async {
-            final action = await showMenu<_AddAction>(
-              context: context,
-              position: const RelativeRect.fromLTRB(200, 200, 0, 0),
-              items: const [
-                PopupMenuItem(value: _AddAction.gallery, child: Text('Pick from Gallery')),
-                PopupMenuItem(value: _AddAction.camera, child: Text('Take Photo')),
-              ],
-            );
-            if (action != null) {
-              await handleAction(action);
-            }
-          },
-          child: const Center(child: Icon(Icons.add_a_photo_outlined)),
+          borderRadius: BorderRadius.circular(AppOverlay.radius),
+          onTap: showPickerSheet,
+          child: Icon(
+            Icons.add_a_photo_outlined,
+            size: size * 0.45, // scales icon size relative to tile
+            color: theme.colorScheme.primary,
+          ),
         ),
       ),
     );

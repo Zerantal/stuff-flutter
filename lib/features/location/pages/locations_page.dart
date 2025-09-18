@@ -1,4 +1,5 @@
 // lib/features/location/pages/locations_page.dart
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';

@@ -55,24 +55,22 @@ Future<AppCore> bootstrapCore() async {
 }
 
 /// Restart handler: re-bootstrap and relaunch the app.
-Future<void> onRestart() async {
-  try {
-    final core = await bootstrapCore();
-    launchApp(core);
-  } catch (e, s) {
-    await Sentry.captureException(e, stackTrace: s);
-    runApp(RuntimeErrorPage(error: e, stackTrace: s));
-  }
+Future<void> onRestart(AppCore core) async {
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    launchApp(core, forceInitialLocation: true);
+  });
 }
 
 /// Catch framework and platform errors.
+/// Only capture once: FlutterError + PlatformDispatcher handle reporting.
+/// UI widgets (ErrorWidget.builder, RuntimeErrorPage) just *display* the error.
 void setupFlutterErrorHooks() {
   FlutterError.onError = (FlutterErrorDetails details) {
     Logger('FlutterError').severe(details.exceptionAsString(), details.exception, details.stack);
 
+    // Show red screen in debug, grey box in release.
     FlutterError.presentError(details);
 
-    // Auto-report to Sentry
     Sentry.captureException(details.exception, stackTrace: details.stack);
   };
 
@@ -80,18 +78,14 @@ void setupFlutterErrorHooks() {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: AppTheme.buildAppTheme(),
-      home: RuntimeErrorPage(
-        error: details.exception,
-        stackTrace: details.stack,
-        onRestart: onRestart,
-      ),
+      home: RuntimeErrorPage(error: details.exception, stackTrace: details.stack),
     );
   };
 
   // Unhandled errors coming from platform/engine layer
   PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
     _log.severe('PlatformDispatcher error', error, stack);
-    // Return true to indicate we handled it (prevents default crash)
+    Sentry.captureException(error, stackTrace: stack);
     return true;
   };
 }

@@ -14,6 +14,8 @@ import 'package:stuff/services/contracts/image_picker_service_interface.dart';
 
 import '../../utils/mocks.dart';
 import '../../utils/dummies.dart';
+import '../../utils/test_router.dart';
+import '../../utils/ui_runner_helper.dart';
 
 void main() {
   late MockIImagePickerService picker;
@@ -76,7 +78,7 @@ void main() {
     expect(removed, 0);
   });
 
-  testWidgets('pick from gallery yields PickedTemp → onImagePicked called', (tester) async {
+  testWidgets('pick from gallery yields PickedTemp - onImagePicked called', (tester) async {
     final tmpSrc = File('src.png');
     final tmpDest = File('dest.png');
 
@@ -92,16 +94,18 @@ void main() {
     ImageIdentifier? pickedId;
     ImageRef? pickedRef;
 
-    await tester.pumpWidget(
-      buildTestWidget(
-        images: const [],
-        onRemoveAt: (_) {},
-        onImagePicked: (id, ref) {
-          pickedId = id;
-          pickedRef = ref;
-        },
-      ),
+    final widget = buildTestWidget(
+      images: const [],
+      onRemoveAt: (_) {},
+      onImagePicked: (id, ref) {
+        pickedId = id;
+        pickedRef = ref;
+      },
     );
+    final router = makeRouterWithWidget(child: widget);
+
+    await pumpApp(tester, router: router);
+    await tester.pumpAndSettle();
 
     await tester.tap(find.byKey(const Key('img_tile_add')));
     await tester.pumpAndSettle();
@@ -117,9 +121,15 @@ void main() {
     when(picker.pickImageFromGallery()).thenAnswer((_) async => null);
 
     var called = false;
-    await tester.pumpWidget(
-      buildTestWidget(images: const [], onRemoveAt: (_) {}, onImagePicked: (_, _) => called = true),
+    final imgWidget = buildTestWidget(
+      images: const [],
+      onRemoveAt: (_) {},
+      onImagePicked: (_, _) => called = true,
     );
+    final router = makeRouterWithWidget(child: imgWidget);
+
+    await pumpApp(tester, router: router);
+    await tester.pumpAndSettle();
 
     await tester.tap(find.byKey(const Key('img_tile_add')));
     await tester.pumpAndSettle();
@@ -148,16 +158,18 @@ void main() {
     ImageIdentifier? pickedId;
     ImageRef? pickedRef;
 
-    await tester.pumpWidget(
-      buildTestWidget(
-        images: const [],
-        onRemoveAt: (_) {},
-        onImagePicked: (id, ref) {
-          pickedId = id;
-          pickedRef = ref;
-        },
-      ),
+    final imgWidget = buildTestWidget(
+      images: const [],
+      onRemoveAt: (_) {},
+      onImagePicked: (id, ref) {
+        pickedId = id;
+        pickedRef = ref;
+      },
     );
+    final router = makeRouterWithWidget(child: imgWidget);
+
+    await pumpApp(tester, router: router);
+    await tester.pumpAndSettle();
 
     await tester.tap(find.byKey(const Key('img_tile_add')));
     await tester.pumpAndSettle();

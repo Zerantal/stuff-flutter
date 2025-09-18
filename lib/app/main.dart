@@ -8,9 +8,10 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 import 'bootstrap.dart';
 import 'injection.dart';
 import 'routing/app_router.dart';
+import 'routing/app_routes.dart';
 import 'sentry_setup.dart';
 import 'theme.dart';
-import '../shared/widgets/error_display_app.dart';
+import '../shared/widgets/bootstrap_error_app.dart';
 
 Future<void> main() async {
   configureLogging();
@@ -37,8 +38,8 @@ Future<void> main() async {
         // Report to Sentry immediately
         final eventId = await Sentry.captureException(e, stackTrace: s);
 
-        // Show standalone error UI with *real* error + stacktrace
-        runApp(ErrorDisplayApp(error: e, stackTrace: s, sentryId: eventId));
+        // Show standalone error UI with *real* error + stacktrace.
+        runApp(BootstrapErrorApp(error: e, stackTrace: s, sentryId: eventId));
       }
     },
   );
@@ -46,31 +47,38 @@ Future<void> main() async {
 
 /// Public method to launch the app with given [AppCore].
 /// Can also be used by restart handlers.
-void launchApp(AppCore core) {
+void launchApp(AppCore core, {bool forceInitialLocation = false}) {
   runApp(
     MultiProvider(
-      providers: buildGlobalProviders(
-        dataService: core.dataService,
-        imageDataService: core.imageDataService,
-      ),
-      child: const _App(),
+      providers: [
+        Provider.value(value: core),
+        ...buildGlobalProviders(
+          dataService: core.dataService,
+          imageDataService: core.imageDataService,
+        ),
+      ],
+      child: _App(core: core, forceInitialLocation: forceInitialLocation),
     ),
   );
 }
 
 class _App extends StatelessWidget {
-  const _App();
+  final AppCore core;
+  final bool forceInitialLocation;
+  const _App({required this.core, this.forceInitialLocation = false});
 
   @override
   Widget build(BuildContext context) {
-    final router = AppRouter.buildRouter();
+    final router = AppRouter.buildRouter(
+      initialLocation: forceInitialLocation ? AppRoutes.locations.path : null,
+    );
 
     // Add UI-related tags once the app is running
     SentrySetup.configureUiScope(AppRouter.rootNavigatorKey);
 
     return MaterialApp.router(
       restorationScopeId: 'root',
-      debugShowCheckedModeBanner: true,
+      debugShowCheckedModeBanner: false,
       routerConfig: router,
       theme: AppTheme.buildAppTheme(),
     );

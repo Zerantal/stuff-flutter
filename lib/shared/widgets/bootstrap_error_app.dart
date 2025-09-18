@@ -1,20 +1,14 @@
+// lib/shared/widgets/bootstrap_error_app.dart
 import 'package:flutter/material.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
-import 'error_view.dart';
+import 'exception_error_panel.dart';
 
-class ErrorDisplayApp extends StatelessWidget {
+class BootstrapErrorApp extends StatelessWidget {
   final Object error;
   final StackTrace? stackTrace;
   final SentryId? sentryId;
-  final Future<void> Function()? onRestart;
 
-  const ErrorDisplayApp({
-    super.key,
-    required this.error,
-    this.stackTrace,
-    this.sentryId,
-    this.onRestart,
-  });
+  const BootstrapErrorApp({super.key, required this.error, this.stackTrace, this.sentryId});
 
   @override
   Widget build(BuildContext context) {
@@ -24,14 +18,20 @@ class ErrorDisplayApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.red),
         useMaterial3: true,
       ),
-      home: ErrorView(
+      home: ExceptionErrorPanel(
         appBarTitle: 'Critical Application Error',
         headline: 'Unable to start the app',
         description: 'A critical error occurred during initialization. The app cannot continue.',
         error: error,
         stackTrace: stackTrace,
-        sentryId: sentryId,
-        onRestart: onRestart,
+        extra: sentryId != null
+            ? [
+                Text(
+                  'Sentry event ID: ${sentryId.toString()}',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ]
+            : null,
       ),
     );
   }

@@ -24,9 +24,20 @@ class AppRadius {
 class AppElevation {
   static const double none = 0; // Scaffolds, background
   static const double low = 1; // Cards, TextFields
-  static const double med = 3; // Menus, small sheets, dropdowns
+  static const double medium = 3; // Menus, small sheets, dropdowns
   static const double high = 6; // Snackbars, modals, popups
   static const double fab = 8; // FloatingActionButton, prominent
+}
+
+class AppOverlay {
+  /// Offset for overlay buttons like remove/close icons on thumbnails
+  static const double offset = AppSpacing.sm; // 8.0
+
+  /// Standard size for small overlay icon buttons
+  static const Size iconButtonSize = Size(28, 28);
+
+  /// Default radius for overlay tiles (add, badges, etc.)
+  static const double radius = AppRadius.md;
 }
 
 /// App-wide theme
@@ -60,7 +71,7 @@ class AppTheme {
 
       menuTheme: MenuThemeData(
         style: MenuStyle(
-          elevation: const WidgetStatePropertyAll(AppElevation.med),
+          elevation: const WidgetStatePropertyAll(AppElevation.medium),
           shape: WidgetStatePropertyAll(
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
           ),
@@ -132,6 +143,36 @@ class AppTheme {
         behavior: SnackBarBehavior.floating,
         backgroundColor: base.colorScheme.inverseSurface,
         contentTextStyle: GoogleFonts.roboto(color: base.colorScheme.onInverseSurface),
+      ),
+
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: base.colorScheme.surface,
+        elevation: AppElevation.medium,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
+        ),
+        showDragHandle: true,
+      ),
+
+      listTileTheme: ListTileThemeData(
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.xs,
+        ),
+        iconColor: base.colorScheme.primary,
+        textColor: base.colorScheme.onSurface,
+        titleTextStyle: base.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w500),
+        subtitleTextStyle: base.textTheme.bodySmall?.copyWith(
+          color: base.colorScheme.onSurfaceVariant,
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.sm)),
+      ),
+
+      popupMenuTheme: PopupMenuThemeData(
+        elevation: AppElevation.medium,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+        color: base.colorScheme.surface,
+        textStyle: base.textTheme.bodyMedium?.copyWith(color: base.colorScheme.onSurface),
       ),
     );
   }
