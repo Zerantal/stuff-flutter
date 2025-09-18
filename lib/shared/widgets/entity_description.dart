@@ -1,26 +1,47 @@
 // lib/shared/widgets/entity_description.dart
 import 'package:flutter/material.dart';
 
+import '../../app/theme.dart';
+
 class EntityDescription extends StatelessWidget {
   final String title;
-  final String? subtitle;
+  final String? description;
+  final Widget? extra; // (e.g. address row)
   final List<Widget>? badges; // chips / counts / tags
 
-  const EntityDescription({super.key, required this.title, this.subtitle, this.badges});
+  const EntityDescription({
+    super.key,
+    required this.title,
+    this.description,
+    this.badges,
+    this.extra,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     final children = <Widget>[
-      Text(title, style: Theme.of(context).textTheme.titleMedium),
-      if (subtitle != null && subtitle!.isNotEmpty)
+      Text(title, style: theme.textTheme.titleMedium, overflow: TextOverflow.ellipsis, maxLines: 1),
+      if (description != null && description!.isNotEmpty)
         Padding(
-          padding: const EdgeInsets.only(top: 2),
-          child: Text(subtitle!, style: Theme.of(context).textTheme.bodySmall),
+          padding: const EdgeInsets.only(top: AppSpacing.xs),
+          child: Text(
+            description!,
+            style: theme.textTheme.bodySmall,
+            overflow: TextOverflow.ellipsis,
+            maxLines: 2,
+          ),
+        ),
+      if (extra != null)
+        Padding(
+          padding: const EdgeInsets.only(top: AppSpacing.sm),
+          child: extra!,
         ),
       if (badges != null && badges!.isNotEmpty)
         Padding(
-          padding: const EdgeInsets.only(top: 8),
-          child: Wrap(spacing: 6, runSpacing: -8, children: badges!),
+          padding: const EdgeInsets.only(top: AppSpacing.sm),
+          child: Wrap(spacing: AppSpacing.sm, runSpacing: -AppSpacing.sm, children: badges!),
         ),
     ];
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: children);

@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../app/theme.dart';
 import 'image_thumb.dart';
 import '../image/image_ref.dart';
 import 'image_viewer/image_viewer_page.dart';
@@ -19,7 +20,7 @@ class GestureWrappedThumbnail extends StatelessWidget {
     this.width,
     this.height,
     this.size = 80,
-    this.borderRadius = 8,
+    this.borderRadius,
     this.fit = BoxFit.cover,
     this.placeholder,
     this.backgroundColor,
@@ -43,15 +44,21 @@ class GestureWrappedThumbnail extends StatelessWidget {
 
   /// Fallback side length for a square thumbnail when width/height are omitted.
   final double size;
-  final double borderRadius;
+
+  /// If null, falls back to theme radius.
+  final double? borderRadius;
+
   final ImageRef? placeholder;
   final BoxFit fit;
+
+  /// If null, falls back to theme surface variant.
   final Color? backgroundColor;
 
   @override
   Widget build(BuildContext context) {
-    Uuid uuid = const Uuid();
+    final uuid = const Uuid();
     final generatedUuid = uuid.v4();
+
     final preview = images.isNotEmpty ? images.first : null;
     final baseTag = 'ent_${entityId ?? generatedUuid}';
     final tags = List<String>.generate(images.length, (i) => '${baseTag}_img$i');
@@ -60,9 +67,35 @@ class GestureWrappedThumbnail extends StatelessWidget {
     final w = width ?? size;
     final h = height ?? size;
 
+    final effectiveBorderRadius =
+        borderRadius ??
+        (Theme.of(context).cardTheme.shape is RoundedRectangleBorder
+            ? (Theme.of(context).cardTheme.shape as RoundedRectangleBorder).borderRadius
+                  .resolve(Directionality.of(context))
+                  .topLeft
+                  .x
+            : AppRadius.sm);
+
+    final effectiveBackgroundColor =
+        backgroundColor ?? Theme.of(context).colorScheme.surfaceContainerHighest;
+
     Widget? placeholderWidget;
     if (placeholder != null) {
       placeholderWidget = buildImage(placeholder!, width: w, height: h, fit: BoxFit.cover);
+    } else {
+      placeholderWidget = Container(
+        width: w,
+        height: h,
+        decoration: BoxDecoration(
+          color: effectiveBackgroundColor,
+          borderRadius: BorderRadius.circular(effectiveBorderRadius),
+        ),
+        child: Icon(
+          Icons.image_outlined,
+          size: size * 0.4,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+      );
     }
 
     return GestureDetector(
@@ -89,10 +122,10 @@ class GestureWrappedThumbnail extends StatelessWidget {
           image: preview, // null => placeholder shown
           width: w,
           height: h,
-          borderRadius: BorderRadius.circular(borderRadius),
+          borderRadius: BorderRadius.circular(effectiveBorderRadius),
           fit: fit,
           placeholderWidget: placeholderWidget,
-          backgroundColor: backgroundColor,
+          backgroundColor: effectiveBackgroundColor,
         ),
       ),
     );

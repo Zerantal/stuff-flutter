@@ -10,6 +10,7 @@ import 'package:stuff/features/location/pages/locations_page.dart';
 import 'package:stuff/domain/models/location_model.dart';
 import 'package:stuff/features/location/viewmodels/locations_view_model.dart';
 import 'package:stuff/shared/widgets/empty_list_state.dart';
+import 'package:stuff/shared/widgets/skeleton_entity_list.dart';
 
 import '../../../utils/test_logger_manager.dart';
 import '../../../utils/test_router.dart';
@@ -65,7 +66,7 @@ void main() {
     testWidgets('loading - empty state', (tester) async {
       await pump(tester);
       await tester.pump(); // initial frame: skeleton list
-      expect(find.byType(ListView), findsOneWidget);
+      expect(find.byType(SkeletonEntityList), findsOneWidget);
 
       // empty
       controller.add(const <Location>[]);
@@ -126,7 +127,11 @@ void main() {
     });
 
     testWidgets('delete flow - confirm deletion and success snackbar', (tester) async {
-      final mocks = await pump(tester);
+      final observer = MockNavigatorObserver();
+      final router = makeTestRouter(home: const LocationsPage(), observers: [observer]);
+
+      final mocks = await pump(tester, observers: [observer], router: router);
+
       final loc = Location(name: 'Office', id: 'abc');
       controller.add([loc]);
 
@@ -154,7 +159,11 @@ void main() {
 
     testWidgets('delete flow - error shows error snackbar', (tester) async {
       final loc = Location(name: 'Garage', id: 'id-1');
-      final mocks = await pump(tester);
+      final observer = MockNavigatorObserver();
+      final router = makeTestRouter(home: const LocationsPage(), observers: [observer]);
+
+      final mocks = await pump(tester, observers: [observer], router: router);
+
       when(mocks.dataService.getLocationById('id-1')).thenAnswer((_) => Future.value(loc));
       when(mocks.dataService.deleteLocation('id-1')).thenThrow(Exception('boom'));
 

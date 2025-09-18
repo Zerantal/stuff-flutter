@@ -11,8 +11,8 @@ import '../../../shared/widgets/context_action_menu.dart';
 import '../../../shared/widgets/gesture_wrapped_thumbnail.dart';
 import '../../../shared/widgets/entity_description.dart';
 import '../../../shared/widgets/responsive_entity_list.dart';
+import '../../../shared/widgets/skeleton_entity_list.dart';
 import '../viewmodels/rooms_view_model.dart';
-import '../../../shared/widgets/skeleton_tile.dart';
 import '../../../shared/widgets/empty_list_state.dart';
 
 final _log = Logger('RoomsPage');
@@ -64,12 +64,7 @@ class RoomsPage extends StatelessWidget {
       stream: vm.rooms,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return ListView.separated(
-            padding: const EdgeInsets.only(bottom: 88, top: 8),
-            itemCount: 6,
-            separatorBuilder: (_, _) => const Divider(height: 1),
-            itemBuilder: (_, _) => const SkeletonTile(),
-          );
+          return const SkeletonEntityList(numRows: 2);
         }
 
         final items = snapshot.data ?? const <RoomListItem>[];
@@ -90,12 +85,12 @@ class RoomsPage extends StatelessWidget {
           images: item.images,
           entityId: item.room.id,
           entityName: item.room.name,
-          size: 80,
           fit: fit,
           placeholder: const ImageRef.asset('assets/images/image_placeholder.png'),
         );
 
         return ResponsiveEntityList<RoomListItem>(
+          gridBodyTargetHeight: 80,
           items: items,
           onTap: (it) => AppRoutes.roomContentsAlias.push(
             context,
@@ -103,7 +98,7 @@ class RoomsPage extends StatelessWidget {
           ),
           headerBuilder: (ctx, it) => thumbnailBuilder(ctx, it),
           bodyBuilder: (ctx, it) =>
-              EntityDescription(title: it.room.name, subtitle: it.room.description),
+              EntityDescription(title: it.room.name, description: it.room.description),
           trailingBuilder: (ctx, it) => ContextActionMenu(
             onView: () => AppRoutes.roomContentsAlias.push(
               context,

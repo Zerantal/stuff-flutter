@@ -128,3 +128,7 @@ app.*.symbols
 # Generated files (by build_runner)
 *.g.dart
 *.mocks.dart
+
+# Sentry build artifacts
+.sentry-native/
+

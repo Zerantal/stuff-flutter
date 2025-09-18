@@ -1,4 +1,5 @@
 // lib/features/location/pages/locations_page.dart
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
@@ -10,9 +11,12 @@ import '../../../shared/image/image_ref.dart';
 import '../../../shared/widgets/confirmation_dialog.dart';
 import '../../../shared/widgets/context_action_menu.dart';
 import '../../../shared/widgets/empty_list_state.dart';
+import '../../../shared/widgets/entity_description.dart';
+import '../../../shared/widgets/entity_tile_theme.dart';
 import '../../../shared/widgets/gesture_wrapped_thumbnail.dart';
 import '../../../shared/widgets/responsive_entity_list.dart';
-import '../../../shared/widgets/skeleton_tile.dart';
+import '../../../shared/widgets/skeleton_entity_list.dart';
+import '../../../app/theme.dart';
 import '../widgets/developer_drawer.dart';
 import '../viewmodels/locations_view_model.dart';
 
@@ -47,12 +51,7 @@ class LocationsPage extends StatelessWidget {
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
             // Skeletons while first batch loads
-            return ListView.separated(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              itemCount: 6,
-              separatorBuilder: (_, _) => const SizedBox(height: 4),
-              itemBuilder: (context, i) => const SkeletonTile(),
-            );
+            return const SkeletonEntityList(count: 6, numRows: 3);
           }
 
           final items = snapshot.data ?? const <LocationListItem>[];
@@ -71,11 +70,12 @@ class LocationsPage extends StatelessWidget {
                 entityId: item.location.id,
                 entityName: item.location.name,
                 size: 80,
-                borderRadius: 10,
+                borderRadius: AppRadius.md,
                 placeholder: const ImageRef.asset('assets/images/image_placeholder.png'),
               );
 
           return ResponsiveEntityList<LocationListItem>(
+            density: EntityTileDensity.roomy,
             items: items,
             onTap: (it) => AppRoutes.roomsForLocation.push(
               context,
@@ -83,7 +83,7 @@ class LocationsPage extends StatelessWidget {
               extra: it.location.name,
             ),
             headerBuilder: thumbnailBuilder,
-            bodyBuilder: itemDescriptionBuilder,
+            bodyBuilder: _itemDescriptionBuilder,
             trailingBuilder: (ctx, it) => ContextActionMenu(
               onView: () => AppRoutes.roomsForLocation.push(
                 context,
@@ -116,34 +116,22 @@ class LocationsPage extends StatelessWidget {
     );
   }
 
-  Widget itemDescriptionBuilder(BuildContext context, LocationListItem item) {
+  /// Renders the body content of a location card
+  Widget _itemDescriptionBuilder(BuildContext context, LocationListItem item) {
     final theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          item.location.name,
-          style: theme.textTheme.titleLarge,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        if ((item.location.description ?? '').isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: Text(
-              item.location.description!,
-              style: theme.textTheme.bodySmall,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        if ((item.location.address ?? '').isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(top: 6),
-            child: Row(
+
+    return EntityDescription(
+      title: item.location.name,
+      description: item.location.description,
+      extra: (item.location.address?.isNotEmpty ?? false)
+          ? Row(
               children: [
-                const Icon(Icons.place_outlined, size: 14),
-                const SizedBox(width: 4),
+                Icon(
+                  Icons.place_outlined,
+                  size: theme.iconTheme.size ?? 14,
+                  color: theme.iconTheme.color?.withValues(alpha: 0.7), // replaces withOpacity
+                ),
+                const SizedBox(width: AppSpacing.xs),
                 Expanded(
                   child: Text(
                     item.location.address!,
@@ -153,9 +141,8 @@ class LocationsPage extends StatelessWidget {
                   ),
                 ),
               ],
-            ),
-          ),
-      ],
+            )
+          : null,
     );
   }
 

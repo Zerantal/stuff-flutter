@@ -8,6 +8,7 @@ import '../../../app/routing/app_routes_ext.dart';
 import '../../../shared/image/image_ref.dart';
 import '../../../shared/widgets/confirmation_dialog.dart';
 import '../../../shared/widgets/context_action_menu.dart';
+import '../../../shared/widgets/entity_description.dart';
 import '../../../shared/widgets/gesture_wrapped_thumbnail.dart';
 import '../../../shared/widgets/empty_list_state.dart';
 import '../../../shared/widgets/responsive_entity_sliver.dart';
@@ -74,8 +75,11 @@ class ContentsPage extends StatelessWidget {
                           fit: BoxFit.contain,
                           placeholder: const ImageRef.asset('assets/images/image_placeholder.png'),
                         ),
-                        bodyBuilder: (ctx, c) =>
-                            _Body(title: c.container.name, subtitle: c.container.description),
+                        bodyBuilder: (ctx, c) => EntityDescription(
+                          title: c.container.name,
+                          description: c.container.description,
+                        ),
+                        // _Body(title: c.container.name, subtitle: c.container.description),
                         trailingBuilder: (ctx, it) => ContextActionMenu(
                           onView: () => AppRoutes.containerContents.push(
                             context,
@@ -99,6 +103,7 @@ class ContentsPage extends StatelessWidget {
                     if (items.isNotEmpty) ...[
                       _sectionHeader('Items'),
                       ResponsiveEntitySliver<ItemListItem>(
+                        gridBodyTargetHeight: 80,
                         items: items,
                         headerBuilder: (ctx, item) => GestureWrappedThumbnail(
                           images: item.images,
@@ -109,9 +114,9 @@ class ContentsPage extends StatelessWidget {
                           fit: BoxFit.contain,
                           placeholder: const ImageRef.asset('assets/images/image_placeholder.png'),
                         ),
-                        bodyBuilder: (ctx, it) => _Body(
+                        bodyBuilder: (ctx, it) => EntityDescription(
                           title: it.item.name,
-                          subtitle: (it.item.description?.isNotEmpty ?? false)
+                          description: (it.item.description?.isNotEmpty ?? false)
                               ? it.item.description
                               : null,
                         ),
@@ -280,33 +285,6 @@ class ContentsPage extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
         child: Text(text, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
       ),
-    );
-  }
-}
-
-class _Body extends StatelessWidget {
-  const _Body({required this.title, this.subtitle});
-  final String title;
-  final String? subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = Theme.of(context).textTheme;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(title, style: t.titleMedium, maxLines: 2, overflow: TextOverflow.ellipsis),
-        if (subtitle != null && subtitle!.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(top: 0),
-            child: Text(
-              subtitle!,
-              style: t.bodySmall,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-      ],
     );
   }
 }

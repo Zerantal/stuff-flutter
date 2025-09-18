@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../app/theme.dart';
 import '../../../services/contracts/temporary_file_service_interface.dart';
 import '../../../shared/widgets/edit_entity_scaffold.dart';
 import '../../../shared/widgets/image_manager_input.dart';
@@ -91,7 +92,7 @@ class _EditForm extends StatelessWidget {
     return Form(
       key: vm.formKey,
       child: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.md),
         children: [
           TextFormField(
             key: const Key('room_name'),
@@ -101,7 +102,7 @@ class _EditForm extends StatelessWidget {
             validator: requiredMax(100),
             enabled: !disabled,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           TextFormField(
             key: const Key('room_description'),
             controller: vm.descriptionController.raw,
@@ -111,8 +112,8 @@ class _EditForm extends StatelessWidget {
             maxLines: 3,
             enabled: !disabled,
           ),
-          const SizedBox(height: 20),
-          // Image picker grid (uses the same component you use in Locations)
+          const SizedBox(height: AppSpacing.md),
+          // Image picker
           Selector<EditRoomViewModel, (bool, TempSession?, int)>(
             selector: (_, m) => (m.hasTempSession, m.tempSession, m.imageListRevision),
             builder: (context, s, _) {
@@ -135,7 +136,7 @@ class _EditForm extends StatelessWidget {
                 onRemoveAt: vm.onRemoveAt,
                 onImagePicked: vm.onImagePicked,
                 tileSize: 92,
-                spacing: 8,
+                spacing: AppSpacing.sm,
                 placeholderAsset: 'assets/images/image_placeholder.jpg',
               );
             },
