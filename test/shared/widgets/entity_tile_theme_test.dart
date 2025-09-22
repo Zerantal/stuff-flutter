@@ -66,7 +66,6 @@ void main() {
       final a = const EntityTileTheme(
         gridHeaderHeight: 100,
         gridBodyTargetHeight: 50,
-        gridTrailingHeight: 10,
         gridSectionGap: 8,
         gridTileVerticalPadding: 20,
         listHeaderWidth: 60,
@@ -76,7 +75,6 @@ void main() {
       final b = const EntityTileTheme(
         gridHeaderHeight: 200,
         gridBodyTargetHeight: 150,
-        gridTrailingHeight: 30,
         gridSectionGap: 12,
         gridTileVerticalPadding: 40,
         listHeaderWidth: 80,

@@ -122,8 +122,6 @@ class ResponsiveEntityList<T> extends StatelessWidget {
 
           gridHeaderHeight: gridHeaderHeight,
           gridBodyTargetHeight: gridBodyTargetHeight,
-          gridTrailingHeight: gridTrailingHeight,
-          forceGridTrailingSpace: forceGridTrailingSpace,
           gridSectionGap: gridSectionGap,
           gridTileVerticalPadding: gridTileVerticalPadding,
 

@@ -165,6 +165,17 @@ class _DeveloperDrawerState extends State<DeveloperDrawer> {
                     )
                   : null,
             ),
+            const Divider(height: 1),
+            ListTile(
+              leading: const Icon(Icons.widgets_outlined),
+              title: const Text('Widget demo - ResponsiveEntitySliver'),
+              subtitle: const Text(''),
+              onTap: () {
+                context.pop();
+                StatefulNavigationShell.of(context).goBranch(1);
+                AppRoutes.debugWidgetDemo.go(context);
+              },
+            ),
           ],
         ),
       ),

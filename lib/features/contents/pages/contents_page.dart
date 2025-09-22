@@ -103,7 +103,6 @@ class ContentsPage extends StatelessWidget {
                     if (items.isNotEmpty) ...[
                       _sectionHeader('Items'),
                       ResponsiveEntitySliver<ItemListItem>(
-                        gridBodyTargetHeight: 80,
                         items: items,
                         headerBuilder: (ctx, item) => GestureWrappedThumbnail(
                           images: item.images,

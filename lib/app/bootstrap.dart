@@ -11,7 +11,6 @@ import '../services/impl/drift_data_service.dart';
 import '../services/contracts/image_data_service_interface.dart';
 import '../services/impl/local_image_data_service.dart';
 import '../shared/widgets/runtime_error_page.dart';
-import 'main.dart';
 import 'theme.dart';
 
 final _log = Logger('Bootstrap');
@@ -52,13 +51,6 @@ Future<AppCore> bootstrapCore() async {
   _log.info('ImageDataService initialized');
 
   return AppCore(dataService: dataService, imageDataService: images);
-}
-
-/// Restart handler: re-bootstrap and relaunch the app.
-Future<void> onRestart(AppCore core) async {
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    launchApp(core, forceInitialLocation: true);
-  });
 }
 
 /// Catch framework and platform errors.

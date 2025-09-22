@@ -9,6 +9,7 @@ import '../../features/container/viewmodels/edit_container_view_model.dart';
 import '../../features/contents/pages/contents_page.dart';
 import '../../features/contents/viewmodels/contents_view_model.dart';
 import '../../features/dev_tools/pages/database_inspector_page.dart';
+import '../../features/dev_tools/pages/responsive_entity_sliver_demo_page.dart';
 import '../../features/dev_tools/pages/sample_data_options_page.dart';
 import '../../features/item/pages/item_details_page.dart';
 import '../../features/item/pages/item_details_wrapper.dart';
@@ -40,6 +41,8 @@ class AppRouter {
   static final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>(
     debugLabel: 'root',
   );
+
+  static final GoRouter router = buildRouter();
 
   static GoRouter buildRouter({String? initialLocation}) {
     return GoRouter(
@@ -351,6 +354,15 @@ class AppRouter {
                   path: AppRoutes.debugSampleDbRandomiser.path,
                   builder: (c, s) => const SampleDataOptionsPage(),
                 ),
+                GoRoute(
+                  name: AppRoutes.debugWidgetDemo.name,
+                  path: AppRoutes.debugWidgetDemo.path,
+                  builder: (context, state) => Provider<LocationsViewModel>(
+                    key: state.pageKey, // recreate when params change
+                    create: (ctx) => LocationsViewModel.create(ctx),
+                    child: const ResponsiveEntitySliverDemoPage(),
+                  ),
+                ),
               ],
             ),
           ],
@@ -360,8 +372,6 @@ class AppRouter {
           _errorPage(state.error?.toString() ?? 'Unknown navigation error'),
     );
   }
-
-  static final GoRouter router = buildRouter();
 
   static Widget _errorPage(String message) {
     return Scaffold(

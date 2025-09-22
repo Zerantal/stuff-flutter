@@ -11,7 +11,6 @@ enum EntityTileDensity { compact, comfy, roomy }
 class EntityTileTheme extends ThemeExtension<EntityTileTheme> {
   final double gridHeaderHeight;
   final double gridBodyTargetHeight; // body min height budget; Expanded fills the rest
-  final double gridTrailingHeight;
   final double gridSectionGap;
   final double gridTileVerticalPadding;
 
@@ -22,7 +21,6 @@ class EntityTileTheme extends ThemeExtension<EntityTileTheme> {
   const EntityTileTheme({
     required this.gridHeaderHeight,
     required this.gridBodyTargetHeight,
-    required this.gridTrailingHeight,
     required this.gridSectionGap,
     required this.gridTileVerticalPadding,
     required this.listHeaderWidth,
@@ -37,7 +35,6 @@ class EntityTileTheme extends ThemeExtension<EntityTileTheme> {
         return const EntityTileTheme(
           gridHeaderHeight: 120,
           gridBodyTargetHeight: 64,
-          gridTrailingHeight: 0,
           gridSectionGap: 8,
           gridTileVerticalPadding: 20,
           listHeaderWidth: 64,
@@ -48,7 +45,6 @@ class EntityTileTheme extends ThemeExtension<EntityTileTheme> {
         return const EntityTileTheme(
           gridHeaderHeight: 160,
           gridBodyTargetHeight: 92,
-          gridTrailingHeight: 0,
           gridSectionGap: 10,
           gridTileVerticalPadding: 28,
           listHeaderWidth: 80,
@@ -61,7 +57,6 @@ class EntityTileTheme extends ThemeExtension<EntityTileTheme> {
         return const EntityTileTheme(
           gridHeaderHeight: 140,
           gridBodyTargetHeight: 76,
-          gridTrailingHeight: 0,
           gridSectionGap: 8,
           gridTileVerticalPadding: 24,
           listHeaderWidth: 72,
@@ -85,7 +80,6 @@ class EntityTileTheme extends ThemeExtension<EntityTileTheme> {
     return EntityTileTheme(
       gridHeaderHeight: gridHeaderHeight ?? this.gridHeaderHeight,
       gridBodyTargetHeight: gridBodyTargetHeight ?? this.gridBodyTargetHeight,
-      gridTrailingHeight: gridTrailingHeight ?? this.gridTrailingHeight,
       gridSectionGap: gridSectionGap ?? this.gridSectionGap,
       gridTileVerticalPadding: gridTileVerticalPadding ?? this.gridTileVerticalPadding,
       listHeaderWidth: listHeaderWidth ?? this.listHeaderWidth,
@@ -101,7 +95,6 @@ class EntityTileTheme extends ThemeExtension<EntityTileTheme> {
     return EntityTileTheme(
       gridHeaderHeight: lerpD(gridHeaderHeight, other.gridHeaderHeight),
       gridBodyTargetHeight: lerpD(gridBodyTargetHeight, other.gridBodyTargetHeight),
-      gridTrailingHeight: lerpD(gridTrailingHeight, other.gridTrailingHeight),
       gridSectionGap: lerpD(gridSectionGap, other.gridSectionGap),
       gridTileVerticalPadding: lerpD(gridTileVerticalPadding, other.gridTileVerticalPadding),
       listHeaderWidth: lerpD(listHeaderWidth, other.listHeaderWidth),

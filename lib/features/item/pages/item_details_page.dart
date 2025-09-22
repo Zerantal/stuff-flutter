@@ -12,6 +12,7 @@ import '../../../shared/widgets/edit_entity_scaffold.dart';
 import '../../../shared/widgets/image_manager_input.dart';
 import '../../../shared/widgets/image_thumb.dart';
 import '../../../shared/widgets/initial_load_error_panel.dart';
+import '../../../shared/widgets/labeled_value.dart';
 import '../../../shared/widgets/loading_scaffold.dart';
 import '../viewmodels/item_details_view_model.dart';
 
@@ -120,14 +121,7 @@ class _DetailsForm extends StatelessWidget {
         children: [
           // --- Name field ---
           isViewOnly
-              ? Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Name', style: Theme.of(context).textTheme.labelLarge),
-                    const SizedBox(height: 4),
-                    Text(state.name, style: Theme.of(context).textTheme.titleMedium),
-                  ],
-                )
+              ? LabeledValue('Name', state.name)
               : TextFormField(
                   key: const Key('item_name'),
                   controller: vm.nameController.raw,
@@ -140,14 +134,7 @@ class _DetailsForm extends StatelessWidget {
 
           // --- Description field ---
           isViewOnly
-              ? Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Description', style: Theme.of(context).textTheme.labelLarge),
-                    const SizedBox(height: 4),
-                    Text(state.description.isEmpty ? '—' : state.description),
-                  ],
-                )
+              ? LabeledValue('Description', state.description)
               : TextFormField(
                   key: const Key('item_description'),
                   controller: vm.descriptionController.raw,

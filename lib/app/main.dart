@@ -8,7 +8,6 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 import 'bootstrap.dart';
 import 'injection.dart';
 import 'routing/app_router.dart';
-import 'routing/app_routes.dart';
 import 'sentry_setup.dart';
 import 'theme.dart';
 import '../shared/widgets/bootstrap_error_app.dart';
@@ -47,31 +46,26 @@ Future<void> main() async {
 
 /// Public method to launch the app with given [AppCore].
 /// Can also be used by restart handlers.
-void launchApp(AppCore core, {bool forceInitialLocation = false}) {
+void launchApp(AppCore core) {
   runApp(
     MultiProvider(
       providers: [
-        Provider.value(value: core),
         ...buildGlobalProviders(
           dataService: core.dataService,
           imageDataService: core.imageDataService,
         ),
       ],
-      child: _App(core: core, forceInitialLocation: forceInitialLocation),
+      child: const _App(),
     ),
   );
 }
 
 class _App extends StatelessWidget {
-  final AppCore core;
-  final bool forceInitialLocation;
-  const _App({required this.core, this.forceInitialLocation = false});
+  const _App();
 
   @override
   Widget build(BuildContext context) {
-    final router = AppRouter.buildRouter(
-      initialLocation: forceInitialLocation ? AppRoutes.locations.path : null,
-    );
+    final router = AppRouter.router;
 
     // Add UI-related tags once the app is running
     SentrySetup.configureUiScope(AppRouter.rootNavigatorKey);

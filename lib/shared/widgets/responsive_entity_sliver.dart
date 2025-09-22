@@ -32,8 +32,6 @@ class ResponsiveEntitySliver<T> extends StatelessWidget {
     // Grid tile layout (nullable => take from ThemeExtension/preset)
     this.gridHeaderHeight,
     this.gridBodyTargetHeight,
-    this.gridTrailingHeight,
-    this.forceGridTrailingSpace = false,
     this.gridSectionGap,
     this.gridTileVerticalPadding,
 
@@ -74,8 +72,6 @@ class ResponsiveEntitySliver<T> extends StatelessWidget {
   // Grid tile layout (nullable to allow theme defaults)
   final double? gridHeaderHeight;
   final double? gridBodyTargetHeight;
-  final double? gridTrailingHeight;
-  final bool forceGridTrailingSpace;
   final double? gridSectionGap;
   final double? gridTileVerticalPadding;
 
@@ -103,7 +99,6 @@ class ResponsiveEntitySliver<T> extends StatelessWidget {
     // Resolve all nullable sizing from theme extension (with local overrides)
     final resolvedGridHeaderHeight = gridHeaderHeight ?? ext.gridHeaderHeight;
     final resolvedGridBodyTargetHeight = gridBodyTargetHeight ?? ext.gridBodyTargetHeight;
-    final resolvedGridTrailingHeight = gridTrailingHeight ?? ext.gridTrailingHeight;
     final resolvedGridSectionGap = gridSectionGap ?? ext.gridSectionGap;
     final resolvedGridTileVPad = gridTileVerticalPadding ?? ext.gridTileVerticalPadding;
 
@@ -141,22 +136,9 @@ class ResponsiveEntitySliver<T> extends StatelessWidget {
           );
         }
 
-        final hasTrailingBuilder = trailingBuilder != null;
-        final reserveTrailing = forceGridTrailingSpace || hasTrailingBuilder;
-
-        // Auto default if user forgot to set a height
-        final effectiveTrailingHeight = reserveTrailing
-            ? ((resolvedGridTrailingHeight > 0) ? resolvedGridTrailingHeight : 40.0)
-            : 0.0;
-
-        // Compute fixed tile height (body will Expand to fill; no overflow)
-        final gaps = resolvedGridSectionGap + (reserveTrailing ? resolvedGridSectionGap : 0);
+        final gaps = resolvedGridSectionGap;
         final tileHeight =
-            resolvedGridTileVPad +
-            resolvedGridHeaderHeight +
-            gaps +
-            effectiveTrailingHeight +
-            resolvedGridBodyTargetHeight;
+            resolvedGridTileVPad + resolvedGridHeaderHeight + gaps + resolvedGridBodyTargetHeight;
 
         // Base inner width after static padding
         final innerBase = math.max(0.0, cross - gridPadding.left - gridPadding.right);
@@ -219,15 +201,13 @@ class ResponsiveEntitySliver<T> extends StatelessWidget {
             delegate: SliverChildBuilderDelegate((ctx, i) {
               final item = items[i];
               final trailing = trailingBuilder?.call(ctx, item);
-              final showTrailing = reserveTrailing && trailing != null;
 
               return _GridTile(
                 header: headerBuilder(ctx, item),
                 body: bodyBuilder(ctx, item),
-                trailing: showTrailing ? trailing : null,
+                trailing: trailing,
                 onTap: onTap == null ? null : () => onTap!(item),
                 headerHeight: resolvedGridHeaderHeight,
-                trailingHeight: effectiveTrailingHeight,
                 gap: resolvedGridSectionGap,
                 paddingV: resolvedGridTileVPad,
               );
@@ -301,7 +281,6 @@ class _GridTile extends StatelessWidget {
     this.trailing,
     this.onTap,
     required this.headerHeight,
-    required this.trailingHeight,
     required this.gap,
     required this.paddingV,
   });
@@ -312,7 +291,6 @@ class _GridTile extends StatelessWidget {
   final VoidCallback? onTap;
 
   final double headerHeight;
-  final double trailingHeight;
   final double gap;
   final double paddingV;
 
@@ -331,19 +309,22 @@ class _GridTile extends StatelessWidget {
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm, horizontal: AppSpacing.md),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+          child: Stack(
             children: [
-              SizedBox(height: headerHeight, child: header),
-              SizedBox(height: gap),
-              Expanded(child: body), // absorbs rounding; no overflow
-              if (trailing != null && trailingHeight > 0) ...[
-                SizedBox(height: gap),
-                SizedBox(
-                  height: trailingHeight,
-                  child: Align(alignment: Alignment.topRight, child: trailing),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SizedBox(height: headerHeight, child: header),
+                  SizedBox(height: gap),
+                  Expanded(child: body),
+                ],
+              ),
+              if (trailing != null)
+                Positioned(
+                  top: 0,
+                  right: 0,
+                  child: Padding(padding: const EdgeInsets.all(4.0), child: trailing),
                 ),
-              ],
             ],
           ),
         ),
