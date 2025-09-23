@@ -44,6 +44,9 @@ class EntityDescription extends StatelessWidget {
           child: Wrap(spacing: AppSpacing.sm, runSpacing: -AppSpacing.sm, children: badges!),
         ),
     ];
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: children);
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.sm),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: children),
+    );
   }
 }

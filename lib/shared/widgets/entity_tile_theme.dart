@@ -10,22 +10,13 @@ enum EntityTileDensity { compact, comfy, roomy }
 @immutable
 class EntityTileTheme extends ThemeExtension<EntityTileTheme> {
   final double gridHeaderHeight;
-  final double gridBodyTargetHeight; // body min height budget; Expanded fills the rest
-  final double gridSectionGap;
+  final double gridBodyHeight; // body min height budget; Expanded fills the rest
   final double gridTileVerticalPadding;
-
-  final double listHeaderWidth;
-  final double listHeaderHeight;
-  final double listTileMinHeight;
 
   const EntityTileTheme({
     required this.gridHeaderHeight,
-    required this.gridBodyTargetHeight,
-    required this.gridSectionGap,
+    required this.gridBodyHeight,
     required this.gridTileVerticalPadding,
-    required this.listHeaderWidth,
-    required this.listHeaderHeight,
-    required this.listTileMinHeight,
   });
 
   /// Built-in presets (match the values we’ve been using).
@@ -34,34 +25,22 @@ class EntityTileTheme extends ThemeExtension<EntityTileTheme> {
       case EntityTileDensity.compact:
         return const EntityTileTheme(
           gridHeaderHeight: 120,
-          gridBodyTargetHeight: 64,
-          gridSectionGap: 8,
+          gridBodyHeight: 64,
           gridTileVerticalPadding: 20,
-          listHeaderWidth: 64,
-          listHeaderHeight: 64,
-          listTileMinHeight: 80,
         );
       case EntityTileDensity.roomy:
         return const EntityTileTheme(
           gridHeaderHeight: 160,
-          gridBodyTargetHeight: 92,
-          gridSectionGap: 10,
+          gridBodyHeight: 92,
           gridTileVerticalPadding: 28,
-          listHeaderWidth: 80,
-          listHeaderHeight: 80,
-          listTileMinHeight: 96,
         );
       case EntityTileDensity.comfy:
       // ignore: unreachable_switch_default
       default:
         return const EntityTileTheme(
           gridHeaderHeight: 140,
-          gridBodyTargetHeight: 76,
-          gridSectionGap: 8,
+          gridBodyHeight: 76,
           gridTileVerticalPadding: 24,
-          listHeaderWidth: 72,
-          listHeaderHeight: 72,
-          listTileMinHeight: 88,
         );
     }
   }
@@ -69,22 +48,13 @@ class EntityTileTheme extends ThemeExtension<EntityTileTheme> {
   @override
   EntityTileTheme copyWith({
     double? gridHeaderHeight,
-    double? gridBodyTargetHeight,
-    double? gridTrailingHeight,
-    double? gridSectionGap,
+    double? gridBodyHeight,
     double? gridTileVerticalPadding,
-    double? listHeaderWidth,
-    double? listHeaderHeight,
-    double? listTileMinHeight,
   }) {
     return EntityTileTheme(
       gridHeaderHeight: gridHeaderHeight ?? this.gridHeaderHeight,
-      gridBodyTargetHeight: gridBodyTargetHeight ?? this.gridBodyTargetHeight,
-      gridSectionGap: gridSectionGap ?? this.gridSectionGap,
+      gridBodyHeight: gridBodyHeight ?? this.gridBodyHeight,
       gridTileVerticalPadding: gridTileVerticalPadding ?? this.gridTileVerticalPadding,
-      listHeaderWidth: listHeaderWidth ?? this.listHeaderWidth,
-      listHeaderHeight: listHeaderHeight ?? this.listHeaderHeight,
-      listTileMinHeight: listTileMinHeight ?? this.listTileMinHeight,
     );
   }
 
@@ -94,12 +64,8 @@ class EntityTileTheme extends ThemeExtension<EntityTileTheme> {
     double lerpD(double a, double b) => a + (b - a) * t;
     return EntityTileTheme(
       gridHeaderHeight: lerpD(gridHeaderHeight, other.gridHeaderHeight),
-      gridBodyTargetHeight: lerpD(gridBodyTargetHeight, other.gridBodyTargetHeight),
-      gridSectionGap: lerpD(gridSectionGap, other.gridSectionGap),
+      gridBodyHeight: lerpD(gridBodyHeight, other.gridBodyHeight),
       gridTileVerticalPadding: lerpD(gridTileVerticalPadding, other.gridTileVerticalPadding),
-      listHeaderWidth: lerpD(listHeaderWidth, other.listHeaderWidth),
-      listHeaderHeight: lerpD(listHeaderHeight, other.listHeaderHeight),
-      listTileMinHeight: lerpD(listTileMinHeight, other.listTileMinHeight),
     );
   }
 }

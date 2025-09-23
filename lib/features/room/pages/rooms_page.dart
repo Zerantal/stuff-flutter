@@ -80,24 +80,25 @@ class RoomsPage extends StatelessWidget {
         GestureWrappedThumbnail thumbnailBuilder(
           BuildContext context,
           RoomListItem item, {
-          BoxFit fit = BoxFit.cover,
+          BoxFit fit = BoxFit.contain,
         }) => GestureWrappedThumbnail(
           images: item.images,
           entityId: item.room.id,
           entityName: item.room.name,
           fit: fit,
+          size: 120,
           placeholder: const ImageRef.asset('assets/images/image_placeholder.png'),
         );
 
         return ResponsiveEntityList<RoomListItem>(
-          gridBodyTargetHeight: 80,
+          gridBodyHeight: 80,
           items: items,
           onTap: (it) => AppRoutes.roomContentsAlias.push(
             context,
             pathParams: {'locationId': vm.locationId, 'roomId': it.room.id},
           ),
-          headerBuilder: (ctx, it) => thumbnailBuilder(ctx, it),
-          bodyBuilder: (ctx, it) =>
+          headerBuilder: (ctx, it, _) => thumbnailBuilder(ctx, it),
+          bodyBuilder: (ctx, it, _) =>
               EntityDescription(title: it.room.name, description: it.room.description),
           trailingBuilder: (ctx, it) => ContextActionMenu(
             onView: () => AppRoutes.roomContentsAlias.push(

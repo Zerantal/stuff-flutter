@@ -42,7 +42,6 @@ class _ResponsiveEntitySliverDemoPageState extends State<ResponsiveEntitySliverD
   double gridMainAxisSpacing = 12;
   double gridCrossAxisSpacing = 12;
 
-  double? listTileMinHeight;
   EdgeInsets listPadding = const EdgeInsets.only(top: 8, bottom: 8);
 
   String lorem =
@@ -65,6 +64,7 @@ class _ResponsiveEntitySliverDemoPageState extends State<ResponsiveEntitySliverD
     );
 
     return Scaffold(
+      key: const ValueKey('WidgetDemoPage'),
       appBar: AppBar(
         title: const Text("ResponsiveEntitySliver Playground"),
         actions: [
@@ -93,116 +93,108 @@ class _ResponsiveEntitySliverDemoPageState extends State<ResponsiveEntitySliverD
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          "Controls",
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                        ),
-                        _slider(
-                          "Grid Breakpoint",
-                          gridBreakpoint,
-                          400,
-                          1200,
-                          (v) => setState(() => gridBreakpoint = v),
-                        ),
-                        SwitchListTile(
-                          title: const Text("Snap To Tile Width"),
-                          value: snapToTileWidth,
-                          onChanged: (v) => setState(() => snapToTileWidth = v),
-                        ),
-                        DropdownButton<SnapAlign>(
-                          value: snapAlign,
-                          items: const [
-                            DropdownMenuItem(value: SnapAlign.left, child: Text("Left")),
-                            DropdownMenuItem(value: SnapAlign.center, child: Text("Center")),
-                            DropdownMenuItem(value: SnapAlign.right, child: Text("Right")),
+                        ExpansionTile(
+                          title: const Text(
+                            "General Settings",
+                            style: TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          children: [
+                            _slider(
+                              "Grid Breakpoint",
+                              gridBreakpoint,
+                              400,
+                              1200,
+                              (v) => setState(() => gridBreakpoint = v),
+                            ),
+                            SwitchListTile(
+                              title: const Text("Snap To Tile Width"),
+                              value: snapToTileWidth,
+                              onChanged: (v) => setState(() => snapToTileWidth = v),
+                            ),
+                            DropdownButton<SnapAlign>(
+                              value: snapAlign,
+                              items: const [
+                                DropdownMenuItem(value: SnapAlign.left, child: Text("Left")),
+                                DropdownMenuItem(value: SnapAlign.center, child: Text("Center")),
+                                DropdownMenuItem(value: SnapAlign.right, child: Text("Right")),
+                              ],
+                              onChanged: (v) => setState(() => snapAlign = v!),
+                            ),
                           ],
-                          onChanged: (v) => setState(() => snapAlign = v!),
                         ),
-                        _slider(
-                          "Grid Tile Width",
-                          gridTileWidth,
-                          100,
-                          400,
-                          (v) => setState(() => gridTileWidth = v),
-                        ),
-                        _stepper(
-                          "Grid Min Columns",
-                          gridMinColumns,
-                          (v) => setState(() => gridMinColumns = v),
-                        ),
-                        _stepper(
-                          "Grid Max Columns",
-                          gridMaxColumns,
-                          (v) => setState(() => gridMaxColumns = v),
-                        ),
-                        _nullableSlider(
-                          "Grid Header Height",
-                          gridHeaderHeight,
-                          24,
-                          120,
-                          (v) => setState(() => gridHeaderHeight = v),
-                        ),
-                        _nullableSlider(
-                          "Grid Body Height",
-                          gridBodyHeight,
-                          40,
-                          200,
-                          (v) => setState(() => gridBodyHeight = v),
-                        ),
-                        _nullableSlider(
-                          "Grid Trailing Height",
-                          gridTrailingHeight,
-                          0,
-                          80,
-                          (v) => setState(() => gridTrailingHeight = v),
-                        ),
-                        _nullableSlider(
-                          "Grid Section Gap",
-                          gridSectionGap,
-                          0,
-                          40,
-                          (v) => setState(() => gridSectionGap = v),
-                        ),
-                        _nullableSlider(
-                          "Grid Tile Vertical Padding",
-                          gridTileVerticalPadding,
-                          0,
-                          40,
-                          (v) => setState(() => gridTileVerticalPadding = v),
-                        ),
-                        _slider(
-                          "Grid Main Axis Spacing",
-                          gridMainAxisSpacing,
-                          0,
-                          40,
-                          (v) => setState(() => gridMainAxisSpacing = v),
-                        ),
-                        _slider(
-                          "Grid Cross Axis Spacing",
-                          gridCrossAxisSpacing,
-                          0,
-                          40,
-                          (v) => setState(() => gridCrossAxisSpacing = v),
-                        ),
-                        _nullableSlider(
-                          "List Tile Min Height",
-                          listTileMinHeight,
-                          40,
-                          200,
-                          (v) => setState(() => listTileMinHeight = v),
+                        ExpansionTile(
+                          title: const Text(
+                            "Grid Layout",
+                            style: TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          children: [
+                            _slider(
+                              "Grid Tile Width",
+                              gridTileWidth,
+                              100,
+                              400,
+                              (v) => setState(() => gridTileWidth = v),
+                            ),
+                            _stepper(
+                              "Grid Min Columns",
+                              gridMinColumns,
+                              (v) => setState(() => gridMinColumns = v),
+                            ),
+                            _stepper(
+                              "Grid Max Columns",
+                              gridMaxColumns,
+                              (v) => setState(() => gridMaxColumns = v),
+                            ),
+                            _nullableSlider(
+                              "Grid Header Height",
+                              gridHeaderHeight,
+                              24,
+                              120,
+                              (v) => setState(() => gridHeaderHeight = v),
+                            ),
+                            _nullableSlider(
+                              "Grid Body Height",
+                              gridBodyHeight,
+                              40,
+                              200,
+                              (v) => setState(() => gridBodyHeight = v),
+                            ),
+                            _nullableSlider(
+                              "Grid Tile Vertical Padding",
+                              gridTileVerticalPadding,
+                              0,
+                              40,
+                              (v) => setState(() => gridTileVerticalPadding = v),
+                            ),
+                            _slider(
+                              "Grid Main Axis Spacing",
+                              gridMainAxisSpacing,
+                              0,
+                              40,
+                              (v) => setState(() => gridMainAxisSpacing = v),
+                            ),
+                            _slider(
+                              "Grid Cross Axis Spacing",
+                              gridCrossAxisSpacing,
+                              0,
+                              40,
+                              (v) => setState(() => gridCrossAxisSpacing = v),
+                            ),
+                          ],
                         ),
                       ],
                     ),
                   ),
                 ),
+
                 const Divider(),
                 Expanded(
                   child: CustomScrollView(
                     slivers: [
                       ResponsiveEntitySliver<EntityDemo>(
                         items: items,
-                        headerBuilder: (ctx, e) => placeholderImage,
-                        bodyBuilder: (ctx, e) =>
+                        headerBuilder: (ctx, e, _) => placeholderImage,
+                        bodyBuilder: (ctx, e, _) =>
                             EntityDescription(title: e.title, description: e.description),
                         trailingBuilder: (ctx, e) => const Icon(Icons.more_vert, size: 20),
                         onTap: (e) => debugPrint('Tapped ${e.title}'),
@@ -213,14 +205,10 @@ class _ResponsiveEntitySliverDemoPageState extends State<ResponsiveEntitySliverD
                         gridMinColumns: gridMinColumns,
                         gridMaxColumns: gridMaxColumns,
                         gridHeaderHeight: gridHeaderHeight,
-                        // gridBodyHeight: gridBodyHeight,
-                        gridSectionGap: gridSectionGap,
+                        gridBodyHeight: gridBodyHeight ?? 70,
                         gridTileVerticalPadding: gridTileVerticalPadding,
-                        gridPadding: gridPadding,
                         gridMainAxisSpacing: gridMainAxisSpacing,
                         gridCrossAxisSpacing: gridCrossAxisSpacing,
-                        listTileMinHeight: listTileMinHeight,
-                        listPadding: listPadding,
                       ),
                     ],
                   ),

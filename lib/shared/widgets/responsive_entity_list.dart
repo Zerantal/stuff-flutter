@@ -32,9 +32,7 @@ class ResponsiveEntityList<T> extends StatelessWidget {
     this.density = EntityTileDensity.comfy,
 
     this.gridHeaderHeight,
-    this.gridBodyTargetHeight,
-    this.gridTrailingHeight,
-    this.forceGridTrailingSpace = false,
+    this.gridBodyHeight,
     this.gridSectionGap,
     this.gridTileVerticalPadding,
 
@@ -53,9 +51,9 @@ class ResponsiveEntityList<T> extends StatelessWidget {
   final List<T> items;
 
   // Slots
-  final Widget Function(BuildContext, T) headerBuilder;
-  final Widget Function(BuildContext, T) bodyBuilder;
-  final Widget Function(BuildContext, T)? trailingBuilder;
+  final Widget Function(BuildContext context, T item, bool isGridView) headerBuilder;
+  final Widget Function(BuildContext context, T item, bool isGridView) bodyBuilder;
+  final Widget Function(BuildContext context, T item)? trailingBuilder;
   final void Function(T item)? onTap;
 
   // ScrollView controls
@@ -79,9 +77,7 @@ class ResponsiveEntityList<T> extends StatelessWidget {
 
   // Grid (nullable => from theme)
   final double? gridHeaderHeight;
-  final double? gridBodyTargetHeight;
-  final double? gridTrailingHeight;
-  final bool forceGridTrailingSpace;
+  final double? gridBodyHeight;
   final double? gridSectionGap;
   final double? gridTileVerticalPadding;
 
@@ -121,18 +117,12 @@ class ResponsiveEntityList<T> extends StatelessWidget {
           density: density,
 
           gridHeaderHeight: gridHeaderHeight,
-          gridBodyTargetHeight: gridBodyTargetHeight,
-          gridSectionGap: gridSectionGap,
+          gridBodyHeight: gridBodyHeight,
           gridTileVerticalPadding: gridTileVerticalPadding,
 
-          gridPadding: gridPadding,
           gridMainAxisSpacing: gridMainAxisSpacing,
           gridCrossAxisSpacing: gridCrossAxisSpacing,
 
-          listHeaderWidth: listHeaderWidth,
-          listHeaderHeight: listHeaderHeight,
-          listTileMinHeight: listTileMinHeight,
-          listPadding: listPadding,
           listSeparatorBuilder: listSeparatorBuilder,
         ),
         ...sliversAfter,

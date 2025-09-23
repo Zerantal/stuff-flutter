@@ -10,27 +10,21 @@ void main() {
       final theme = EntityTileTheme.preset(EntityTileDensity.compact);
 
       expect(theme.gridHeaderHeight, 120);
-      expect(theme.gridBodyTargetHeight, 64);
-      expect(theme.listHeaderWidth, 64);
-      expect(theme.listTileMinHeight, 80);
+      expect(theme.gridBodyHeight, 64);
     });
 
     test('comfy preset has expected values', () {
       final theme = EntityTileTheme.preset(EntityTileDensity.comfy);
 
       expect(theme.gridHeaderHeight, 140);
-      expect(theme.gridBodyTargetHeight, 76);
-      expect(theme.listHeaderWidth, 72);
-      expect(theme.listTileMinHeight, 88);
+      expect(theme.gridBodyHeight, 76);
     });
 
     test('roomy preset has expected values', () {
       final theme = EntityTileTheme.preset(EntityTileDensity.roomy);
 
       expect(theme.gridHeaderHeight, 160);
-      expect(theme.gridBodyTargetHeight, 92);
-      expect(theme.listHeaderWidth, 80);
-      expect(theme.listTileMinHeight, 96);
+      expect(theme.gridBodyHeight, 92);
     });
   });
 
@@ -41,8 +35,7 @@ void main() {
 
       expect(modified.gridHeaderHeight, 200);
       // unchanged fields remain the same
-      expect(modified.gridBodyTargetHeight, base.gridBodyTargetHeight);
-      expect(modified.listHeaderWidth, base.listHeaderWidth);
+      expect(modified.gridBodyHeight, base.gridBodyHeight);
     });
 
     test('returns new instance even if no changes', () {
@@ -65,29 +58,19 @@ void main() {
     test('interpolates numeric values between two themes', () {
       final a = const EntityTileTheme(
         gridHeaderHeight: 100,
-        gridBodyTargetHeight: 50,
-        gridSectionGap: 8,
+        gridBodyHeight: 50,
         gridTileVerticalPadding: 20,
-        listHeaderWidth: 60,
-        listHeaderHeight: 60,
-        listTileMinHeight: 70,
       );
       final b = const EntityTileTheme(
         gridHeaderHeight: 200,
-        gridBodyTargetHeight: 150,
-        gridSectionGap: 12,
+        gridBodyHeight: 150,
         gridTileVerticalPadding: 40,
-        listHeaderWidth: 80,
-        listHeaderHeight: 80,
-        listTileMinHeight: 90,
       );
 
       final mid = a.lerp(b, 0.5);
 
       expect(mid.gridHeaderHeight, closeTo(150, 0.001));
-      expect(mid.gridBodyTargetHeight, closeTo(100, 0.001));
-      expect(mid.listHeaderWidth, closeTo(70, 0.001));
-      expect(mid.listTileMinHeight, closeTo(80, 0.001));
+      expect(mid.gridBodyHeight, closeTo(100, 0.001));
     });
   });
 

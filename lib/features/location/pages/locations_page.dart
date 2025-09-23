@@ -69,8 +69,9 @@ class LocationsPage extends StatelessWidget {
                 images: item.images,
                 entityId: item.location.id,
                 entityName: item.location.name,
-                size: 80,
+                size: 100,
                 borderRadius: AppRadius.md,
+                fit: BoxFit.contain,
                 placeholder: const ImageRef.asset('assets/images/image_placeholder.png'),
               );
 
@@ -82,8 +83,8 @@ class LocationsPage extends StatelessWidget {
               pathParams: {'locationId': it.location.id},
               extra: it.location.name,
             ),
-            headerBuilder: thumbnailBuilder,
-            bodyBuilder: _itemDescriptionBuilder,
+            headerBuilder: (ctx, it, _) => thumbnailBuilder(ctx, it),
+            bodyBuilder: (ctx, it, _) => _itemDescriptionBuilder(ctx, it),
             trailingBuilder: (ctx, it) => ContextActionMenu(
               onView: () => AppRoutes.roomsForLocation.push(
                 context,
@@ -94,7 +95,7 @@ class LocationsPage extends StatelessWidget {
                   AppRoutes.locationEdit.push(context, pathParams: {'locationId': it.location.id}),
               onDelete: () => _confirmDelete(context, vm, it),
             ),
-            gridBodyTargetHeight: 100,
+            gridBodyHeight: 100,
           );
         },
       ),

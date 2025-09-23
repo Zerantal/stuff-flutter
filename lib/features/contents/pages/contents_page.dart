@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../../../app/routing/app_routes.dart';
 import '../../../app/routing/app_routes_ext.dart';
+import '../../../app/theme.dart';
 import '../../../shared/image/image_ref.dart';
 import '../../../shared/widgets/confirmation_dialog.dart';
 import '../../../shared/widgets/context_action_menu.dart';
@@ -66,20 +67,19 @@ class ContentsPage extends StatelessWidget {
                       _sectionHeader('Containers'),
                       ResponsiveEntitySliver<ContainerListItem>(
                         items: containers,
-                        headerBuilder: (ctx, item) => GestureWrappedThumbnail(
+                        headerBuilder: (ctx, item, _) => GestureWrappedThumbnail(
                           images: item.images,
                           entityId: item.container.id,
                           entityName: item.container.name,
-                          size: 80,
-                          borderRadius: 10,
+                          size: 120,
+                          borderRadius: AppRadius.md,
                           fit: BoxFit.contain,
                           placeholder: const ImageRef.asset('assets/images/image_placeholder.png'),
                         ),
-                        bodyBuilder: (ctx, c) => EntityDescription(
+                        bodyBuilder: (ctx, c, _) => EntityDescription(
                           title: c.container.name,
                           description: c.container.description,
                         ),
-                        // _Body(title: c.container.name, subtitle: c.container.description),
                         trailingBuilder: (ctx, it) => ContextActionMenu(
                           onView: () => AppRoutes.containerContents.push(
                             context,
@@ -104,7 +104,7 @@ class ContentsPage extends StatelessWidget {
                       _sectionHeader('Items'),
                       ResponsiveEntitySliver<ItemListItem>(
                         items: items,
-                        headerBuilder: (ctx, item) => GestureWrappedThumbnail(
+                        headerBuilder: (ctx, item, _) => GestureWrappedThumbnail(
                           images: item.images,
                           entityId: item.item.id,
                           entityName: item.item.name,
@@ -113,7 +113,7 @@ class ContentsPage extends StatelessWidget {
                           fit: BoxFit.contain,
                           placeholder: const ImageRef.asset('assets/images/image_placeholder.png'),
                         ),
-                        bodyBuilder: (ctx, it) => EntityDescription(
+                        bodyBuilder: (ctx, it, _) => EntityDescription(
                           title: it.item.name,
                           description: (it.item.description?.isNotEmpty ?? false)
                               ? it.item.description

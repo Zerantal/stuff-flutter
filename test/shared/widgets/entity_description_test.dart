@@ -16,7 +16,7 @@ void main() {
     expect(find.byType(Wrap), findsNothing); // no badges container
   });
 
-  testWidgets('renders non-empty subtitle with top padding of xs', (tester) async {
+  testWidgets('renders non-empty description with top padding of xs', (tester) async {
     await tester.pumpWidget(
       _wrap(const EntityDescription(title: 'Kitchen', description: 'Upstairs')),
     );
@@ -24,10 +24,12 @@ void main() {
     expect(find.text('Kitchen'), findsOneWidget);
     expect(find.text('Upstairs'), findsOneWidget);
 
-    // The subtitle Text is wrapped in a Padding with top: 2
-    final paddingWithSubtitle = tester.widget<Padding>(find.widgetWithText(Padding, 'Upstairs'));
-    expect(paddingWithSubtitle.padding is EdgeInsets, true);
-    final e = paddingWithSubtitle.padding as EdgeInsets;
+    // The description Text is wrapped in a Padding with top: 2
+    final paddingWithDescription = tester.widget<Padding>(
+      find.ancestor(of: find.text('Upstairs'), matching: find.byType(Padding)).first,
+    );
+    expect(paddingWithDescription.padding is EdgeInsets, true);
+    final e = paddingWithDescription.padding as EdgeInsets;
     expect(e.top, AppSpacing.xs);
   });
 
@@ -54,7 +56,7 @@ void main() {
 
     // The Wrap is wrapped in a Padding with top: 8
     final paddingWithWrap = tester.widget<Padding>(
-      find.ancestor(of: find.byType(Wrap), matching: find.byType(Padding)),
+      find.ancestor(of: find.byType(Wrap), matching: find.byType(Padding)).first,
     );
     expect((paddingWithWrap.padding as EdgeInsets).top, 8.0);
   });

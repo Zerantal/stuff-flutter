@@ -51,6 +51,7 @@ void main() {
     // Debug
     AppRoutes.debugDbInspector: const ValueKey('DatabaseInspectorPage'),
     AppRoutes.debugSampleDbRandomiser: const ValueKey('SampleDataOptionsPage'),
+    AppRoutes.debugWidgetDemo: const ValueKey('WidgetDemoPage'),
   };
 
   for (final route in AppRoutes.values.where((r) => !r.name.endsWith('Alias'))) {

@@ -38,16 +38,16 @@ class SkeletonEntityList extends StatelessWidget {
     return ResponsiveEntityList<int>(
       listHeaderHeight: estimatedHeight,
       listHeaderWidth: estimatedHeight,
-      gridBodyTargetHeight: estimatedHeight,
+      gridBodyHeight: estimatedHeight,
       items: List.generate(count, (i) => i),
       onTap: null,
-      headerBuilder: (ctx, _) => box(
+      headerBuilder: (ctx, _, _) => box(
         // box will be sized according to listHeaderWidth and listHeaderHeight
         0,
         0,
         r: BorderRadius.circular(AppRadius.md),
       ),
-      bodyBuilder: (ctx, _) => SizedBox(
+      bodyBuilder: (ctx, _, _) => SizedBox(
         height: estimatedHeight,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
