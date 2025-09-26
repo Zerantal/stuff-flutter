@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:math' as math;
 
 import '../../app/theme.dart';
-import 'entity_tile_theme.dart';
+import 'responsive_entity_sliver_theme.dart';
 
 enum SnapAlign { left, center, right }
 
@@ -35,7 +35,7 @@ class ResponsiveEntitySliver<T> extends StatelessWidget {
     this.gridTileVerticalPadding,
 
     // Spacing
-    this.outerPadding = const EdgeInsets.fromLTRB(12, 12, 12, 88),
+    this.outerPadding,
     this.gridMainAxisSpacing = 12.0,
     this.gridCrossAxisSpacing = 12.0,
 
@@ -74,14 +74,15 @@ class ResponsiveEntitySliver<T> extends StatelessWidget {
   final double gridCrossAxisSpacing;
 
   // Shared outer padding (applies in both list & grid mode)
-  final EdgeInsets outerPadding;
+  final EdgeInsets? outerPadding;
 
   // List layout
   final Widget Function(BuildContext, int)? listSeparatorBuilder;
 
-  EntityTileTheme _resolveTheme(BuildContext context) {
+  ResponsiveEntitySliverTheme _resolveTheme(BuildContext context) {
     // Prefer app theme extension, otherwise use the density preset locally.
-    return Theme.of(context).extension<EntityTileTheme>() ?? EntityTileTheme.preset(density);
+    return Theme.of(context).extension<ResponsiveEntitySliverTheme>() ??
+        ResponsiveEntitySliverTheme.preset(density);
   }
 
   @override
@@ -92,6 +93,7 @@ class ResponsiveEntitySliver<T> extends StatelessWidget {
     final resolvedGridHeaderHeight = gridHeaderHeight ?? ext.gridHeaderHeight;
     final resolvedGridBodyHeight = gridBodyHeight ?? ext.gridBodyHeight;
     final resolvedGridTileVPad = gridTileVerticalPadding ?? ext.gridTileVerticalPadding;
+    final resolvedOuterPadding = outerPadding ?? ext.outerPadding;
 
     return SliverLayoutBuilder(
       builder: (context, constraints) {
@@ -103,7 +105,7 @@ class ResponsiveEntitySliver<T> extends StatelessWidget {
           final childCount = items.isEmpty ? 0 : math.max(0, items.length * 2 - 1);
 
           return SliverPadding(
-            padding: outerPadding,
+            padding: resolvedOuterPadding,
             sliver: SliverList(
               delegate: SliverChildBuilderDelegate((ctx, i) {
                 if (i.isOdd) return sep(ctx, i ~/ 2);
@@ -126,10 +128,13 @@ class ResponsiveEntitySliver<T> extends StatelessWidget {
             resolvedGridBodyHeight;
 
         // Base inner width after static padding
-        final innerBase = math.max(0.0, cross - outerPadding.left - outerPadding.right);
+        final innerBase = math.max(
+          0.0,
+          cross - resolvedOuterPadding.left - resolvedOuterPadding.right,
+        );
 
         int columns;
-        EdgeInsets snappedPadding = outerPadding;
+        EdgeInsets snappedPadding = resolvedOuterPadding;
 
         if (snapToTileWidth) {
           int c = ((innerBase + gridCrossAxisSpacing) / (gridTileWidth + gridCrossAxisSpacing))
@@ -150,17 +155,21 @@ class ResponsiveEntitySliver<T> extends StatelessWidget {
           // Adjust only left/right padding based on snapAlign
           switch (snapAlign) {
             case SnapAlign.left:
-              snappedPadding = outerPadding.copyWith(right: outerPadding.right + extra);
+              snappedPadding = resolvedOuterPadding.copyWith(
+                right: resolvedOuterPadding.right + extra,
+              );
               break;
             case SnapAlign.center:
               final hPad = extra / 2.0;
-              snappedPadding = outerPadding.copyWith(
-                left: outerPadding.left + hPad,
-                right: outerPadding.right + hPad,
+              snappedPadding = resolvedOuterPadding.copyWith(
+                left: resolvedOuterPadding.left + hPad,
+                right: resolvedOuterPadding.right + hPad,
               );
               break;
             case SnapAlign.right:
-              snappedPadding = outerPadding.copyWith(left: outerPadding.left + extra);
+              snappedPadding = resolvedOuterPadding.copyWith(
+                left: resolvedOuterPadding.left + extra,
+              );
               break;
           }
         } else {

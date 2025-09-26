@@ -4,7 +4,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../shared/widgets/entity_tile_theme.dart';
+import '../shared/image/image_ref.dart';
+import '../shared/widgets/responsive_entity_sliver_theme.dart';
+import '../shared/widgets/gesture_wrapped_thumbnail_theme.dart';
 
 /// Design tokens: spacing, radius, elevation
 class AppSpacing {
@@ -43,10 +45,23 @@ class AppOverlay {
 /// App-wide theme
 class AppTheme {
   static ThemeData buildAppTheme() {
+    ResponsiveEntitySliverTheme responsiveEntitySliverTheme = ResponsiveEntitySliverTheme.preset(
+      EntityTileDensity.compact,
+    );
+
     final base = ThemeData(
       useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(seedColor: Colors.cyan),
-      extensions: <ThemeExtension<dynamic>>[EntityTileTheme.preset(EntityTileDensity.compact)],
+      extensions: <ThemeExtension<dynamic>>[
+        responsiveEntitySliverTheme,
+        const GestureWrappedThumbnailTheme(
+          size: 100,
+          borderRadius: AppRadius.md,
+          backgroundColor: Colors.transparent,
+          fit: BoxFit.cover,
+          placeholder: ImageRef.asset('assets/images/image_placeholder.png'),
+        ),
+      ],
     );
 
     return base.copyWith(

@@ -7,12 +7,10 @@ import 'package:provider/provider.dart';
 
 import '../../../app/routing/app_routes.dart';
 import '../../../app/routing/app_routes_ext.dart';
-import '../../../shared/image/image_ref.dart';
 import '../../../shared/widgets/confirmation_dialog.dart';
 import '../../../shared/widgets/context_action_menu.dart';
 import '../../../shared/widgets/empty_list_state.dart';
 import '../../../shared/widgets/entity_description.dart';
-import '../../../shared/widgets/entity_tile_theme.dart';
 import '../../../shared/widgets/gesture_wrapped_thumbnail.dart';
 import '../../../shared/widgets/responsive_entity_list.dart';
 import '../../../shared/widgets/skeleton_entity_list.dart';
@@ -69,14 +67,10 @@ class LocationsPage extends StatelessWidget {
                 images: item.images,
                 entityId: item.location.id,
                 entityName: item.location.name,
-                size: 100,
-                borderRadius: AppRadius.md,
-                fit: BoxFit.contain,
-                placeholder: const ImageRef.asset('assets/images/image_placeholder.png'),
               );
 
           return ResponsiveEntityList<LocationListItem>(
-            density: EntityTileDensity.roomy,
+            // density: EntityTileDensity.roomy,
             items: items,
             onTap: (it) => AppRoutes.roomsForLocation.push(
               context,
@@ -95,7 +89,8 @@ class LocationsPage extends StatelessWidget {
                   AppRoutes.locationEdit.push(context, pathParams: {'locationId': it.location.id}),
               onDelete: () => _confirmDelete(context, vm, it),
             ),
-            gridBodyHeight: 100,
+            // gridBodyHeight:  108,
+            gridBodyHeight: EntityDescription.estimateHeight(context, extraLines: 1),
           );
         },
       ),
@@ -130,14 +125,14 @@ class LocationsPage extends StatelessWidget {
                 Icon(
                   Icons.place_outlined,
                   size: theme.iconTheme.size ?? 14,
-                  color: theme.iconTheme.color?.withValues(alpha: 0.7), // replaces withOpacity
+                  color: theme.iconTheme.color?.withValues(alpha: 0.7),
                 ),
                 const SizedBox(width: AppSpacing.xs),
                 Expanded(
                   child: Text(
                     item.location.address!,
                     style: theme.textTheme.bodySmall,
-                    maxLines: 2,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),

@@ -87,24 +87,23 @@ void main() {
       }
     });
 
-    testWidgets('grid: snaps tile width to gridTileWidth (left aligned)', (tester) async {
+    testWidgets('grid - snaps tile width to gridTileWidth (left aligned)', (tester) async {
       // Using defaults: gridPadding: left/right=12; crossSpacing=12; gridTileWidth=240
       // width=1000 => innerBase = 1000 - 24 = 976
       // columns = floor((976+12) / (240+12)) = floor(988/252)=3; desiredInner=744; extra=232
       // SnapAlign.left => left padding ~12; grid tile width should be ~240
       final items = List<int>.generate(5, (i) => i);
 
+      final responsiveEntitySliverElement = ResponsiveEntitySliver<int>(
+        items: items,
+        headerBuilder: (ctx, i, _) => Container(color: Colors.red),
+        bodyBuilder: (ctx, i, _) => const SizedBox.shrink(),
+        outerPadding: const EdgeInsets.all(12),
+      );
+
       final widget = _wrapWidget(
         tester,
-        CustomScrollView(
-          slivers: [
-            ResponsiveEntitySliver<int>(
-              items: items,
-              headerBuilder: (ctx, i, _) => Container(color: Colors.red),
-              bodyBuilder: (ctx, i, _) => const SizedBox.shrink(),
-            ),
-          ],
-        ),
+        CustomScrollView(slivers: [responsiveEntitySliverElement]),
         const Size(1000, 800),
       );
 
@@ -124,7 +123,7 @@ void main() {
       // Left alignment => first tile left should be very close to left padding (12)
       final left = tester.getTopLeft(firstTile).dx;
       expect(
-        (left - 12.0).abs() < 1.0,
+        (left - responsiveEntitySliverElement.outerPadding!.left).abs() < 1.0,
         isTrue,
         reason: 'First column should start at left padding ~12px',
       );
@@ -240,7 +239,6 @@ void main() {
           // force grid
           gridBreakpoint: 480.0,
           gridTileWidth: 200.0,
-          gridPadding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
           gridCrossAxisSpacing: 8.0,
           gridMainAxisSpacing: 8.0,
           headerBuilder: (ctx, i, _) => Container(color: Colors.orange),

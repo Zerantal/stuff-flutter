@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'responsive_entity_sliver.dart';
-import 'entity_tile_theme.dart';
+import 'responsive_entity_sliver_theme.dart';
 
 /// A convenience wrapper that hosts [ResponsiveEntitySliver] inside a
 /// [CustomScrollView].
@@ -33,17 +33,13 @@ class ResponsiveEntityList<T> extends StatelessWidget {
 
     this.gridHeaderHeight,
     this.gridBodyHeight,
-    this.gridSectionGap,
     this.gridTileVerticalPadding,
 
-    this.gridPadding = const EdgeInsets.fromLTRB(12, 12, 12, 96),
+    // spacing
+    this.outerPadding = const EdgeInsets.fromLTRB(12, 12, 12, 88),
     this.gridMainAxisSpacing = 12.0,
     this.gridCrossAxisSpacing = 12.0,
 
-    this.listHeaderWidth,
-    this.listHeaderHeight,
-    this.listTileMinHeight,
-    this.listPadding = const EdgeInsets.only(top: 8, bottom: 88),
     this.listSeparatorBuilder,
   });
 
@@ -78,18 +74,14 @@ class ResponsiveEntityList<T> extends StatelessWidget {
   // Grid (nullable => from theme)
   final double? gridHeaderHeight;
   final double? gridBodyHeight;
-  final double? gridSectionGap;
   final double? gridTileVerticalPadding;
 
-  final EdgeInsets gridPadding;
+  // spacing
+  final EdgeInsets outerPadding;
   final double gridMainAxisSpacing;
   final double gridCrossAxisSpacing;
 
   // List (nullable => from theme)
-  final double? listHeaderWidth;
-  final double? listHeaderHeight;
-  final double? listTileMinHeight;
-  final EdgeInsets listPadding;
   final Widget Function(BuildContext, int)? listSeparatorBuilder;
 
   @override

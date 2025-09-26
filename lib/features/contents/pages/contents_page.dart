@@ -6,7 +6,6 @@ import 'package:provider/provider.dart';
 import '../../../app/routing/app_routes.dart';
 import '../../../app/routing/app_routes_ext.dart';
 import '../../../app/theme.dart';
-import '../../../shared/image/image_ref.dart';
 import '../../../shared/widgets/confirmation_dialog.dart';
 import '../../../shared/widgets/context_action_menu.dart';
 import '../../../shared/widgets/entity_description.dart';
@@ -71,10 +70,6 @@ class ContentsPage extends StatelessWidget {
                           images: item.images,
                           entityId: item.container.id,
                           entityName: item.container.name,
-                          size: 120,
-                          borderRadius: AppRadius.md,
-                          fit: BoxFit.contain,
-                          placeholder: const ImageRef.asset('assets/images/image_placeholder.png'),
                         ),
                         bodyBuilder: (ctx, c, _) => EntityDescription(
                           title: c.container.name,
@@ -108,10 +103,6 @@ class ContentsPage extends StatelessWidget {
                           images: item.images,
                           entityId: item.item.id,
                           entityName: item.item.name,
-                          size: 80,
-                          borderRadius: 10,
-                          fit: BoxFit.contain,
-                          placeholder: const ImageRef.asset('assets/images/image_placeholder.png'),
                         ),
                         bodyBuilder: (ctx, it, _) => EntityDescription(
                           title: it.item.name,
@@ -281,7 +272,12 @@ class ContentsPage extends StatelessWidget {
   SliverToBoxAdapter _sectionHeader(String text) {
     return SliverToBoxAdapter(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.md,
+          AppSpacing.xl,
+          AppSpacing.md,
+          AppSpacing.sm,
+        ),
         child: Text(text, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
       ),
     );

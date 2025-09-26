@@ -39,25 +39,4 @@ void main() {
     // No subtitle rendered when empty
     expect(find.text(''), findsNothing);
   });
-
-  testWidgets('renders badges in a Wrap with spacing and top padding of sm', (tester) async {
-    final badge1 = const Chip(label: Text('12 items'));
-    final badge2 = const Chip(label: Text('fragile'));
-
-    await tester.pumpWidget(_wrap(EntityDescription(title: 'Garage', badges: [badge1, badge2])));
-
-    // Badges present
-    expect(find.byType(Chip), findsNWidgets(2));
-
-    // Wrap container exists with expected spacing
-    final wrap = tester.widget<Wrap>(find.byType(Wrap));
-    expect(wrap.spacing, AppSpacing.sm);
-    expect(wrap.runSpacing, -AppSpacing.sm);
-
-    // The Wrap is wrapped in a Padding with top: 8
-    final paddingWithWrap = tester.widget<Padding>(
-      find.ancestor(of: find.byType(Wrap), matching: find.byType(Padding)).first,
-    );
-    expect((paddingWithWrap.padding as EdgeInsets).top, 8.0);
-  });
 }

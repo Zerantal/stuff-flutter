@@ -1,8 +1,10 @@
 // lib/shared/widgets/gesture_wrapped_thumbnail.dart
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../app/theme.dart';
+import 'gesture_wrapped_thumbnail_theme.dart';
 import 'image_thumb.dart';
 import '../image/image_ref.dart';
 import 'image_viewer/image_viewer_page.dart';
@@ -19,9 +21,9 @@ class GestureWrappedThumbnail extends StatelessWidget {
     this.heroTag,
     this.width,
     this.height,
-    this.size = 80,
+    this.size,
     this.borderRadius,
-    this.fit = BoxFit.cover,
+    this.fit,
     this.placeholder,
     this.backgroundColor,
   });
@@ -43,13 +45,13 @@ class GestureWrappedThumbnail extends StatelessWidget {
   final double? height;
 
   /// Fallback side length for a square thumbnail when width/height are omitted.
-  final double size;
+  final double? size;
 
   /// If null, falls back to theme radius.
   final double? borderRadius;
 
   final ImageRef? placeholder;
-  final BoxFit fit;
+  final BoxFit? fit;
 
   /// If null, falls back to theme surface variant.
   final Color? backgroundColor;
@@ -64,24 +66,19 @@ class GestureWrappedThumbnail extends StatelessWidget {
     final tags = List<String>.generate(images.length, (i) => '${baseTag}_img$i');
     if (tags.isNotEmpty && heroTag != null) tags[0] = heroTag!;
 
-    final w = width ?? size;
-    final h = height ?? size;
+    final ext = GestureWrappedThumbnailTheme.of(context);
 
-    final effectiveBorderRadius =
-        borderRadius ??
-        (Theme.of(context).cardTheme.shape is RoundedRectangleBorder
-            ? (Theme.of(context).cardTheme.shape as RoundedRectangleBorder).borderRadius
-                  .resolve(Directionality.of(context))
-                  .topLeft
-                  .x
-            : AppRadius.sm);
+    final w = width ?? size ?? ext.size;
+    final h = height ?? size ?? ext.size;
 
-    final effectiveBackgroundColor =
-        backgroundColor ?? Theme.of(context).colorScheme.surfaceContainerHighest;
+    final effectiveBorderRadius = borderRadius ?? ext.borderRadius;
+    final effectiveFit = fit ?? ext.fit;
+    final effectiveBackgroundColor = backgroundColor ?? ext.backgroundColor;
+    final effectivePlaceholder = placeholder ?? ext.placeholder;
 
     Widget? placeholderWidget;
-    if (placeholder != null) {
-      placeholderWidget = buildImage(placeholder!, width: w, height: h, fit: BoxFit.cover);
+    if (effectivePlaceholder != null) {
+      placeholderWidget = buildImage(effectivePlaceholder, width: w, height: h, fit: BoxFit.cover);
     } else {
       placeholderWidget = Container(
         width: w,
@@ -90,11 +87,7 @@ class GestureWrappedThumbnail extends StatelessWidget {
           color: effectiveBackgroundColor,
           borderRadius: BorderRadius.circular(effectiveBorderRadius),
         ),
-        child: Icon(
-          Icons.image_outlined,
-          size: size * 0.4,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
+        child: Icon(Icons.image_outlined, size: min(w, h) * 0.8),
       );
     }
 
@@ -123,7 +116,7 @@ class GestureWrappedThumbnail extends StatelessWidget {
           width: w,
           height: h,
           borderRadius: BorderRadius.circular(effectiveBorderRadius),
-          fit: fit,
+          fit: effectiveFit,
           placeholderWidget: placeholderWidget,
           backgroundColor: effectiveBackgroundColor,
         ),

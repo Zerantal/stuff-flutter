@@ -1,71 +1,79 @@
-// lib/shared/widgets/entity_tile_theme.dart
+// lib/shared/widgets/responsive_entity_sliver_theme.dart
 import 'package:flutter/material.dart';
 
 /// Density presets for entity tiles.
 enum EntityTileDensity { compact, comfy, roomy }
 
 /// Theme extension that centralizes sizing for list + grid tiles.
-/// If you add this to your app's ThemeData, the responsive widgets
-/// will auto-pick values from here unless you override them per-call.
+/// the responsive widgets will auto-pick values from here unless
+/// overridden per-call.
 @immutable
-class EntityTileTheme extends ThemeExtension<EntityTileTheme> {
+class ResponsiveEntitySliverTheme extends ThemeExtension<ResponsiveEntitySliverTheme> {
   final double gridHeaderHeight;
-  final double gridBodyHeight; // body min height budget; Expanded fills the rest
+  final double gridBodyHeight;
   final double gridTileVerticalPadding;
+  final EdgeInsets outerPadding;
 
-  const EntityTileTheme({
+  const ResponsiveEntitySliverTheme({
     required this.gridHeaderHeight,
     required this.gridBodyHeight,
     required this.gridTileVerticalPadding,
+    required this.outerPadding,
   });
 
   /// Built-in presets (match the values we’ve been using).
-  factory EntityTileTheme.preset(EntityTileDensity density) {
+  factory ResponsiveEntitySliverTheme.preset(EntityTileDensity density) {
     switch (density) {
       case EntityTileDensity.compact:
-        return const EntityTileTheme(
+        return const ResponsiveEntitySliverTheme(
           gridHeaderHeight: 120,
           gridBodyHeight: 64,
           gridTileVerticalPadding: 20,
-        );
-      case EntityTileDensity.roomy:
-        return const EntityTileTheme(
-          gridHeaderHeight: 160,
-          gridBodyHeight: 92,
-          gridTileVerticalPadding: 28,
+          outerPadding: EdgeInsets.symmetric(horizontal: 4),
         );
       case EntityTileDensity.comfy:
-      // ignore: unreachable_switch_default
-      default:
-        return const EntityTileTheme(
+        return const ResponsiveEntitySliverTheme(
           gridHeaderHeight: 140,
           gridBodyHeight: 76,
           gridTileVerticalPadding: 24,
+          outerPadding: EdgeInsets.symmetric(horizontal: 8),
+        );
+      case EntityTileDensity.roomy:
+      // ignore: unreachable_switch_default
+      default:
+        return const ResponsiveEntitySliverTheme(
+          gridHeaderHeight: 160,
+          gridBodyHeight: 92,
+          gridTileVerticalPadding: 28,
+          outerPadding: EdgeInsets.symmetric(horizontal: 12),
         );
     }
   }
 
   @override
-  EntityTileTheme copyWith({
+  ResponsiveEntitySliverTheme copyWith({
     double? gridHeaderHeight,
     double? gridBodyHeight,
     double? gridTileVerticalPadding,
+    EdgeInsets? outerPadding,
   }) {
-    return EntityTileTheme(
+    return ResponsiveEntitySliverTheme(
       gridHeaderHeight: gridHeaderHeight ?? this.gridHeaderHeight,
       gridBodyHeight: gridBodyHeight ?? this.gridBodyHeight,
       gridTileVerticalPadding: gridTileVerticalPadding ?? this.gridTileVerticalPadding,
+      outerPadding: outerPadding ?? this.outerPadding,
     );
   }
 
   @override
-  EntityTileTheme lerp(ThemeExtension<EntityTileTheme>? other, double t) {
-    if (other is! EntityTileTheme) return this;
+  ResponsiveEntitySliverTheme lerp(ThemeExtension<ResponsiveEntitySliverTheme>? other, double t) {
+    if (other is! ResponsiveEntitySliverTheme) return this;
     double lerpD(double a, double b) => a + (b - a) * t;
-    return EntityTileTheme(
+    return ResponsiveEntitySliverTheme(
       gridHeaderHeight: lerpD(gridHeaderHeight, other.gridHeaderHeight),
       gridBodyHeight: lerpD(gridBodyHeight, other.gridBodyHeight),
       gridTileVerticalPadding: lerpD(gridTileVerticalPadding, other.gridTileVerticalPadding),
+      outerPadding: EdgeInsets.lerp(outerPadding, other.outerPadding, t)!,
     );
   }
 }

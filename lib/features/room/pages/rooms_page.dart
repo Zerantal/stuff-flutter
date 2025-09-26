@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 
 import '../../../app/routing/app_routes_ext.dart';
 import '../../../app/routing/app_routes.dart';
-import '../../../shared/image/image_ref.dart';
 import '../../../shared/widgets/confirmation_dialog.dart';
 import '../../../shared/widgets/context_action_menu.dart';
 import '../../../shared/widgets/gesture_wrapped_thumbnail.dart';
@@ -85,13 +84,10 @@ class RoomsPage extends StatelessWidget {
           images: item.images,
           entityId: item.room.id,
           entityName: item.room.name,
-          fit: fit,
-          size: 120,
-          placeholder: const ImageRef.asset('assets/images/image_placeholder.png'),
         );
 
         return ResponsiveEntityList<RoomListItem>(
-          gridBodyHeight: 80,
+          gridBodyHeight: EntityDescription.estimateHeight(context),
           items: items,
           onTap: (it) => AppRoutes.roomContentsAlias.push(
             context,
