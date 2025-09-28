@@ -55,7 +55,7 @@ class AppTheme {
       extensions: <ThemeExtension<dynamic>>[
         responsiveEntitySliverTheme,
         const GestureWrappedThumbnailTheme(
-          size: 100,
+          size: 80,
           borderRadius: AppRadius.md,
           backgroundColor: Colors.transparent,
           fit: BoxFit.cover,

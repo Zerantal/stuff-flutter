@@ -25,36 +25,38 @@ class RoomsPage extends StatelessWidget {
     final useExtendedFab = width >= 720;
     final vm = context.read<RoomsViewModel>();
 
-    return Scaffold(
-      key: const ValueKey('RoomsPage'),
-      appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Rooms'),
-            if (vm.locationName != null)
-              Text(vm.locationName!, style: Theme.of(context).textTheme.bodySmall),
-          ],
+    return SafeArea(
+      child: Scaffold(
+        key: const ValueKey('RoomsPage'),
+        appBar: AppBar(
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Rooms'),
+              if (vm.locationName != null)
+                Text(vm.locationName!, style: Theme.of(context).textTheme.bodySmall),
+            ],
+          ),
         ),
+        body: _buildBody(vm),
+        floatingActionButton: useExtendedFab
+            ? FloatingActionButton.extended(
+                key: const ValueKey('add_room_fab'),
+                heroTag: 'roomsPageFAB',
+                onPressed: () =>
+                    AppRoutes.roomAdd.push(context, pathParams: {'locationId': vm.locationId}),
+                icon: const Icon(Icons.add_outlined),
+                label: const Text('Add Room'),
+              )
+            : FloatingActionButton(
+                key: const ValueKey('add_room_fab'),
+                heroTag: 'roomsPageFAB',
+                onPressed: () =>
+                    AppRoutes.roomAdd.push(context, pathParams: {'locationId': vm.locationId}),
+                tooltip: 'Add Room',
+                child: const Icon(Icons.add_outlined),
+              ),
       ),
-      body: _buildBody(vm),
-      floatingActionButton: useExtendedFab
-          ? FloatingActionButton.extended(
-              key: const ValueKey('add_room_fab'),
-              heroTag: 'roomsPageFAB',
-              onPressed: () =>
-                  AppRoutes.roomAdd.push(context, pathParams: {'locationId': vm.locationId}),
-              icon: const Icon(Icons.add_outlined),
-              label: const Text('Add Room'),
-            )
-          : FloatingActionButton(
-              key: const ValueKey('add_room_fab'),
-              heroTag: 'roomsPageFAB',
-              onPressed: () =>
-                  AppRoutes.roomAdd.push(context, pathParams: {'locationId': vm.locationId}),
-              tooltip: 'Add Room',
-              child: const Icon(Icons.add_outlined),
-            ),
     );
   }
 

@@ -29,86 +29,88 @@ class LocationsPage extends StatelessWidget {
     final useExtendedFab = width >= 720; // wide screens get an extended FAB
     final vm = context.read<LocationsViewModel>();
 
-    return Scaffold(
-      key: const ValueKey('LocationsPage'),
-      appBar: AppBar(
-        title: const Text('Locations'),
-        leading: kDebugMode
-            ? Builder(
-                builder: (appBarCtx) => IconButton(
-                  icon: const Icon(Icons.menu),
-                  tooltip: 'Developer Options',
-                  onPressed: () => Scaffold.of(appBarCtx).openDrawer(),
-                ),
-              )
-            : null,
-      ),
-      drawer: kDebugMode ? const DeveloperDrawer() : null,
-      body: StreamBuilder<List<LocationListItem>>(
-        stream: vm.locations,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
-            // Skeletons while first batch loads
-            return const SkeletonEntityList(count: 6, numRows: 3);
-          }
+    return SafeArea(
+      child: Scaffold(
+        key: const ValueKey('LocationsPage'),
+        appBar: AppBar(
+          title: const Text('Locations'),
+          leading: kDebugMode
+              ? Builder(
+                  builder: (appBarCtx) => IconButton(
+                    icon: const Icon(Icons.menu),
+                    tooltip: 'Developer Options',
+                    onPressed: () => Scaffold.of(appBarCtx).openDrawer(),
+                  ),
+                )
+              : null,
+        ),
+        drawer: kDebugMode ? const DeveloperDrawer() : null,
+        body: StreamBuilder<List<LocationListItem>>(
+          stream: vm.locations,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
+              // Skeletons while first batch loads
+              return const SkeletonEntityList(count: 6, numRows: 3);
+            }
 
-          final items = snapshot.data ?? const <LocationListItem>[];
-          if (items.isEmpty) {
-            return EmptyListState(
-              onAdd: () => AppRoutes.locationAdd.push(context),
-              text: 'No locations found. Tap + to add one.',
-              buttonText: 'Add First Location',
-              buttonIcon: const Icon(Icons.add_home_outlined),
-            );
-          }
-
-          GestureWrappedThumbnail thumbnailBuilder(BuildContext context, LocationListItem item) =>
-              GestureWrappedThumbnail(
-                images: item.images,
-                entityId: item.location.id,
-                entityName: item.location.name,
+            final items = snapshot.data ?? const <LocationListItem>[];
+            if (items.isEmpty) {
+              return EmptyListState(
+                onAdd: () => AppRoutes.locationAdd.push(context),
+                text: 'No locations found. Tap + to add one.',
+                buttonText: 'Add First Location',
+                buttonIcon: const Icon(Icons.add_home_outlined),
               );
+            }
 
-          return ResponsiveEntityList<LocationListItem>(
-            // density: EntityTileDensity.roomy,
-            items: items,
-            onTap: (it) => AppRoutes.roomsForLocation.push(
-              context,
-              pathParams: {'locationId': it.location.id},
-              extra: it.location.name,
-            ),
-            headerBuilder: (ctx, it, _) => thumbnailBuilder(ctx, it),
-            bodyBuilder: (ctx, it, _) => _itemDescriptionBuilder(ctx, it),
-            trailingBuilder: (ctx, it) => ContextActionMenu(
-              onView: () => AppRoutes.roomsForLocation.push(
+            GestureWrappedThumbnail thumbnailBuilder(BuildContext context, LocationListItem item) =>
+                GestureWrappedThumbnail(
+                  images: item.images,
+                  entityId: item.location.id,
+                  entityName: item.location.name,
+                );
+
+            return ResponsiveEntityList<LocationListItem>(
+              // density: EntityTileDensity.roomy,
+              items: items,
+              onTap: (it) => AppRoutes.roomsForLocation.push(
                 context,
                 pathParams: {'locationId': it.location.id},
                 extra: it.location.name,
               ),
-              onEdit: () =>
-                  AppRoutes.locationEdit.push(context, pathParams: {'locationId': it.location.id}),
-              onDelete: () => _confirmDelete(context, vm, it),
-            ),
-            // gridBodyHeight:  108,
-            gridBodyHeight: EntityDescription.estimateHeight(context, extraLines: 1),
-          );
-        },
+              headerBuilder: (ctx, it, _) => thumbnailBuilder(ctx, it),
+              bodyBuilder: (ctx, it, _) => _itemDescriptionBuilder(ctx, it),
+              trailingBuilder: (ctx, it) => ContextActionMenu(
+                onView: () => AppRoutes.roomsForLocation.push(
+                  context,
+                  pathParams: {'locationId': it.location.id},
+                  extra: it.location.name,
+                ),
+                onEdit: () =>
+                    AppRoutes.locationEdit.push(context, pathParams: {'locationId': it.location.id}),
+                onDelete: () => _confirmDelete(context, vm, it),
+              ),
+              // gridBodyHeight:  108,
+              gridBodyHeight: EntityDescription.estimateHeight(context, extraLines: 1),
+            );
+          },
+        ),
+        floatingActionButton: useExtendedFab
+            ? FloatingActionButton.extended(
+                key: const ValueKey('add_location_fab'),
+                heroTag: 'locationsPageFAB',
+                onPressed: () => AppRoutes.locationAdd.push(context),
+                icon: const Icon(Icons.add_home_outlined),
+                label: const Text('Add Location'),
+              )
+            : FloatingActionButton(
+                key: const ValueKey('add_location_fab'),
+                heroTag: 'locationsPageFAB',
+                onPressed: () => AppRoutes.locationAdd.push(context),
+                tooltip: 'Add Location',
+                child: const Icon(Icons.add_home_outlined),
+              ),
       ),
-      floatingActionButton: useExtendedFab
-          ? FloatingActionButton.extended(
-              key: const ValueKey('add_location_fab'),
-              heroTag: 'locationsPageFAB',
-              onPressed: () => AppRoutes.locationAdd.push(context),
-              icon: const Icon(Icons.add_home_outlined),
-              label: const Text('Add Location'),
-            )
-          : FloatingActionButton(
-              key: const ValueKey('add_location_fab'),
-              heroTag: 'locationsPageFAB',
-              onPressed: () => AppRoutes.locationAdd.push(context),
-              tooltip: 'Add Location',
-              child: const Icon(Icons.add_home_outlined),
-            ),
     );
   }
 

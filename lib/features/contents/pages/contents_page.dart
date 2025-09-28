@@ -54,76 +54,78 @@ class ContentsPage extends StatelessWidget {
 
               final nothingToShow = !isInitialLoading && containers.isEmpty && items.isEmpty;
 
-              return CustomScrollView(
-                slivers: [
-                  if (nothingToShow)
-                    const SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: EmptyListState(text: 'No contents yet!\nAdd containers or items.'),
-                    )
-                  else ...[
-                    if (containers.isNotEmpty) ...[
-                      _sectionHeader('Containers'),
-                      ResponsiveEntitySliver<ContainerListItem>(
-                        items: containers,
-                        headerBuilder: (ctx, item, _) => GestureWrappedThumbnail(
-                          images: item.images,
-                          entityId: item.container.id,
-                          entityName: item.container.name,
-                        ),
-                        bodyBuilder: (ctx, c, _) => EntityDescription(
-                          title: c.container.name,
-                          description: c.container.description,
-                        ),
-                        trailingBuilder: (ctx, it) => ContextActionMenu(
-                          onView: () => AppRoutes.containerContents.push(
-                            context,
-                            pathParams: {'containerId': it.container.id},
+              return SafeArea(
+                child: CustomScrollView(
+                  slivers: [
+                    if (nothingToShow)
+                      const SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: EmptyListState(text: 'No contents yet!\nAdd containers or items.'),
+                      )
+                    else ...[
+                      if (containers.isNotEmpty) ...[
+                        _sectionHeader('Containers', isFirst: true),
+                        ResponsiveEntitySliver<ContainerListItem>(
+                          items: containers,
+                          headerBuilder: (ctx, item, _) => GestureWrappedThumbnail(
+                            images: item.images,
+                            entityId: item.container.id,
+                            entityName: item.container.name,
                           ),
-                          onEdit: () => AppRoutes.containerEdit.push(
-                            ctx,
-                            pathParams: {'containerId': it.container.id},
+                          bodyBuilder: (ctx, c, _) => EntityDescription(
+                            title: c.container.name,
+                            description: c.container.description,
                           ),
-                          onDelete: () => _confirmDeleteContents(context, it),
+                          trailingBuilder: (ctx, it) => ContextActionMenu(
+                            onView: () => AppRoutes.containerContents.push(
+                              context,
+                              pathParams: {'containerId': it.container.id},
+                            ),
+                            onEdit: () => AppRoutes.containerEdit.push(
+                              ctx,
+                              pathParams: {'containerId': it.container.id},
+                            ),
+                            onDelete: () => _confirmDeleteContents(context, it),
+                          ),
+                          onTap: (c) {
+                            AppRoutes.containerContents.push(
+                              context,
+                              pathParams: {'containerId': c.container.id},
+                            );
+                          },
                         ),
-                        onTap: (c) {
-                          AppRoutes.containerContents.push(
-                            context,
-                            pathParams: {'containerId': c.container.id},
-                          );
-                        },
-                      ),
-                    ],
+                      ],
 
-                    if (items.isNotEmpty) ...[
-                      _sectionHeader('Items'),
-                      ResponsiveEntitySliver<ItemListItem>(
-                        items: items,
-                        headerBuilder: (ctx, item, _) => GestureWrappedThumbnail(
-                          images: item.images,
-                          entityId: item.item.id,
-                          entityName: item.item.name,
+                      if (items.isNotEmpty) ...[
+                        _sectionHeader('Items'),
+                        ResponsiveEntitySliver<ItemListItem>(
+                          items: items,
+                          headerBuilder: (ctx, item, _) => GestureWrappedThumbnail(
+                            images: item.images,
+                            entityId: item.item.id,
+                            entityName: item.item.name,
+                          ),
+                          bodyBuilder: (ctx, it, _) => EntityDescription(
+                            title: it.item.name,
+                            description: (it.item.description?.isNotEmpty ?? false)
+                                ? it.item.description
+                                : null,
+                          ),
+                          trailingBuilder: (ctx, it) => ContextActionMenu(
+                            onView: () =>
+                                AppRoutes.itemView.push(context, pathParams: {'itemId': it.item.id}),
+                            onEdit: () =>
+                                AppRoutes.itemEdit.push(ctx, pathParams: {'itemId': it.item.id}),
+                            onDelete: () => _confirmDeleteItem(context, it),
+                          ),
+                          onTap: (c) {
+                            AppRoutes.itemView.push(context, pathParams: {'itemId': c.item.id});
+                          },
                         ),
-                        bodyBuilder: (ctx, it, _) => EntityDescription(
-                          title: it.item.name,
-                          description: (it.item.description?.isNotEmpty ?? false)
-                              ? it.item.description
-                              : null,
-                        ),
-                        trailingBuilder: (ctx, it) => ContextActionMenu(
-                          onView: () =>
-                              AppRoutes.itemView.push(context, pathParams: {'itemId': it.item.id}),
-                          onEdit: () =>
-                              AppRoutes.itemEdit.push(ctx, pathParams: {'itemId': it.item.id}),
-                          onDelete: () => _confirmDeleteItem(context, it),
-                        ),
-                        onTap: (c) {
-                          AppRoutes.itemView.push(context, pathParams: {'itemId': c.item.id});
-                        },
-                      ),
+                      ],
                     ],
                   ],
-                ],
+                ),
               );
             },
           );
@@ -269,12 +271,14 @@ class ContentsPage extends StatelessWidget {
   }
 
   /// Section header that works as a sliver
-  SliverToBoxAdapter _sectionHeader(String text) {
+  SliverToBoxAdapter _sectionHeader(String text, {bool isFirst = false}) {
+    final mediaPadding = MediaQueryData.fromView(WidgetsBinding.instance.platformDispatcher.views.first).padding;
+
     return SliverToBoxAdapter(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(
+        padding: EdgeInsets.fromLTRB(
           AppSpacing.md,
-          AppSpacing.xl,
+          isFirst ? mediaPadding.top + AppSpacing.lg : AppSpacing.xl,
           AppSpacing.md,
           AppSpacing.sm,
         ),
