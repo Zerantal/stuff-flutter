@@ -86,8 +86,10 @@ class LocationsPage extends StatelessWidget {
                   pathParams: {'locationId': it.location.id},
                   extra: it.location.name,
                 ),
-                onEdit: () =>
-                    AppRoutes.locationEdit.push(context, pathParams: {'locationId': it.location.id}),
+                onEdit: () => AppRoutes.locationEdit.push(
+                  context,
+                  pathParams: {'locationId': it.location.id},
+                ),
                 onDelete: () => _confirmDelete(context, vm, it),
               ),
               // gridBodyHeight:  108,

@@ -112,8 +112,10 @@ class ContentsPage extends StatelessWidget {
                                 : null,
                           ),
                           trailingBuilder: (ctx, it) => ContextActionMenu(
-                            onView: () =>
-                                AppRoutes.itemView.push(context, pathParams: {'itemId': it.item.id}),
+                            onView: () => AppRoutes.itemView.push(
+                              context,
+                              pathParams: {'itemId': it.item.id},
+                            ),
                             onEdit: () =>
                                 AppRoutes.itemEdit.push(ctx, pathParams: {'itemId': it.item.id}),
                             onDelete: () => _confirmDeleteItem(context, it),
@@ -272,7 +274,9 @@ class ContentsPage extends StatelessWidget {
 
   /// Section header that works as a sliver
   SliverToBoxAdapter _sectionHeader(String text, {bool isFirst = false}) {
-    final mediaPadding = MediaQueryData.fromView(WidgetsBinding.instance.platformDispatcher.views.first).padding;
+    final mediaPadding = MediaQueryData.fromView(
+      WidgetsBinding.instance.platformDispatcher.views.first,
+    ).padding;
 
     return SliverToBoxAdapter(
       child: Padding(
