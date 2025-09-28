@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'responsive_entity_sliver.dart';
-import 'entity_tile_theme.dart';
+import 'responsive_entity_sliver_theme.dart';
 
 /// A convenience wrapper that hosts [ResponsiveEntitySliver] inside a
 /// [CustomScrollView].
@@ -32,20 +32,14 @@ class ResponsiveEntityList<T> extends StatelessWidget {
     this.density = EntityTileDensity.comfy,
 
     this.gridHeaderHeight,
-    this.gridBodyTargetHeight,
-    this.gridTrailingHeight,
-    this.forceGridTrailingSpace = false,
-    this.gridSectionGap,
+    this.gridBodyHeight,
     this.gridTileVerticalPadding,
 
-    this.gridPadding = const EdgeInsets.fromLTRB(12, 12, 12, 96),
+    // spacing
+    this.outerPadding = const EdgeInsets.fromLTRB(12, 12, 12, 88),
     this.gridMainAxisSpacing = 12.0,
     this.gridCrossAxisSpacing = 12.0,
 
-    this.listHeaderWidth,
-    this.listHeaderHeight,
-    this.listTileMinHeight,
-    this.listPadding = const EdgeInsets.only(top: 8, bottom: 88),
     this.listSeparatorBuilder,
   });
 
@@ -53,9 +47,9 @@ class ResponsiveEntityList<T> extends StatelessWidget {
   final List<T> items;
 
   // Slots
-  final Widget Function(BuildContext, T) headerBuilder;
-  final Widget Function(BuildContext, T) bodyBuilder;
-  final Widget Function(BuildContext, T)? trailingBuilder;
+  final Widget Function(BuildContext context, T item, bool isGridView) headerBuilder;
+  final Widget Function(BuildContext context, T item, bool isGridView) bodyBuilder;
+  final Widget Function(BuildContext context, T item)? trailingBuilder;
   final void Function(T item)? onTap;
 
   // ScrollView controls
@@ -79,21 +73,15 @@ class ResponsiveEntityList<T> extends StatelessWidget {
 
   // Grid (nullable => from theme)
   final double? gridHeaderHeight;
-  final double? gridBodyTargetHeight;
-  final double? gridTrailingHeight;
-  final bool forceGridTrailingSpace;
-  final double? gridSectionGap;
+  final double? gridBodyHeight;
   final double? gridTileVerticalPadding;
 
-  final EdgeInsets gridPadding;
+  // spacing
+  final EdgeInsets outerPadding;
   final double gridMainAxisSpacing;
   final double gridCrossAxisSpacing;
 
   // List (nullable => from theme)
-  final double? listHeaderWidth;
-  final double? listHeaderHeight;
-  final double? listTileMinHeight;
-  final EdgeInsets listPadding;
   final Widget Function(BuildContext, int)? listSeparatorBuilder;
 
   @override
@@ -121,20 +109,12 @@ class ResponsiveEntityList<T> extends StatelessWidget {
           density: density,
 
           gridHeaderHeight: gridHeaderHeight,
-          gridBodyTargetHeight: gridBodyTargetHeight,
-          gridTrailingHeight: gridTrailingHeight,
-          forceGridTrailingSpace: forceGridTrailingSpace,
-          gridSectionGap: gridSectionGap,
+          gridBodyHeight: gridBodyHeight,
           gridTileVerticalPadding: gridTileVerticalPadding,
 
-          gridPadding: gridPadding,
           gridMainAxisSpacing: gridMainAxisSpacing,
           gridCrossAxisSpacing: gridCrossAxisSpacing,
 
-          listHeaderWidth: listHeaderWidth,
-          listHeaderHeight: listHeaderHeight,
-          listTileMinHeight: listTileMinHeight,
-          listPadding: listPadding,
           listSeparatorBuilder: listSeparatorBuilder,
         ),
         ...sliversAfter,

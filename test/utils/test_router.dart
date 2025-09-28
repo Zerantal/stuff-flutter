@@ -52,3 +52,35 @@ GoRouter makeTestRouter({
     observers: observers, // attach test NavigatorObservers here
   );
 }
+
+/// Build a GoRouter for tests with a stub and a widget-under-test route.
+///
+/// - Starts at `/stub` (renders a [_RouteStubPage]).
+/// - Then pushes `/widget` which builds the provided [child].
+/// - Returns the [GoRouter] instance so tests can pump it.
+GoRouter makeRouterWithWidget({
+  required Widget child,
+  List<NavigatorObserver> observers = const [],
+}) {
+  late GoRouter router;
+
+  router = GoRouter(
+    initialLocation: '/stub',
+    routes: [
+      GoRoute(path: '/stub', name: 'stub', builder: (ctx, st) => _RouteStubPage('stub', st)),
+      GoRoute(path: '/widget', name: 'widget', builder: (ctx, st) => child),
+    ],
+    observers: observers,
+  );
+
+  // Push /widget after /stub is built.
+  // This runs on the next microtask after router attaches.
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    final ctx = router.routerDelegate.navigatorKey.currentContext;
+    if (ctx != null) {
+      router.push('/widget');
+    }
+  });
+
+  return router;
+}

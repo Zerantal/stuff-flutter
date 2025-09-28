@@ -36,8 +36,8 @@ void main() {
             ResponsiveEntitySliver<int>(
               items: items,
               gridBreakpoint: 720.0, // default; just explicit
-              headerBuilder: (ctx, i) => Container(key: ValueKey('h-$i')),
-              bodyBuilder: (ctx, i) => Text('Item $i', key: ValueKey('b-$i')),
+              headerBuilder: (ctx, i, _) => Container(key: ValueKey('h-$i')),
+              bodyBuilder: (ctx, i, _) => Text('Item $i', key: ValueKey('b-$i')),
             ),
           ],
         ),
@@ -67,8 +67,8 @@ void main() {
             ResponsiveEntitySliver<int>(
               items: items,
               gridBreakpoint: 720.0,
-              headerBuilder: (ctx, i) => Container(key: ValueKey('h-$i')),
-              bodyBuilder: (ctx, i) => Text('Item $i', key: ValueKey('b-$i')),
+              headerBuilder: (ctx, i, _) => Container(key: ValueKey('h-$i')),
+              bodyBuilder: (ctx, i, _) => Text('Item $i', key: ValueKey('b-$i')),
             ),
           ],
         ),
@@ -87,24 +87,23 @@ void main() {
       }
     });
 
-    testWidgets('grid: snaps tile width to gridTileWidth (left aligned)', (tester) async {
+    testWidgets('grid - snaps tile width to gridTileWidth (left aligned)', (tester) async {
       // Using defaults: gridPadding: left/right=12; crossSpacing=12; gridTileWidth=240
       // width=1000 => innerBase = 1000 - 24 = 976
       // columns = floor((976+12) / (240+12)) = floor(988/252)=3; desiredInner=744; extra=232
       // SnapAlign.left => left padding ~12; grid tile width should be ~240
       final items = List<int>.generate(5, (i) => i);
 
+      final responsiveEntitySliverElement = ResponsiveEntitySliver<int>(
+        items: items,
+        headerBuilder: (ctx, i, _) => Container(color: Colors.red),
+        bodyBuilder: (ctx, i, _) => const SizedBox.shrink(),
+        outerPadding: const EdgeInsets.all(12),
+      );
+
       final widget = _wrapWidget(
         tester,
-        CustomScrollView(
-          slivers: [
-            ResponsiveEntitySliver<int>(
-              items: items,
-              headerBuilder: (ctx, i) => Container(color: Colors.red),
-              bodyBuilder: (ctx, i) => const SizedBox.shrink(),
-            ),
-          ],
-        ),
+        CustomScrollView(slivers: [responsiveEntitySliverElement]),
         const Size(1000, 800),
       );
 
@@ -124,7 +123,7 @@ void main() {
       // Left alignment => first tile left should be very close to left padding (12)
       final left = tester.getTopLeft(firstTile).dx;
       expect(
-        (left - 12.0).abs() < 1.0,
+        (left - responsiveEntitySliverElement.outerPadding!.left).abs() < 1.0,
         isTrue,
         reason: 'First column should start at left padding ~12px',
       );
@@ -140,8 +139,8 @@ void main() {
             ResponsiveEntitySliver<int>(
               items: items,
               snapAlign: SnapAlign.center,
-              headerBuilder: (ctx, i) => Container(color: Colors.blue),
-              bodyBuilder: (ctx, i) => const SizedBox.shrink(),
+              headerBuilder: (ctx, i, _) => Container(color: Colors.blue),
+              bodyBuilder: (ctx, i, _) => const SizedBox.shrink(),
             ),
           ],
         ),
@@ -161,80 +160,6 @@ void main() {
       );
     });
 
-    testWidgets('grid: trailing height defaults when trailingBuilder is present', (tester) async {
-      final items = [1, 2, 3];
-
-      // Configure explicit heights (so we can assert exact tile height):
-      // header=100, body=60, gap=10, vpad=20. With trailing present but height unspecified,
-      // effective trailing height = 40 (default).
-      // tileHeight = 20 + 100 + (10 + 10) + 40 + 60 = 240
-      final widget = _wrapWidget(
-        tester,
-        CustomScrollView(
-          slivers: [
-            ResponsiveEntitySliver<int>(
-              items: items,
-              gridHeaderHeight: 100,
-              gridBodyTargetHeight: 60,
-              gridSectionGap: 10,
-              gridTileVerticalPadding: 20,
-              // Not providing gridTrailingHeight -> triggers default 40 when trailingBuilder != null
-              trailingBuilder: (ctx, i) => const SizedBox(width: 16, height: 1),
-              headerBuilder: (ctx, i) => Container(color: Colors.green),
-              bodyBuilder: (ctx, i) => const SizedBox.shrink(),
-            ),
-          ],
-        ),
-        const Size(1000, 800),
-      );
-
-      await tester.pumpWidget(widget);
-
-      await tester.pumpAndSettle();
-
-      final h = tester.getSize(find.byType(Card).first).height;
-      expect(
-        (h - 240.0).abs() < 1.0,
-        isTrue,
-        reason: 'Tile height should include default trailing area (≈240px)',
-      );
-    });
-
-    testWidgets('grid: smaller tile height without trailingBuilder', (tester) async {
-      final items = [1, 2, 3];
-
-      // Same explicit config as above but with NO trailingBuilder.
-      // tileHeight = 20 + 100 + (10) + 0 + 60 = 190
-      final widget = _wrapWidget(
-        tester,
-        CustomScrollView(
-          slivers: [
-            ResponsiveEntitySliver<int>(
-              items: items,
-              gridHeaderHeight: 100,
-              gridBodyTargetHeight: 60,
-              gridSectionGap: 10,
-              gridTileVerticalPadding: 20,
-              headerBuilder: (ctx, i) => Container(color: Colors.green),
-              bodyBuilder: (ctx, i) => const SizedBox.shrink(),
-            ),
-          ],
-        ),
-        const Size(1000, 800),
-      );
-
-      await tester.pumpWidget(widget);
-
-      await tester.pumpAndSettle();
-
-      final h = tester.getSize(find.byType(Card).first).height;
-      expect(
-        (h - 190.0).abs() < 1.0,
-        isTrue,
-        reason: 'Tile height should be smaller when no trailing area is reserved',
-      );
-    });
-
     testWidgets('list: uses separator builder and handles taps', (tester) async {
       final items = List<int>.generate(4, (i) => i);
       int taps = 0;
@@ -248,8 +173,8 @@ void main() {
               gridBreakpoint: 720.0,
               listSeparatorBuilder: (ctx, _) =>
                   const Divider(key: ValueKey('sep'), height: 1, thickness: 0.6),
-              headerBuilder: (ctx, i) => SizedBox(key: ValueKey('h-$i'), width: 72, height: 72),
-              bodyBuilder: (ctx, i) => Text('Row $i', key: ValueKey('r-$i')),
+              headerBuilder: (ctx, i, _) => SizedBox(key: ValueKey('h-$i'), width: 72, height: 72),
+              bodyBuilder: (ctx, i, _) => Text('Row $i', key: ValueKey('r-$i')),
               onTap: (_) => taps++,
             ),
           ],
@@ -277,8 +202,8 @@ void main() {
         tester,
         ResponsiveEntityList<int>(
           items: items,
-          headerBuilder: (ctx, i) => Container(key: ValueKey('top-$i')),
-          bodyBuilder: (ctx, i) => Text('Body $i', key: ValueKey('body-$i')),
+          headerBuilder: (ctx, i, _) => Container(key: ValueKey('top-$i')),
+          bodyBuilder: (ctx, i, _) => Text('Body $i', key: ValueKey('body-$i')),
           sliversBefore: const [
             SliverToBoxAdapter(
               child: SizedBox(height: 10, child: Text('before', key: ValueKey('before'))),
@@ -314,11 +239,10 @@ void main() {
           // force grid
           gridBreakpoint: 480.0,
           gridTileWidth: 200.0,
-          gridPadding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
           gridCrossAxisSpacing: 8.0,
           gridMainAxisSpacing: 8.0,
-          headerBuilder: (ctx, i) => Container(color: Colors.orange),
-          bodyBuilder: (ctx, i) => const SizedBox.shrink(),
+          headerBuilder: (ctx, i, _) => Container(color: Colors.orange),
+          bodyBuilder: (ctx, i, _) => const SizedBox.shrink(),
         ),
         const Size(1000, 800),
       );

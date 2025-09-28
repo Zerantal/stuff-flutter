@@ -5,14 +5,13 @@ import 'package:provider/provider.dart';
 
 import '../../../app/routing/app_routes_ext.dart';
 import '../../../app/routing/app_routes.dart';
-import '../../../shared/image/image_ref.dart';
 import '../../../shared/widgets/confirmation_dialog.dart';
 import '../../../shared/widgets/context_action_menu.dart';
 import '../../../shared/widgets/gesture_wrapped_thumbnail.dart';
 import '../../../shared/widgets/entity_description.dart';
 import '../../../shared/widgets/responsive_entity_list.dart';
+import '../../../shared/widgets/skeleton_entity_list.dart';
 import '../viewmodels/rooms_view_model.dart';
-import '../../../shared/widgets/skeleton_tile.dart';
 import '../../../shared/widgets/empty_list_state.dart';
 
 final _log = Logger('RoomsPage');
@@ -26,36 +25,38 @@ class RoomsPage extends StatelessWidget {
     final useExtendedFab = width >= 720;
     final vm = context.read<RoomsViewModel>();
 
-    return Scaffold(
-      key: const ValueKey('RoomsPage'),
-      appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Rooms'),
-            if (vm.locationName != null)
-              Text(vm.locationName!, style: Theme.of(context).textTheme.bodySmall),
-          ],
+    return SafeArea(
+      child: Scaffold(
+        key: const ValueKey('RoomsPage'),
+        appBar: AppBar(
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Rooms'),
+              if (vm.locationName != null)
+                Text(vm.locationName!, style: Theme.of(context).textTheme.bodySmall),
+            ],
+          ),
         ),
+        body: _buildBody(vm),
+        floatingActionButton: useExtendedFab
+            ? FloatingActionButton.extended(
+                key: const ValueKey('add_room_fab'),
+                heroTag: 'roomsPageFAB',
+                onPressed: () =>
+                    AppRoutes.roomAdd.push(context, pathParams: {'locationId': vm.locationId}),
+                icon: const Icon(Icons.add_outlined),
+                label: const Text('Add Room'),
+              )
+            : FloatingActionButton(
+                key: const ValueKey('add_room_fab'),
+                heroTag: 'roomsPageFAB',
+                onPressed: () =>
+                    AppRoutes.roomAdd.push(context, pathParams: {'locationId': vm.locationId}),
+                tooltip: 'Add Room',
+                child: const Icon(Icons.add_outlined),
+              ),
       ),
-      body: _buildBody(vm),
-      floatingActionButton: useExtendedFab
-          ? FloatingActionButton.extended(
-              key: const ValueKey('add_room_fab'),
-              heroTag: 'roomsPageFAB',
-              onPressed: () =>
-                  AppRoutes.roomAdd.push(context, pathParams: {'locationId': vm.locationId}),
-              icon: const Icon(Icons.add_outlined),
-              label: const Text('Add Room'),
-            )
-          : FloatingActionButton(
-              key: const ValueKey('add_room_fab'),
-              heroTag: 'roomsPageFAB',
-              onPressed: () =>
-                  AppRoutes.roomAdd.push(context, pathParams: {'locationId': vm.locationId}),
-              tooltip: 'Add Room',
-              child: const Icon(Icons.add_outlined),
-            ),
     );
   }
 
@@ -64,12 +65,7 @@ class RoomsPage extends StatelessWidget {
       stream: vm.rooms,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return ListView.separated(
-            padding: const EdgeInsets.only(bottom: 88, top: 8),
-            itemCount: 6,
-            separatorBuilder: (_, _) => const Divider(height: 1),
-            itemBuilder: (_, _) => const SkeletonTile(),
-          );
+          return const SkeletonEntityList(numRows: 2);
         }
 
         final items = snapshot.data ?? const <RoomListItem>[];
@@ -85,25 +81,23 @@ class RoomsPage extends StatelessWidget {
         GestureWrappedThumbnail thumbnailBuilder(
           BuildContext context,
           RoomListItem item, {
-          BoxFit fit = BoxFit.cover,
+          BoxFit fit = BoxFit.contain,
         }) => GestureWrappedThumbnail(
           images: item.images,
           entityId: item.room.id,
           entityName: item.room.name,
-          size: 80,
-          fit: fit,
-          placeholder: const ImageRef.asset('assets/images/image_placeholder.png'),
         );
 
         return ResponsiveEntityList<RoomListItem>(
+          gridBodyHeight: EntityDescription.estimateHeight(context),
           items: items,
           onTap: (it) => AppRoutes.roomContentsAlias.push(
             context,
             pathParams: {'locationId': vm.locationId, 'roomId': it.room.id},
           ),
-          headerBuilder: (ctx, it) => thumbnailBuilder(ctx, it),
-          bodyBuilder: (ctx, it) =>
-              EntityDescription(title: it.room.name, subtitle: it.room.description),
+          headerBuilder: (ctx, it, _) => thumbnailBuilder(ctx, it),
+          bodyBuilder: (ctx, it, _) =>
+              EntityDescription(title: it.room.name, description: it.room.description),
           trailingBuilder: (ctx, it) => ContextActionMenu(
             onView: () => AppRoutes.roomContentsAlias.push(
               context,

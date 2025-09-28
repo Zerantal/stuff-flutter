@@ -57,7 +57,8 @@ enum AppRoutes {
 
   // ─────────────────────────── Debug ────────────────────────────
   debugDbInspector('/debug/db_inspector'),
-  debugSampleDbRandomiser('/debug/sample_db_randomiser');
+  debugSampleDbRandomiser('/debug/sample_db_randomiser'),
+  debugWidgetDemo('/debug/widget_demo');
 
   final String path;
   const AppRoutes(this.path);

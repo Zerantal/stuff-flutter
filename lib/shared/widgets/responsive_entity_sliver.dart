@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 
-import 'entity_tile_theme.dart';
+import '../../app/theme.dart';
+import 'responsive_entity_sliver_theme.dart';
 
 enum SnapAlign { left, center, right }
 
@@ -28,33 +29,26 @@ class ResponsiveEntitySliver<T> extends StatelessWidget {
     // Density & Theme
     this.density = EntityTileDensity.comfy,
 
-    // Grid tile layout (nullable => take from ThemeExtension/preset)
+    // Grid tile layout
     this.gridHeaderHeight,
-    this.gridBodyTargetHeight,
-    this.gridTrailingHeight,
-    this.forceGridTrailingSpace = false,
-    this.gridSectionGap,
+    this.gridBodyHeight,
     this.gridTileVerticalPadding,
 
-    // Spacing/padding
-    this.gridPadding = const EdgeInsets.fromLTRB(12, 12, 12, 96),
+    // Spacing
+    this.outerPadding,
     this.gridMainAxisSpacing = 12.0,
     this.gridCrossAxisSpacing = 12.0,
 
-    // List layout (nullable => ThemeExtension/preset)
-    this.listHeaderWidth,
-    this.listHeaderHeight,
-    this.listTileMinHeight,
-    this.listPadding = const EdgeInsets.only(top: 8, bottom: 88),
+    // List layout
     this.listSeparatorBuilder,
   });
 
   final List<T> items;
 
   // Slots
-  final Widget Function(BuildContext, T) headerBuilder;
-  final Widget Function(BuildContext, T) bodyBuilder;
-  final Widget Function(BuildContext, T)? trailingBuilder;
+  final Widget Function(BuildContext context, T item, bool isGridView) headerBuilder;
+  final Widget Function(BuildContext context, T item, bool isGridView) bodyBuilder;
+  final Widget Function(BuildContext context, T item)? trailingBuilder;
   final void Function(T item)? onTap;
 
   // Breakpoint
@@ -72,27 +66,23 @@ class ResponsiveEntitySliver<T> extends StatelessWidget {
 
   // Grid tile layout (nullable to allow theme defaults)
   final double? gridHeaderHeight;
-  final double? gridBodyTargetHeight;
-  final double? gridTrailingHeight;
-  final bool forceGridTrailingSpace;
-  final double? gridSectionGap;
+  final double? gridBodyHeight;
   final double? gridTileVerticalPadding;
 
   // Grid spacing/padding
-  final EdgeInsets gridPadding;
   final double gridMainAxisSpacing;
   final double gridCrossAxisSpacing;
 
-  // List layout (nullable to allow theme defaults)
-  final double? listHeaderWidth;
-  final double? listHeaderHeight;
-  final double? listTileMinHeight;
-  final EdgeInsets listPadding;
+  // Shared outer padding (applies in both list & grid mode)
+  final EdgeInsets? outerPadding;
+
+  // List layout
   final Widget Function(BuildContext, int)? listSeparatorBuilder;
 
-  EntityTileTheme _resolveTheme(BuildContext context) {
+  ResponsiveEntitySliverTheme _resolveTheme(BuildContext context) {
     // Prefer app theme extension, otherwise use the density preset locally.
-    return Theme.of(context).extension<EntityTileTheme>() ?? EntityTileTheme.preset(density);
+    return Theme.of(context).extension<ResponsiveEntitySliverTheme>() ??
+        ResponsiveEntitySliverTheme.preset(density);
   }
 
   @override
@@ -101,14 +91,9 @@ class ResponsiveEntitySliver<T> extends StatelessWidget {
 
     // Resolve all nullable sizing from theme extension (with local overrides)
     final resolvedGridHeaderHeight = gridHeaderHeight ?? ext.gridHeaderHeight;
-    final resolvedGridBodyTargetHeight = gridBodyTargetHeight ?? ext.gridBodyTargetHeight;
-    final resolvedGridTrailingHeight = gridTrailingHeight ?? ext.gridTrailingHeight;
-    final resolvedGridSectionGap = gridSectionGap ?? ext.gridSectionGap;
+    final resolvedGridBodyHeight = gridBodyHeight ?? ext.gridBodyHeight;
     final resolvedGridTileVPad = gridTileVerticalPadding ?? ext.gridTileVerticalPadding;
-
-    final resolvedListHeaderWidth = listHeaderWidth ?? ext.listHeaderWidth;
-    final resolvedListHeaderHeight = listHeaderHeight ?? ext.listHeaderHeight;
-    final resolvedListTileMinHeight = listTileMinHeight ?? ext.listTileMinHeight;
+    final resolvedOuterPadding = outerPadding ?? ext.outerPadding;
 
     return SliverLayoutBuilder(
       builder: (context, constraints) {
@@ -120,18 +105,15 @@ class ResponsiveEntitySliver<T> extends StatelessWidget {
           final childCount = items.isEmpty ? 0 : math.max(0, items.length * 2 - 1);
 
           return SliverPadding(
-            padding: listPadding,
+            padding: resolvedOuterPadding,
             sliver: SliverList(
               delegate: SliverChildBuilderDelegate((ctx, i) {
                 if (i.isOdd) return sep(ctx, i ~/ 2);
                 final idx = i ~/ 2;
                 final item = items[idx];
                 return _ListTile(
-                  minHeight: resolvedListTileMinHeight,
-                  headerWidth: resolvedListHeaderWidth,
-                  headerHeight: resolvedListHeaderHeight,
-                  header: headerBuilder(ctx, item),
-                  body: bodyBuilder(ctx, item),
+                  header: headerBuilder(ctx, item, false),
+                  body: bodyBuilder(ctx, item, false),
                   trailing: trailingBuilder?.call(ctx, item),
                   onTap: onTap == null ? null : () => onTap!(item),
                 );
@@ -140,28 +122,19 @@ class ResponsiveEntitySliver<T> extends StatelessWidget {
           );
         }
 
-        final hasTrailingBuilder = trailingBuilder != null;
-        final reserveTrailing = forceGridTrailingSpace || hasTrailingBuilder;
-
-        // Auto default if user forgot to set a height
-        final effectiveTrailingHeight = reserveTrailing
-            ? ((resolvedGridTrailingHeight > 0) ? resolvedGridTrailingHeight : 40.0)
-            : 0.0;
-
-        // Compute fixed tile height (body will Expand to fill; no overflow)
-        final gaps = resolvedGridSectionGap + (reserveTrailing ? resolvedGridSectionGap : 0);
         final tileHeight =
-            resolvedGridTileVPad +
+            resolvedGridTileVPad + // total vertical padding
             resolvedGridHeaderHeight +
-            gaps +
-            effectiveTrailingHeight +
-            resolvedGridBodyTargetHeight;
+            resolvedGridBodyHeight;
 
         // Base inner width after static padding
-        final innerBase = math.max(0.0, cross - gridPadding.left - gridPadding.right);
+        final innerBase = math.max(
+          0.0,
+          cross - resolvedOuterPadding.left - resolvedOuterPadding.right,
+        );
 
         int columns;
-        EdgeInsets snappedPadding = gridPadding;
+        EdgeInsets snappedPadding = resolvedOuterPadding;
 
         if (snapToTileWidth) {
           int c = ((innerBase + gridCrossAxisSpacing) / (gridTileWidth + gridCrossAxisSpacing))
@@ -179,24 +152,28 @@ class ResponsiveEntitySliver<T> extends StatelessWidget {
 
           final extra = math.max(0.0, innerBase - desiredInner);
 
-          // Align the snapped inner area
+          // Adjust only left/right padding based on snapAlign
           switch (snapAlign) {
             case SnapAlign.left:
-              snappedPadding = gridPadding.copyWith(right: gridPadding.right + extra);
+              snappedPadding = resolvedOuterPadding.copyWith(
+                right: resolvedOuterPadding.right + extra,
+              );
               break;
             case SnapAlign.center:
               final hPad = extra / 2.0;
-              snappedPadding = gridPadding.copyWith(
-                left: gridPadding.left + hPad,
-                right: gridPadding.right + hPad,
+              snappedPadding = resolvedOuterPadding.copyWith(
+                left: resolvedOuterPadding.left + hPad,
+                right: resolvedOuterPadding.right + hPad,
               );
               break;
             case SnapAlign.right:
-              snappedPadding = gridPadding.copyWith(left: gridPadding.left + extra);
+              snappedPadding = resolvedOuterPadding.copyWith(
+                left: resolvedOuterPadding.left + extra,
+              );
               break;
           }
         } else {
-          columns = 0; // we’ll use MaxCrossAxisExtent delegate
+          columns = 0; // fallback to MaxCrossAxisExtent delegate
         }
 
         return SliverPadding(
@@ -218,16 +195,14 @@ class ResponsiveEntitySliver<T> extends StatelessWidget {
             delegate: SliverChildBuilderDelegate((ctx, i) {
               final item = items[i];
               final trailing = trailingBuilder?.call(ctx, item);
-              final showTrailing = reserveTrailing && trailing != null;
 
               return _GridTile(
-                header: headerBuilder(ctx, item),
-                body: bodyBuilder(ctx, item),
-                trailing: showTrailing ? trailing : null,
+                header: headerBuilder(ctx, item, true),
+                body: bodyBuilder(ctx, item, true),
+                trailing: trailing,
                 onTap: onTap == null ? null : () => onTap!(item),
                 headerHeight: resolvedGridHeaderHeight,
-                trailingHeight: effectiveTrailingHeight,
-                gap: resolvedGridSectionGap,
+                gridBodyHeight: resolvedGridBodyHeight,
                 paddingV: resolvedGridTileVPad,
               );
             }, childCount: items.length),
@@ -239,45 +214,39 @@ class ResponsiveEntitySliver<T> extends StatelessWidget {
 }
 
 class _ListTile extends StatelessWidget {
-  const _ListTile({
-    required this.header,
-    required this.body,
-    this.trailing,
-    this.onTap,
-    required this.headerWidth,
-    required this.headerHeight,
-    required this.minHeight,
-  });
+  const _ListTile({required this.header, required this.body, this.trailing, this.onTap});
 
   final Widget header;
   final Widget body;
   final Widget? trailing;
   final VoidCallback? onTap;
-  final double headerWidth;
-  final double headerHeight;
-  final double minHeight;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Material(
+      color: theme.cardColor,
+      elevation: theme.cardTheme.elevation ?? AppElevation.low,
+      shape:
+          theme.cardTheme.shape ??
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
       child: InkWell(
+        borderRadius: BorderRadius.circular(AppRadius.md),
         onTap: onTap,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(minHeight: minHeight),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(width: headerWidth, height: headerHeight, child: header),
-                const SizedBox(width: 12),
-                Expanded(child: body),
-                if (trailing != null) ...[
-                  const SizedBox(width: 8),
-                  Align(alignment: Alignment.topRight, child: trailing!),
-                ],
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              header,
+              const SizedBox(width: 12),
+              Expanded(child: body),
+              if (trailing != null) ...[
+                const SizedBox(width: 8),
+                Align(alignment: Alignment.topRight, child: trailing!),
               ],
-            ),
+            ],
           ),
         ),
       ),
@@ -292,8 +261,7 @@ class _GridTile extends StatelessWidget {
     this.trailing,
     this.onTap,
     required this.headerHeight,
-    required this.trailingHeight,
-    required this.gap,
+    required this.gridBodyHeight,
     required this.paddingV,
   });
 
@@ -303,33 +271,38 @@ class _GridTile extends StatelessWidget {
   final VoidCallback? onTap;
 
   final double headerHeight;
-  final double trailingHeight;
-  final double gap;
+  final double gridBodyHeight;
   final double paddingV;
 
   @override
   Widget build(BuildContext context) {
-    final pad = EdgeInsets.symmetric(vertical: paddingV / 2, horizontal: 12);
+    final theme = Theme.of(context);
 
     return Card(
+      margin: EdgeInsets.zero, // <--- override global theme margin
+      elevation: theme.cardTheme.elevation ?? AppElevation.low,
+      shape:
+          theme.cardTheme.shape ??
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
+        borderRadius: BorderRadius.circular(AppRadius.md),
         onTap: onTap,
         child: Padding(
-          padding: pad,
+          padding: EdgeInsets.symmetric(vertical: paddingV / 2, horizontal: AppSpacing.sm),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              SizedBox(height: headerHeight, child: header),
-              SizedBox(height: gap),
-              Expanded(child: body), // absorbs rounding; no overflow
-              if (trailing != null && trailingHeight > 0) ...[
-                SizedBox(height: gap),
-                SizedBox(
-                  height: trailingHeight,
-                  child: Align(alignment: Alignment.topRight, child: trailing),
-                ),
-              ],
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(height: headerHeight, child: header),
+                  const Spacer(),
+                  if (trailing != null)
+                    Padding(padding: const EdgeInsets.only(left: 8.0), child: trailing),
+                ],
+              ),
+              SizedBox(height: gridBodyHeight, child: body),
             ],
           ),
         ),

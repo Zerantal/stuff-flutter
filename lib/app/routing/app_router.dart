@@ -9,6 +9,7 @@ import '../../features/container/viewmodels/edit_container_view_model.dart';
 import '../../features/contents/pages/contents_page.dart';
 import '../../features/contents/viewmodels/contents_view_model.dart';
 import '../../features/dev_tools/pages/database_inspector_page.dart';
+import '../../features/dev_tools/pages/responsive_entity_sliver_demo_page.dart';
 import '../../features/dev_tools/pages/sample_data_options_page.dart';
 import '../../features/item/pages/item_details_page.dart';
 import '../../features/item/pages/item_details_wrapper.dart';
@@ -22,6 +23,7 @@ import '../../features/room/pages/rooms_page.dart';
 
 import '../../features/room/viewmodels/edit_room_view_model.dart';
 import '../../features/room/viewmodels/rooms_view_model.dart';
+import '../theme.dart';
 import 'app_routes_ext.dart';
 import 'app_routes.dart';
 
@@ -36,11 +38,13 @@ class RootAppShell extends StatelessWidget {
 }
 
 class AppRouter {
-  static GoRouter buildRouter({String? initialLocation}) {
-    final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>(
-      debugLabel: 'root',
-    );
+  static final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>(
+    debugLabel: 'root',
+  );
 
+  static final GoRouter router = buildRouter();
+
+  static GoRouter buildRouter({String? initialLocation}) {
     return GoRouter(
       navigatorKey: rootNavigatorKey,
       debugLogDiagnostics: kDebugMode,
@@ -350,6 +354,15 @@ class AppRouter {
                   path: AppRoutes.debugSampleDbRandomiser.path,
                   builder: (c, s) => const SampleDataOptionsPage(),
                 ),
+                GoRoute(
+                  name: AppRoutes.debugWidgetDemo.name,
+                  path: AppRoutes.debugWidgetDemo.path,
+                  builder: (context, state) => Provider<LocationsViewModel>(
+                    key: state.pageKey, // recreate when params change
+                    create: (ctx) => LocationsViewModel.create(ctx),
+                    child: const ResponsiveEntitySliverDemoPage(),
+                  ),
+                ),
               ],
             ),
           ],
@@ -360,14 +373,12 @@ class AppRouter {
     );
   }
 
-  static final GoRouter router = buildRouter();
-
   static Widget _errorPage(String message) {
     return Scaffold(
       appBar: AppBar(title: const Text('Error')),
       body: Center(
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(AppSpacing.md),
           child: Text(message, textAlign: TextAlign.center),
         ),
       ),

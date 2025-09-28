@@ -1,7 +1,6 @@
 // lib/shared/widgets/initial_load_error_panel.dart
-// coverage:ignore-file
-
 import 'package:flutter/material.dart';
+import 'error_message_panel.dart';
 
 class InitialLoadErrorPanel extends StatelessWidget {
   const InitialLoadErrorPanel({
@@ -21,56 +20,29 @@ class InitialLoadErrorPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(title: Text(title)),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 480),
-            child: Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.error_outline, color: theme.colorScheme.error),
-                    const SizedBox(height: 8),
-                    Text('Failed to load', style: theme.textTheme.titleMedium),
-                    const SizedBox(height: 6),
-                    Text(message, textAlign: TextAlign.center),
-                    if (details != null) ...[
-                      const SizedBox(height: 8),
-                      Text(details!, textAlign: TextAlign.center, style: theme.textTheme.bodySmall),
-                    ],
-                    const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        if (onRetry != null)
-                          FilledButton.icon(
-                            key: const ValueKey('initial_load_retry_btn'),
-                            onPressed: onRetry,
-                            icon: const Icon(Icons.refresh),
-                            label: const Text('Retry'),
-                          ),
-                        if (onRetry != null && onClose != null) const SizedBox(width: 8),
-                        if (onClose != null)
-                          OutlinedButton.icon(
-                            key: const ValueKey('initial_load_close_btn'),
-                            onPressed: onClose,
-                            icon: const Icon(Icons.close),
-                            label: const Text('Close'),
-                          ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
+      body: ErrorMessagePanel(
+        icon: Icons.warning_amber_outlined,
+        title: 'Failed to load',
+        message: message,
+        details: details,
+        actions: [
+          if (onRetry != null)
+            FilledButton.icon(
+              key: const ValueKey('initial_load_retry_btn'),
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Retry'),
             ),
-          ),
-        ),
+          if (onClose != null)
+            OutlinedButton.icon(
+              key: const ValueKey('initial_load_close_btn'),
+              onPressed: onClose,
+              icon: const Icon(Icons.close),
+              label: const Text('Close'),
+            ),
+        ],
       ),
     );
   }

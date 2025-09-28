@@ -1,7 +1,10 @@
 // lib/shared/widgets/gesture_wrapped_thumbnail.dart
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
+import 'gesture_wrapped_thumbnail_theme.dart';
 import 'image_thumb.dart';
 import '../image/image_ref.dart';
 import 'image_viewer/image_viewer_page.dart';
@@ -18,9 +21,9 @@ class GestureWrappedThumbnail extends StatelessWidget {
     this.heroTag,
     this.width,
     this.height,
-    this.size = 80,
-    this.borderRadius = 8,
-    this.fit = BoxFit.cover,
+    this.size,
+    this.borderRadius,
+    this.fit,
     this.placeholder,
     this.backgroundColor,
   });
@@ -42,27 +45,50 @@ class GestureWrappedThumbnail extends StatelessWidget {
   final double? height;
 
   /// Fallback side length for a square thumbnail when width/height are omitted.
-  final double size;
-  final double borderRadius;
+  final double? size;
+
+  /// If null, falls back to theme radius.
+  final double? borderRadius;
+
   final ImageRef? placeholder;
-  final BoxFit fit;
+  final BoxFit? fit;
+
+  /// If null, falls back to theme surface variant.
   final Color? backgroundColor;
 
   @override
   Widget build(BuildContext context) {
-    Uuid uuid = const Uuid();
+    final uuid = const Uuid();
     final generatedUuid = uuid.v4();
+
     final preview = images.isNotEmpty ? images.first : null;
     final baseTag = 'ent_${entityId ?? generatedUuid}';
     final tags = List<String>.generate(images.length, (i) => '${baseTag}_img$i');
     if (tags.isNotEmpty && heroTag != null) tags[0] = heroTag!;
 
-    final w = width ?? size;
-    final h = height ?? size;
+    final ext = GestureWrappedThumbnailTheme.of(context);
+
+    final w = width ?? size ?? ext.size;
+    final h = height ?? size ?? ext.size;
+
+    final effectiveBorderRadius = borderRadius ?? ext.borderRadius;
+    final effectiveFit = fit ?? ext.fit;
+    final effectiveBackgroundColor = backgroundColor ?? ext.backgroundColor;
+    final effectivePlaceholder = placeholder ?? ext.placeholder;
 
     Widget? placeholderWidget;
-    if (placeholder != null) {
-      placeholderWidget = buildImage(placeholder!, width: w, height: h, fit: BoxFit.cover);
+    if (effectivePlaceholder != null) {
+      placeholderWidget = buildImage(effectivePlaceholder, width: w, height: h, fit: BoxFit.cover);
+    } else {
+      placeholderWidget = Container(
+        width: w,
+        height: h,
+        decoration: BoxDecoration(
+          color: effectiveBackgroundColor,
+          borderRadius: BorderRadius.circular(effectiveBorderRadius),
+        ),
+        child: Icon(Icons.image_outlined, size: min(w, h) * 0.8),
+      );
     }
 
     return GestureDetector(
@@ -89,10 +115,10 @@ class GestureWrappedThumbnail extends StatelessWidget {
           image: preview, // null => placeholder shown
           width: w,
           height: h,
-          borderRadius: BorderRadius.circular(borderRadius),
-          fit: fit,
+          borderRadius: BorderRadius.circular(effectiveBorderRadius),
+          fit: effectiveFit,
           placeholderWidget: placeholderWidget,
-          backgroundColor: backgroundColor,
+          backgroundColor: effectiveBackgroundColor,
         ),
       ),
     );

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../app/theme.dart';
+
 class EmptyListState extends StatelessWidget {
   const EmptyListState({
     super.key,
@@ -21,12 +23,12 @@ class EmptyListState extends StatelessWidget {
     );
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(text, textAlign: TextAlign.center),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.md),
             if (onAdd != null && buttonText != null)
               ElevatedButton.icon(icon: buttonIcon, label: Text(buttonText!), onPressed: onAdd),
           ],
